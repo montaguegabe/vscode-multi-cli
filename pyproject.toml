@@ -1,0 +1,13 @@
+[project]
+name = "cursor-multi"
+version = "0.1.0"
+description = "Cursor Multi"
+authors = [{ name = "Gabe Montague", email = "gabemontague@outlook.com" }]
+dependencies = []
+
+[project.scripts]
+cursor-merge = "cursor_multi.merge_branch:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
