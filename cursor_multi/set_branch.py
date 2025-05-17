@@ -4,7 +4,7 @@ import argparse
 import os
 import sys
 
-from .utils import check_branch_existence, load_repos, run_git, validate_repo_is_clean
+from .repos import check_branch_existence, load_repos, run_git, validate_repo_is_clean
 
 
 def create_and_switch_branch(repo_path: str, branch_name: str) -> bool:

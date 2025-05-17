@@ -1,5 +1,4 @@
 import json
-import os
 import subprocess
 from dataclasses import dataclass
 from functools import lru_cache
@@ -168,28 +167,3 @@ def load_repos() -> List[Repository]:
         raise NoRepositoriesError("No repositories found in repos.json")
 
     return result
-
-
-def get_app_packages(repo_names: List[str]) -> List[str]:
-    """Get list of repositories that have web.app_packages entry points.
-
-    Args:
-        repo_names: List of repository names to check
-
-    Returns:
-        List of repository names that have web.app_packages entry points
-    """
-    git_root = get_root()
-    app_packages = []
-
-    for repo in repo_names:
-        pyproject_path = os.path.join(git_root, repo, "pyproject.toml")
-        if not os.path.exists(pyproject_path):
-            continue
-
-        with open(pyproject_path, "r") as f:
-            content = f.read()
-            if '[project.entry-points."web.app_packages"]' in content:
-                app_packages.append(repo)
-
-    return app_packages

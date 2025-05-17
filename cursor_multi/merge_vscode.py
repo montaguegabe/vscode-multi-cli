@@ -4,14 +4,11 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List
 
-from .utils import get_app_packages, get_root, load_repos
+from cursor_multi.paths import root_dir
+from cursor_multi.repos import load_repos
+from cursor_multi.settings import settings
 
 logger = logging.getLogger(__name__)
-
-# Keys to skip when merging VSCode configurations
-SKIP_KEYS = [
-    "workbench.colorCustomizations",
-]
 
 
 def soft_load_json_file(path: Path) -> Dict[str, Any]:
@@ -84,9 +81,11 @@ def deep_merge(
     """
     merged = base.copy()
 
+    skip_keys = settings["vscode"]["skip_keys"]
+
     for key, value in override.items():
         # Skip keys that we don't want to merge
-        if key in SKIP_KEYS:
+        if key in skip_keys:
             continue
 
         # Special handling for launch.json configurations
@@ -130,31 +129,26 @@ def deep_merge(
 
 def merge_vscode_configs():
     """Merge .vscode configuration files from all repositories."""
-    git_root = get_root()
 
     # Delete existing launch.json and tasks.json
     for file_to_delete in ["launch.json", "tasks.json"]:
-        file_path = os.path.join(git_root, ".vscode", file_to_delete)
-        if os.path.exists(file_path):
+        file_path = Path(os.path.join(root_dir, ".vscode", file_to_delete))
+        if file_path.exists():
             os.remove(file_path)
-            print(f"🗑️  Deleted existing {file_to_delete}")
+            logger.info(f"Deleted existing {file_to_delete}")
 
     repos = load_repos()
-    repo_names = [repo_url.split("/")[-1] for repo_url in repos]
-    root_folder_name = os.path.basename(git_root).title()
-
-    # Get list of app packages to skip
-    app_packages = get_app_packages(repo_names)
+    root_folder_name = os.path.basename(root_dir).title()
 
     # VSCode config files to merge
     config_files = ["settings.json", "launch.json", "tasks.json"]
 
     for config_file in config_files:
-        print(f"\n🔄 Merging {config_file} from all repositories...")
+        logger.info(f"Merging {config_file} from all repositories...")
 
         # Start with the root config if it exists
-        root_config_path = os.path.join(git_root, ".vscode", config_file)
-        merged_config = load_json_file(root_config_path)
+        root_config_path = Path(os.path.join(root_dir, ".vscode", config_file))
+        merged_config = soft_load_json_file(root_config_path)
 
         # For settings.json, add Python paths
         if config_file == "settings.json":
@@ -174,24 +168,26 @@ def merge_vscode_configs():
         for repo_name in repo_names:
             # Skip app packages
             if repo_name in app_packages:
-                print(f"⏭️  Skipping {repo_name} (app package)")
+                logger.debug(f"Skipping {repo_name} (app package)")
                 continue
 
-            repo_config_path = os.path.join(git_root, repo_name, ".vscode", config_file)
+            repo_config_path = Path(
+                os.path.join(root_dir, repo_name, ".vscode", config_file)
+            )
             repo_config = soft_load_json_file(repo_config_path)
 
             if repo_config:
-                print(f"📦 Merging config from {repo_name}")
+                logger.info(f"Merging config from {repo_name}")
                 merged_config = deep_merge(merged_config, repo_config, repo_name)
 
         # For settings.json, merge in @settings.shared.json at the end
         if config_file == "settings.json":
-            shared_settings_path = os.path.join(
-                git_root, ".vscode", "@settings.shared.json"
+            shared_settings_path = Path(
+                os.path.join(root_dir, ".vscode", "@settings.shared.json")
             )
             shared_settings = soft_load_json_file(shared_settings_path)
             if shared_settings:
-                print("📦 Merging shared settings from @settings.shared.json")
+                logger.info("Merging shared settings from @settings.shared.json")
                 merged_config = deep_merge(merged_config, shared_settings)
 
         # For launch.json, create a master compound that includes all configurations
@@ -226,18 +222,16 @@ def merge_vscode_configs():
 
         # Write the merged config back to the root .vscode directory
         if merged_config:
-            os.makedirs(os.path.join(git_root, ".vscode"), exist_ok=True)
+            os.makedirs(Path(os.path.join(root_dir, ".vscode")), exist_ok=True)
             with open(root_config_path, "w") as f:
                 json.dump(merged_config, f, indent=4)
-            print(f"✅ Successfully merged {config_file}")
+            logger.info(f"Successfully merged {config_file}")
         else:
-            print(f"ℹ️  No {config_file} files found to merge")
+            logger.info(f"No {config_file} files found to merge")
 
 
 def main():
-    print("🚀 Running post-setup tasks...")
     merge_vscode_configs()
-    print("\n✨ Post-setup tasks completed successfully!")
 
 
 if __name__ == "__main__":

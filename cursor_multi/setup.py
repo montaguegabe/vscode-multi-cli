@@ -2,11 +2,11 @@
 
 import os
 
+from .repos import get_root, load_repos, run_git
 from .rules import (
     cleanup_existing_imported_rules,
     import_cursor_rules,
 )
-from .utils import get_root, load_repos, run_git
 
 
 def get_current_branch(repo_path: str) -> str:

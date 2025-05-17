@@ -1,8 +1,8 @@
-from typing import List
-
 import tomli
 
 from .paths import multi_toml_path
+
+default_settings = {"vscode": {"skip_keys": ["workbench.colorCustomizations"]}}
 
 
 def load_settings() -> dict:
@@ -12,11 +12,8 @@ def load_settings() -> dict:
             return tomli.load(f)
     except FileNotFoundError:
         # Return default settings if file doesn't exist
-        return {"vscode": {"skip_keys": ["workbench.colorCustomizations"]}}
+        return default_settings
 
 
 # Load settings at module level
-_settings = load_settings()
-
-# Export specific settings
-SKIP_KEYS: List[str] = _settings["vscode"]["skip_keys"]
+settings = load_settings()

@@ -4,3 +4,15 @@
 
 - Automatic syncing of Cursor rule .mcd files from the sub-repos
 - Automatic syncing of your `.vscode` folder: `launch.json`, `tasks.json`, `settings.json`
+
+## Getting started
+
+- First create a multi.toml file in the root directory under which you would like the sub-repos to live:
+
+E.g.:
+
+```
+[vscode]
+# Keys to skip when merging VSCode configurations
+skip_keys = ["workbench.colorCustomizations"]
+```

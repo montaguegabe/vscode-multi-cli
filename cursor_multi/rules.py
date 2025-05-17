@@ -7,7 +7,7 @@ from cursor_multi.ignore_files import (
     update_gitignore_with_imported_rules,
 )
 from cursor_multi.paths import get_cursor_rules_dir, get_root, root_rules_dir
-from cursor_multi.utils import Repository, load_repos
+from cursor_multi.repos import Repository, load_repos
 
 logger = logging.getLogger(__name__)
 

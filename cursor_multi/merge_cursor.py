@@ -1,17 +1,21 @@
-from .rules import cleanup_existing_imported_rules, import_cursor_rules
+import logging
+
+from cursor_multi.rules import cleanup_existing_imported_rules, import_cursor_rules
+
+logger = logging.getLogger(__name__)
 
 
 def main():
-    print("🔄 Merging Cursor rules...")
+    logger.info("🔄 Merging Cursor rules...")
 
     # Clean up any previously imported rules
-    print("\n🔄 Cleaning up old imported rules...")
+    logger.info("\n🔄 Cleaning up old imported rules...")
     cleanup_existing_imported_rules()
 
     # Import cursor rules from each repository
-    print("\n🔄 Importing Cursor rules...")
+    logger.info("\n🔄 Importing Cursor rules...")
     import_cursor_rules()
-    print("\n✨ Cursor rules merged successfully!")
+    logger.info("\n✨ Cursor rules merged successfully!")
 
 
 if __name__ == "__main__":

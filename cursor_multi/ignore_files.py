@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from cursor_multi.paths import gitignore_path, vscode_ignore_path
-from cursor_multi.utils import load_repos
+from cursor_multi.repos import load_repos
 
 logger = logging.getLogger(__name__)
 

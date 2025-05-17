@@ -3,7 +3,7 @@ name = "cursor-multi"
 version = "0.1.0"
 description = "Cursor Multi"
 authors = [{ name = "Gabe Montague", email = "gabemontague@outlook.com" }]
-dependencies = []
+dependencies = ["tomli>=2.0.1"]
 
 [project.optional-dependencies]
 dev = ["ruff>=0.2.0"]
