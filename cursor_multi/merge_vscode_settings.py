@@ -3,6 +3,7 @@ from typing import Any, Dict, List
 
 from cursor_multi.merge_vscode_helpers import deep_merge
 from cursor_multi.paths import get_vscode_config_dir, vscode_settings_shared_path
+from cursor_multi.settings import settings
 from cursor_multi.utils import soft_read_json_file
 
 logger = logging.getLogger(__name__)
@@ -18,7 +19,12 @@ def merge_settings_json(repos: List[Any]) -> Dict[str, Any]:
 
         repo_settings_path = get_vscode_config_dir(repo.path) / "settings.json"
         repo_settings = soft_read_json_file(repo_settings_path)
-        merged_settings = deep_merge(merged_settings, repo_settings, repo.name)
+        merged_settings = deep_merge(
+            merged_settings,
+            repo_settings,
+            repo.name,
+            skip_keys=settings["vscode"]["skip_settings"],
+        )
 
     # Merge in settings.shared.json
     shared_settings = soft_read_json_file(vscode_settings_shared_path)

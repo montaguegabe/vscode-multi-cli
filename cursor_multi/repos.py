@@ -1,33 +1,36 @@
-import json
-from dataclasses import dataclass
 from functools import lru_cache
-from pathlib import Path
-from typing import List
+from typing import Any, List
 
 from cursor_multi.errors import NoRepositoriesError
-from cursor_multi.paths import get_root
+from cursor_multi.paths import root_dir
+
+from .settings import settings
 
 
-@dataclass
 class Repository:
     """Represents a repository in the workspace.
 
     Attributes:
-        url: The repository URL
-        name: Repository name derived from the URL
-        path: Local filesystem path where the repository is/will be cloned
+        url: The repository URL.
+        name: Repository name derived from the URL.
+        path: Local filesystem path where the repository is/will be cloned.
+        skip: Whether to skip this repository for certain operations (default: False).
+              Other attributes may be dynamically added from the config.
     """
 
-    url: str
-    options: dict | None = None
-    skip: bool = False
-
-    def __post_init__(self):
-        """Derive name and path from URL after initialization."""
+    def __init__(self, url: str, **kwargs: Any):
+        """Initialize Repository, deriving name and path, and setting other attributes from kwargs."""
+        self.url = url
+        # Derive name and path from URL
         self.name = self.url.split("/")[-1]
-        self.path = get_root() / self.name
-        if self.options is None:
-            self.options = {}
+        self.path = root_dir / self.name
+
+        # Set 'skip' attribute, defaulting to False if not provided in kwargs
+        self.skip = kwargs.pop("skip", False)
+
+        # Set any other attributes passed in kwargs (top-level keys from repo config)
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     @property
     def is_python(self) -> bool:
@@ -44,38 +47,35 @@ class Repository:
 
 @lru_cache(maxsize=1)
 def load_repos() -> List[Repository]:
-    """Load repository information from repos.json.
+    """Load repository information from the "repos" key in multi.json settings.
 
-    The repos.json file should contain a list of objects with the following structure:
-    [
-        {
-            "url": "https://github.com/user/repo",
-            "options": {
-                // Repository-specific settings (optional)
+    Each repository config in the list should be an object. Example:
+    {
+        "repos": [
+            {
+                "url": "https://github.com/user/repo",
+                "skip": false, // Optional, defaults to false
+                "custom_setting": "value" // Other top-level settings become attributes
             }
-        },
-        // More repositories...
-    ]
+        ]
+    }
     """
-    root = get_root()
-    repos_file = Path(root) / "repos.json"
-
-    with open(repos_file) as f:
-        repo_configs = json.load(f)
+    repo_configs_list = settings.get("repos", [])
 
     result = []
-    for config in repo_configs:
-        if isinstance(config, dict):
-            url = config.get("url")
-            if not url:
-                raise ValueError("Repository config must contain a 'url' field")
-            result.append(Repository(url=url, **config.get("options", {})))
-        else:
+    for config_dict in repo_configs_list:
+        if not isinstance(config_dict, dict):
+            raise ValueError("Each repository config in multi.json must be an object.")
+
+        if "url" not in config_dict:
             raise ValueError(
-                "Each repository config must be an object with a 'url' field"
+                "Repository config in multi.json must contain a 'url' field."
             )
 
+        # Directly pass the config_dict; __init__ will handle parsing.
+        result.append(Repository(**config_dict))
+
     if not result:
-        raise NoRepositoriesError("No repositories found in repos.json")
+        raise NoRepositoriesError("No repositories found in multi.json settings.")
 
     return result

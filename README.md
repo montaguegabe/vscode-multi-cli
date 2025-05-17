@@ -7,12 +7,22 @@
 
 ## Getting started
 
-- First create a multi.toml file in the root directory under which you would like the sub-repos to live:
+- First create a multi.json file in the root directory under which you would like the sub-repos to live:
 
 E.g.:
 
+```json
+{
+  "repos": [
+    {
+      "url": "https://github.com/myorg/myrepo"
+    }
+  ]
+}
 ```
-[vscode]
-# Keys to skip when merging VSCode configurations
-skip_keys = ["workbench.colorCustomizations"]
-```
+
+## TODO:
+
+- Single file merge template
+- Git operation template - (warn on bad git state after)
+- Tests

@@ -8,3 +8,7 @@ class MergeBranchError(Exception):
 
 class GitError(Exception):
     pass
+
+
+class RepoNotCleanError(Exception):
+    pass

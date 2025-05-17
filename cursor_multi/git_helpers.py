@@ -4,8 +4,14 @@ from pathlib import Path
 from typing import List, Tuple
 
 from cursor_multi.errors import GitError
+from cursor_multi.repos import load_repos
 
 logger = logging.getLogger(__name__)
+
+
+def check_is_git_repo_root(repo_path: Path) -> bool:
+    # Will fail for submodules and worktrees, but these aren't used by us
+    return (repo_path / ".git").is_dir()
 
 
 def run_git(
@@ -29,9 +35,22 @@ def run_git(
         raise GitError(f"Failed to {action_description}") from e
 
 
-def check_is_git_repo_root(repo_path: Path) -> bool:
-    # Will fail for submodules and worktrees, but these aren't used by us
-    return (repo_path / ".git").is_dir()
+def get_current_branch(repo_path: Path) -> str:
+    """Get the current branch name of a git repository."""
+    result = run_git(
+        ["rev-parse", "--abbrev-ref", "HEAD"],
+        "determine current branch",
+        repo_path,
+    )
+    return result.stdout.strip()
+
+
+def validate_all_on_same_branch() -> bool:
+    """Validate that all repositories are on the same branch."""
+    repos = load_repos()
+    branches = [get_current_branch(repo.path) for repo in repos]
+    first_branch = branches[0]
+    return all(branch == first_branch for branch in branches)
 
 
 def validate_repo_is_clean(repo_path: Path) -> bool:

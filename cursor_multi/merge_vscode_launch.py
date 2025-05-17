@@ -3,12 +3,11 @@ import os
 from typing import Any, Dict, List
 
 from cursor_multi.merge_vscode_helpers import (
-    apply_defaults_to_structure,
     deep_merge,
     prefix_repo_name_to_path,
 )
 from cursor_multi.paths import get_vscode_config_dir, root_dir
-from cursor_multi.utils import soft_read_json_file
+from cursor_multi.utils import apply_defaults_to_structure, soft_read_json_file
 
 logger = logging.getLogger(__name__)
 

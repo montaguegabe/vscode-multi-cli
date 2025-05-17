@@ -5,7 +5,7 @@ from cursor_multi.rules import cleanup_existing_imported_rules, import_cursor_ru
 logger = logging.getLogger(__name__)
 
 
-def main():
+def cleanup_and_import_cursor_rules():
     logger.info("🔄 Merging Cursor rules...")
 
     # Clean up any previously imported rules
@@ -16,7 +16,3 @@ def main():
     logger.info("\n🔄 Importing Cursor rules...")
     import_cursor_rules()
     logger.info("\n✨ Cursor rules merged successfully!")
-
-
-if __name__ == "__main__":
-    main()

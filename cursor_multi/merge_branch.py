@@ -4,7 +4,8 @@ import sys
 from pathlib import Path
 
 from cursor_multi.errors import MergeBranchError
-from cursor_multi.repos import check_branch_existence, get_root, load_repos, run_git
+from cursor_multi.git_helpers import check_branch_existence, run_git
+from cursor_multi.repos import load_repos
 
 logger = logging.getLogger(__name__)
 

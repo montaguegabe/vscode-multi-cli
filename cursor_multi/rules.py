@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 from cursor_multi.ignore_files import (
     update_gitignore_with_imported_rules,
 )
-from cursor_multi.paths import get_cursor_rules_dir, get_root, root_rules_dir
+from cursor_multi.paths import get_cursor_rules_dir, imported_rules_path, root_rules_dir
 from cursor_multi.repos import Repository, load_repos
 
 logger = logging.getLogger(__name__)
@@ -158,8 +158,6 @@ def cleanup_existing_imported_rules():
     """Remove any previously imported rules listed in .importedrules."""
 
     # The imported rules path contains a list of rules that were loaded from the subrepos.
-    imported_rules_path = get_root() / ".importedrules"
-    rules_dir = get_root() / ".cursor" / "rules"
 
     if not imported_rules_path.exists():
         logger.debug("No imported rules to cleanup")
@@ -169,10 +167,10 @@ def cleanup_existing_imported_rules():
         imported_rules = [line.strip() for line in f.readlines() if line.strip()]
 
     for rule in imported_rules:
-        rule_path = rules_dir / rule
+        rule_path = root_rules_dir / rule
         if rule_path.exists():
             rule_path.unlink()
-            print(f"🗑️  Removed old imported rule: {rule}")
+            logger.info(f"🗑️  Removed old imported rule: {rule}")
 
     # Clear the imported rules file
     imported_rules_path.unlink()
@@ -230,7 +228,7 @@ def import_cursor_rules():
             with dst_path.open("w") as f:
                 f.write(modified_content)
 
-            print(
+            logger.info(
                 f"✅ Imported rule from {repo_name}/{rule_file} (scoped to {repo_name}/)"
             )
             continue
@@ -247,7 +245,9 @@ def import_cursor_rules():
                 f.write(combined_content)
 
             repo_list = ", ".join(source_repos)
-            print(f"✅ Combined identical rule {rule_file} from repos: {repo_list}")
+            logger.info(
+                f"✅ Combined identical rule {rule_file} from repos: {repo_list}"
+            )
         else:
             # Rules have different content - use suffixed filenames
             for repo_name in source_repos:
@@ -263,7 +263,7 @@ def import_cursor_rules():
                 with dst_path.open("w") as f:
                     f.write(modified_content)
 
-                print(
+                logger.info(
                     f"🔄 Imported rule from {repo_name}/{rule_file} as {dst_filename} (scoped to {repo_name}/)"
                 )
 
