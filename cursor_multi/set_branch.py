@@ -3,15 +3,14 @@
 import argparse
 import os
 import sys
-from typing import List
 
-from .utils import load_repos, run_git, validate_git_repo, check_branch_existence
+from .utils import check_branch_existence, load_repos, run_git, validate_repo_is_clean
 
 
 def create_and_switch_branch(repo_path: str, branch_name: str) -> bool:
     """Create a branch if it doesn't exist and switch to it."""
     try:
-        if not validate_git_repo(repo_path):
+        if not validate_repo_is_clean(repo_path):
             return False
 
         # Get current branch

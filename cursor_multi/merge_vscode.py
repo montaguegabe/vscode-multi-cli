@@ -1,19 +1,37 @@
-#!/usr/bin/env python3
-
 import json
+import logging
 import os
-from typing import Dict, Any, List
-from .utils import load_repos, get_git_root, get_app_packages
+from pathlib import Path
+from typing import Any, Dict, List
 
+from .utils import get_app_packages, get_root, load_repos
+
+logger = logging.getLogger(__name__)
 
 # Keys to skip when merging VSCode configurations
 SKIP_KEYS = [
-    "projectType",
     "workbench.colorCustomizations",
 ]
 
 
-def adjust_workspace_path(value: Any, repo_name: str) -> Any:
+def soft_load_json_file(path: Path) -> Dict[str, Any]:
+    """Load a JSON file if it exists, otherwise return an empty dict."""
+    if path.exists():
+        try:
+            with path.open("r") as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            logger.warning(f"Could not parse {path}, skipping...")
+    return {}
+
+
+def prefix_repo_name_to_path(value: str, repo_name: str) -> str:
+    if f"${{workspaceFolder}}/{repo_name}" in value:
+        return value
+    return value.replace("${workspaceFolder}", f"${{workspaceFolder}}/{repo_name}")
+
+
+def prefix_repo_name_to_path_recursive(value: Any, repo_name: str) -> Any:
     """
     Recursively adjust workspace folder paths in values.
 
@@ -22,29 +40,20 @@ def adjust_workspace_path(value: Any, repo_name: str) -> Any:
         repo_name: Name of the repository to add to workspace folder paths
     """
     if isinstance(value, str) and "${workspaceFolder}" in value:
-        # Don't add repo_name if it's already there
-        if f"${{workspaceFolder}}/{repo_name}" in value:
-            return value
-        return value.replace("${workspaceFolder}", f"${{workspaceFolder}}/{repo_name}")
+        return prefix_repo_name_to_path(value, repo_name)
     elif isinstance(value, dict):
-        return {k: adjust_workspace_path(v, repo_name) for k, v in value.items()}
+        return {
+            k: prefix_repo_name_to_path_recursive(v, repo_name)
+            for k, v in value.items()
+        }
     elif isinstance(value, list):
-        return [adjust_workspace_path(item, repo_name) for item in value]
+        return [prefix_repo_name_to_path_recursive(item, repo_name) for item in value]
     return value
 
 
 def collect_compound_configurations(
     compounds: List[Dict[str, Any]], merged_config: Dict[str, Any]
 ) -> List[str]:
-    """
-    Collect configuration names from required compounds and standalone required configurations.
-
-    Args:
-        compounds: List of compound configurations
-        merged_config: The complete merged configuration object
-    Returns:
-        List of unique configuration names
-    """
     configs = []
 
     # Collect from required compounds
@@ -86,7 +95,7 @@ def deep_merge(
             for config in value:
                 if isinstance(config, dict) and "cwd" not in config:
                     # Add cwd to the configuration only if it doesn't exist
-                    config["cwd"] = adjust_workspace_path(
+                    config["cwd"] = prefix_repo_name_to_path(
                         "${workspaceFolder}", repo_name
                     )
 
@@ -98,13 +107,13 @@ def deep_merge(
                     if "options" not in task:
                         task["options"] = {}
                     if "cwd" not in task["options"]:
-                        task["options"]["cwd"] = adjust_workspace_path(
+                        task["options"]["cwd"] = prefix_repo_name_to_path(
                             "${workspaceFolder}", repo_name
                         )
 
         # Adjust workspace folder paths in the value if repo_name is provided
         if repo_name:
-            value = adjust_workspace_path(value, repo_name)
+            value = prefix_repo_name_to_path_recursive(value, repo_name)
 
         if key in merged and isinstance(merged[key], dict) and isinstance(value, dict):
             merged[key] = deep_merge(merged[key], value, repo_name)
@@ -119,20 +128,9 @@ def deep_merge(
     return merged
 
 
-def load_json_file(file_path: str) -> Dict[str, Any]:
-    """Load a JSON file if it exists, otherwise return an empty dict."""
-    if os.path.exists(file_path):
-        try:
-            with open(file_path, "r") as f:
-                return json.load(f)
-        except json.JSONDecodeError:
-            print(f"⚠️  Warning: Could not parse {file_path}, skipping...")
-    return {}
-
-
 def merge_vscode_configs():
     """Merge .vscode configuration files from all repositories."""
-    git_root = get_git_root()
+    git_root = get_root()
 
     # Delete existing launch.json and tasks.json
     for file_to_delete in ["launch.json", "tasks.json"]:
@@ -180,7 +178,7 @@ def merge_vscode_configs():
                 continue
 
             repo_config_path = os.path.join(git_root, repo_name, ".vscode", config_file)
-            repo_config = load_json_file(repo_config_path)
+            repo_config = soft_load_json_file(repo_config_path)
 
             if repo_config:
                 print(f"📦 Merging config from {repo_name}")
@@ -191,7 +189,7 @@ def merge_vscode_configs():
             shared_settings_path = os.path.join(
                 git_root, ".vscode", "@settings.shared.json"
             )
-            shared_settings = load_json_file(shared_settings_path)
+            shared_settings = soft_load_json_file(shared_settings_path)
             if shared_settings:
                 print("📦 Merging shared settings from @settings.shared.json")
                 merged_config = deep_merge(merged_config, shared_settings)

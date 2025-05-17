@@ -1,79 +1,173 @@
-"""Shared utilities for scripts."""
-
 import json
 import os
 import subprocess
-import sys
-from typing import List, Sequence
+from dataclasses import dataclass
+from functools import lru_cache
+from pathlib import Path
+from typing import List, Tuple, Union
+
+from cursor_multi.errors import GitError, NoRepositoriesError
+from cursor_multi.paths import get_root
+
+
+@dataclass
+class Repository:
+    """Represents a repository in the workspace.
+
+    Attributes:
+        url: The repository URL
+        name: Repository name derived from the URL
+        path: Local filesystem path where the repository is/will be cloned
+        options: Dictionary of repository-specific settings (defaults to empty dict)
+    """
+
+    url: str
+    options: dict | None = None
+
+    def __post_init__(self):
+        """Derive name and path from URL after initialization."""
+        self.name = self.url.split("/")[-1]
+        self.path = get_root() / self.name
+        if self.options is None:
+            self.options = {}
 
 
 def run_git(
-    args: Sequence[str],
-    description: str,
-    repo_path: str | None = None,
+    args: List[str],
+    action_description: str,
+    repo_path: Union[Path, None] = None,
+    check: bool = True,
 ) -> subprocess.CompletedProcess:
-    """Run a git command with consistent error handling.
-
-    Args:
-        args: The git command arguments (e.g. ["checkout", "main"])
-        description: Description of the operation for error messages
-        repo_path: Optional path to run git command in, uses current directory if None
-
-    Returns:
-        CompletedProcess instance if successful
-
-    Exits:
-        Prints error and exits with status 1 if command fails
-    """
+    """Run a git command and handle errors."""
+    cmd = ["git"] + args
     try:
+        if repo_path:
+            return subprocess.run(
+                cmd,
+                cwd=repo_path,
+                check=check,
+                capture_output=True,
+                text=True,
+            )
         return subprocess.run(
-            ["git", *args],
-            cwd=repo_path,
+            cmd,
+            check=check,
             capture_output=True,
             text=True,
-            check=True,
         )
     except subprocess.CalledProcessError as e:
-        repo_name = os.path.basename(repo_path) if repo_path else "current repository"
-        print(f"\n❌ Failed to {description} in {repo_name}")
-        print(f"Git output:\n{e.stderr}")
-        sys.exit(1)
+        print(f"❌ Failed to {action_description}")
+        print(f"Error: {e.stderr}")
+        raise GitError(f"Failed to {action_description}") from e
 
 
-def get_git_root() -> str:
-    """Get the root directory of the git repository.
-
-    Returns:
-        The absolute path to the git repository root.
-
-    Raises:
-        subprocess.CalledProcessError: If git command fails.
-    """
-    result = run_git(
-        ["rev-parse", "--show-toplevel"],
-        "get repository root",
-    )
-    return result.stdout.strip()
-
-
-def load_repos(names_only: bool = False) -> List[str]:
-    """Load repository URLs from repos.json.
+def validate_repo_is_clean(repo_path: Path) -> bool:
+    """Validate that the path is a git repository and has a clean working directory.
 
     Args:
-        names_only: If True, returns only the repository names instead of URLs.
+        repo_path: Path to the repository
 
     Returns:
-        List of repository URLs or names depending on names_only parameter.
+        bool: True if repository is valid and clean, False otherwise
     """
-    git_root = get_git_root()
-    repos_file = os.path.join(git_root, "repos.json")
+    # Check if this is a git repository
+    try:
+        run_git(["rev-parse", "--git-dir"], "check if git repo", repo_path)
+    except Exception:
+        print(f"\n❌ {repo_path} is not a git repository or has not been initialized")
+        return False
 
-    with open(repos_file, "r") as f:
-        urls = json.load(f)
+    # Get current branch to ensure we're in a valid state
+    try:
+        run_git(["rev-parse", "--abbrev-ref", "HEAD"], "get current branch", repo_path)
+    except Exception:
+        print(f"\n❌ Could not determine current branch in {repo_path}")
+        return False
 
-    if names_only:
-        return [url.split("/")[-1] for url in urls]
-    return urls
+    # Make sure we have a clean working directory
+    status = run_git(
+        ["status", "--porcelain"], "check working directory status", repo_path
+    )
+    if status.stdout.strip():
+        print(
+            f"\n❌ Working directory is not clean in {repo_path}. Please commit or stash changes first."
+        )
+        return False
+    return True
+
+
+def check_branch_existence(repo_path: Path, branch_name: str) -> Tuple[bool, bool]:
+    """Check if a branch exists locally and/or remotely.
+
+    Args:
+        repo_path: Path to the repository
+        branch_name: Name of the branch to check
+
+    Returns:
+        Tuple[bool, bool]: (exists_locally, exists_remotely)
+    """
+    # Check if branch exists locally
+    result = run_git(
+        ["branch", "--list", branch_name],
+        "check if branch exists",
+        repo_path,
+    )
+    exists_locally = bool(result.stdout.strip())
+
+    # Check if branch exists remotely
+    try:
+        result = run_git(
+            ["ls-remote", "--heads", "origin", branch_name],
+            "check if branch exists remotely",
+            repo_path,
+        )
+        exists_remotely = bool(result.stdout.strip())
+    except Exception:
+        print(
+            f"Could not check remote branches in {repo_path}, assuming branch doesn't exist remotely"
+        )
+        exists_remotely = False
+
+    return exists_locally, exists_remotely
+
+
+@lru_cache(maxsize=1)
+def load_repos() -> List[Repository]:
+    """Load repository information from repos.json.
+
+    The repos.json file should contain a list of objects with the following structure:
+    [
+        {
+            "url": "https://github.com/user/repo",
+            "options": {
+                // Repository-specific settings (optional)
+            }
+        },
+        // More repositories...
+    ]
+    """
+    root = get_root()
+    repos_file = Path(root) / "repos.json"
+
+    with open(repos_file) as f:
+        repo_configs = json.load(f)
+
+    result = []
+    for config in repo_configs:
+        if isinstance(config, dict):
+            url = config.get("url")
+            if not url:
+                raise ValueError("Repository config must contain a 'url' field")
+            result.append(Repository(url=url, options=config.get("options")))
+        else:
+            raise ValueError(
+                "Each repository config must be an object with a 'url' field"
+            )
+
+    if not result:
+        raise NoRepositoriesError("No repositories found in repos.json")
+
+    return result
 
 
 def get_app_packages(repo_names: List[str]) -> List[str]:
@@ -85,7 +179,7 @@ def get_app_packages(repo_names: List[str]) -> List[str]:
     Returns:
         List of repository names that have web.app_packages entry points
     """
-    git_root = get_git_root()
+    git_root = get_root()
     app_packages = []
 
     for repo in repo_names:

@@ -5,9 +5,27 @@ description = "Cursor Multi"
 authors = [{ name = "Gabe Montague", email = "gabemontague@outlook.com" }]
 dependencies = []
 
+[project.optional-dependencies]
+dev = ["ruff>=0.2.0"]
+
 [project.scripts]
-cursor-merge = "cursor_multi.merge_branch:main"
+merge-branch = "cursor_multi.merge_branch:main"
+merge-cursor = "cursor_multi.merge_cursor:main"
+merge-vscode = "cursor_multi.merge_vscode:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+select = ["E", "F", "I", "B", "W", "C90"]
+ignore = ["C901", "E501", "F821"]
+
+[tool.ruff.lint]
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.format]
+line-ending = "auto"

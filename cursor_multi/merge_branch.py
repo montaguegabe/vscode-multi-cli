@@ -1,57 +1,50 @@
-#!/usr/bin/env python3
-
 import argparse
-import os
+import logging
 import sys
+from pathlib import Path
 
-from cursor_multi.utils import (
-    check_branch_existence,
-    load_repos,
-    run_git,
-    validate_git_repo,
-)
+from cursor_multi.errors import MergeBranchError
+from cursor_multi.utils import check_branch_existence, get_root, load_repos, run_git
+
+logger = logging.getLogger(__name__)
 
 
-def merge_branch(repo_path: str, source_branch: str, target_branch: str) -> bool:
+def merge_branch(repo_path: Path, source_branch: str, target_branch: str) -> None:
     """Merge source_branch into target_branch in the specified repository."""
-    try:
-        if not validate_git_repo(repo_path):
-            return False
-
-        # Check if both branches exist
-        for branch in [source_branch, target_branch]:
-            exists_locally, exists_remotely = check_branch_existence(repo_path, branch)
-            if not exists_locally and not exists_remotely:
-                print(
-                    f"\n❌ Branch '{branch}' does not exist locally or remotely in {repo_path}"
-                )
-                return False
-
-        # Switch to target branch
-        try:
-            run_git(["checkout", target_branch], "checkout target branch", repo_path)
-        except Exception as e:
-            print(f"\n❌ Failed to checkout target branch in {repo_path}: {str(e)}")
-            return False
-
-        # Perform the merge
-        try:
-            print(
-                f"\n🔄 Merging '{source_branch}' into '{target_branch}' in {repo_path}"
+    # Check if both branches exist
+    for branch in [source_branch, target_branch]:
+        exists_locally, exists_remotely = check_branch_existence(repo_path, branch)
+        if not exists_locally and not exists_remotely:
+            raise MergeBranchError(
+                f"Branch '{branch}' does not exist locally or remotely in {repo_path}"
             )
-            run_git(["merge", source_branch], "merge branches", repo_path)
-            print(
-                f"✅ Successfully merged '{source_branch}' into '{target_branch}' in {repo_path}"
-            )
-            return True
-        except Exception as e:
-            print(f"\n❌ Merge failed in {repo_path}: {str(e)}")
-            print("Please resolve conflicts manually and commit the changes.")
-            return False
 
-    except Exception as e:
-        print(f"\n❌ Error in {repo_path}: {str(e)}")
-        return False
+    # Switch to target branch
+    run_git(["checkout", target_branch], "checkout target branch", repo_path)
+
+    # Perform the merge
+    run_git(["merge", source_branch], "merge branches", repo_path)
+    logger.info(
+        f"Successfully merged '{source_branch}' into '{target_branch}' in {repo_path}"
+    )
+
+
+def merge_branches_in_all_repos(source_branch: str, target_branch: str) -> None:
+    """
+    Merge source branch into target branch across all repositories.
+    Raises MergeBranchError if any operation fails.
+    """
+    root = get_root()
+
+    # First merge in root repo
+    merge_branch(root, source_branch, target_branch)
+
+    # Load repos
+    repos = load_repos()
+
+    # Merge sub-repositories
+    for repo in repos:
+        merge_branch(repo.path, source_branch, target_branch)
 
 
 def main() -> None:
@@ -63,35 +56,10 @@ def main() -> None:
     args = parser.parse_args()
 
     if not args.source_branch or not args.target_branch:
-        print("\n❌ Both source and target branch names are required")
+        logger.error("Both source and target branch names are required")
         sys.exit(1)
 
-    git_root = os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    )
-
-    # First merge in root repo
-    print("\n🔄 Processing root repository...")
-    if not merge_branch(git_root, args.source_branch, args.target_branch):
-        sys.exit(1)
-
-    # Load repo names
-    repos = load_repos(names_only=True)
-
-    if not repos:
-        print("\n❌ No repositories found in repos.json")
-        sys.exit(1)
-
-    print("\n🔄 Processing sub-repositories...")
-    success = True
-
-    for repo_name in repos:
-        repo_path = os.path.join(git_root, repo_name)
-        if not merge_branch(repo_path, args.source_branch, args.target_branch):
-            success = False
-
-    if not success:
-        sys.exit(1)
+    merge_branches_in_all_repos(args.source_branch, args.target_branch)
 
 
 if __name__ == "__main__":
