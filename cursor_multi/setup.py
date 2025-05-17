@@ -2,7 +2,7 @@
 
 import os
 
-from .repos import get_root, load_repos, run_git
+from .repos import get_root, load_repos
 from .rules import (
     cleanup_existing_imported_rules,
     import_cursor_rules,
