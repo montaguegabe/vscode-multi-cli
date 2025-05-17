@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
-import argparse
 import logging
 from pathlib import Path
+
+import click
 
 from cursor_multi.errors import RepoNotCleanError
 from cursor_multi.git_helpers import (
@@ -16,7 +17,7 @@ from cursor_multi.repos import load_repos
 logger = logging.getLogger(__name__)
 
 
-def create_and_switch_branch(repo_path: Path, branch_name: str) -> bool:
+def create_and_switch_branch(repo_path: Path, branch_name: str) -> None:
     """Create a branch if it doesn't exist and switch to it."""
     if not validate_repo_is_clean(repo_path):
         raise RepoNotCleanError()
@@ -50,17 +51,11 @@ def set_branch_in_all_repos(branch_name: str) -> None:
         create_and_switch_branch(repo.path, branch_name)
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Create and switch to a branch in all repositories"
-    )
-    parser.add_argument(
-        "branch_name", help="Name of the branch to create and switch to"
-    )
-    args = parser.parse_args()
+@click.command()
+@click.argument("branch_name")
+def set_branch_cmd(branch_name: str) -> None:
+    """Create and switch to a branch in all repositories.
 
-    set_branch_in_all_repos(args.branch_name)
-
-
-if __name__ == "__main__":
-    main()
+    BRANCH_NAME: Name of the branch to create and switch to
+    """
+    set_branch_in_all_repos(branch_name)

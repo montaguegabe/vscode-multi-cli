@@ -1,10 +1,12 @@
-import argparse
 import logging
 import sys
 from pathlib import Path
 
+import click
+
 from cursor_multi.errors import MergeBranchError
 from cursor_multi.git_helpers import check_branch_existence, run_git
+from cursor_multi.paths import root_dir
 from cursor_multi.repos import load_repos
 
 logger = logging.getLogger(__name__)
@@ -35,10 +37,8 @@ def merge_branches_in_all_repos(source_branch: str, target_branch: str) -> None:
     Merge source branch into target branch across all repositories.
     Raises MergeBranchError if any operation fails.
     """
-    root = get_root()
-
     # First merge in root repo
-    merge_branch(root, source_branch, target_branch)
+    merge_branch(root_dir, source_branch, target_branch)
 
     # Load repos
     repos = load_repos()
@@ -48,20 +48,17 @@ def merge_branches_in_all_repos(source_branch: str, target_branch: str) -> None:
         merge_branch(repo.path, source_branch, target_branch)
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Merge source branch into target branch across all repositories"
-    )
-    parser.add_argument("source_branch", help="Name of the source branch to merge from")
-    parser.add_argument("target_branch", help="Name of the target branch to merge into")
-    args = parser.parse_args()
+@click.command()
+@click.argument("source_branch")
+@click.argument("target_branch")
+def merge_branch_cmd(source_branch: str, target_branch: str) -> None:
+    """Merge source branch into target branch across all repositories.
 
-    if not args.source_branch or not args.target_branch:
+    SOURCE_BRANCH: Name of the source branch to merge from
+    TARGET_BRANCH: Name of the target branch to merge into
+    """
+    if not source_branch or not target_branch:
         logger.error("Both source and target branch names are required")
         sys.exit(1)
 
-    merge_branches_in_all_repos(args.source_branch, args.target_branch)
-
-
-if __name__ == "__main__":
-    main()
+    merge_branches_in_all_repos(source_branch, target_branch)

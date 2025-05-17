@@ -3,7 +3,12 @@
 import logging
 
 from cursor_multi.git_helpers import get_current_branch, run_git
+from cursor_multi.ignore_files import (
+    update_gitignore_with_repos,
+    update_ignore_with_repos,
+)
 from cursor_multi.merge_cursor import cleanup_and_import_cursor_rules
+from cursor_multi.merge_vscode import merge_vscode_configs
 from cursor_multi.paths import root_dir
 from cursor_multi.repos import load_repos
 
@@ -47,12 +52,17 @@ def clone_repos():
                 f"Branch {current_branch} not found in {repo.name}, staying on default branch"
             )
 
+    update_gitignore_with_repos()
+    update_ignore_with_repos()
+
 
 def main():
     logger.info("🚀 Setting up development environment...")
 
     clone_repos()
     cleanup_and_import_cursor_rules()
+    merge_vscode_configs()
+
     logger.info("\n✨ All setup tasks completed successfully!")
 
 

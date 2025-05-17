@@ -83,14 +83,14 @@ def update_gitignore_with_imported_rules(imported_rules: List[str]) -> None:
     gitignore.add_lines_if_missing(rule_entries, "# Ignore imported cursor rules")
 
 
-def update_gitignore_with_repos() -> None:
+def update_gitignore_with_repos():
     """Ensure all repos are in gitignore entries."""
     repos = load_repos()
     repo_entries = [f"{repo.name}/" for repo in repos]
     gitignore.add_lines_if_missing(repo_entries, "# Ignore repository directories")
 
 
-def update_ignore_with_repos() -> None:
+def update_ignore_with_repos():
     """Update .ignore to allow searching in gitignored directories."""
     repos = load_repos()
     repo_entries = [f"!{repo.name}/" for repo in repos]
