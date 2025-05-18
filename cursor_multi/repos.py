@@ -2,9 +2,8 @@ from functools import lru_cache
 from typing import Any, List
 
 from cursor_multi.errors import NoRepositoriesError
-from cursor_multi.paths import root_dir
-
-from .settings import settings
+from cursor_multi.paths import paths
+from cursor_multi.settings import settings
 
 
 class Repository:
@@ -23,7 +22,7 @@ class Repository:
         self.url = url
         # Derive name and path from URL
         self.name = self.url.split("/")[-1]
-        self.path = root_dir / self.name
+        self.path = paths.root_dir / self.name
 
         # Set 'skip' attribute, defaulting to False if not provided in kwargs
         self.skip = kwargs.pop("skip", False)

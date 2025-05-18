@@ -67,13 +67,13 @@ def setup_git_repos(
         root_repo,
     )
 
-    # Monkeypatch the root_dir to point to our temporary root repo
+    # Monkeypatch the paths.root_dir to point to our temporary root repo
     import cursor_multi.paths
 
-    original_root = cursor_multi.paths.root_dir
-    cursor_multi.paths.root_dir = root_repo
+    original_root = cursor_multi.paths.paths.root_dir
+    cursor_multi.paths.paths.root_dir = root_repo
 
     yield root_repo, sub_repos
 
-    # Restore the original root_dir
-    cursor_multi.paths.root_dir = original_root
+    # Restore the original paths.root_dir
+    cursor_multi.paths.paths.root_dir = original_root

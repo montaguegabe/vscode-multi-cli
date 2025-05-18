@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 from typing import List, Optional
 
-from cursor_multi.paths import gitignore_path, vscode_ignore_path
+from cursor_multi.paths import paths
 from cursor_multi.repos import load_repos
 
 logger = logging.getLogger(__name__)
@@ -70,16 +70,13 @@ class IgnoreFile:
         self._existing_lines = existing_lines
 
 
-gitignore = IgnoreFile(gitignore_path)
-vscode_ignore = IgnoreFile(vscode_ignore_path)
-
-
 def update_gitignore_with_imported_rules(imported_rules: List[str]) -> None:
     """Add imported cursor rules to gitignore entries."""
     if not imported_rules:
         return
 
     rule_entries = [f".cursor/rules/{rule}" for rule in imported_rules]
+    gitignore = IgnoreFile(paths.gitignore_path)
     gitignore.add_lines_if_missing(rule_entries, "# Ignore imported cursor rules")
 
 
@@ -87,6 +84,7 @@ def update_gitignore_with_repos():
     """Ensure all repos are in gitignore entries."""
     repos = load_repos()
     repo_entries = [f"{repo.name}/" for repo in repos]
+    gitignore = IgnoreFile(paths.gitignore_path)
     gitignore.add_lines_if_missing(repo_entries, "# Ignore repository directories")
 
 
@@ -94,6 +92,7 @@ def update_ignore_with_repos():
     """Update .ignore to allow searching in gitignored directories."""
     repos = load_repos()
     repo_entries = [f"!{repo.name}/" for repo in repos]
+    vscode_ignore = IgnoreFile(paths.vscode_ignore_path)
     vscode_ignore.add_lines_if_missing(
         repo_entries,
         "# Allow us to search inside these gitignored directories",

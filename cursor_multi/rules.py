@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 from cursor_multi.ignore_files import (
     update_gitignore_with_imported_rules,
 )
-from cursor_multi.paths import get_cursor_rules_dir, imported_rules_path, root_rules_dir
+from cursor_multi.paths import paths
 from cursor_multi.repos import Repository, load_repos
 
 logger = logging.getLogger(__name__)
@@ -159,28 +159,26 @@ def cleanup_existing_imported_rules():
 
     # The imported rules path contains a list of rules that were loaded from the subrepos.
 
-    if not imported_rules_path.exists():
+    if not paths.imported_rules_path.exists():
         logger.debug("No imported rules to cleanup")
         return
 
-    with imported_rules_path.open("r") as f:
+    with paths.imported_rules_path.open("r") as f:
         imported_rules = [line.strip() for line in f.readlines() if line.strip()]
 
     for rule in imported_rules:
-        rule_path = root_rules_dir / rule
+        rule_path = paths.root_rules_dir / rule
         if rule_path.exists():
             rule_path.unlink()
             logger.info(f"🗑️  Removed old imported rule: {rule}")
 
     # Clear the imported rules file
-    imported_rules_path.unlink()
+    paths.imported_rules_path.unlink()
 
 
-def track_imported_rules(git_root: str, imported_rules: list[str]):
+def track_imported_rules(imported_rules: list[str]):
     """Write the list of imported rules to .importedrules."""
-    imported_rules_file = os.path.join(git_root, ".importedrules")
-
-    with open(imported_rules_file, "w") as f:
+    with paths.imported_rules_path.open("w") as f:
         f.write("\n".join(sorted(imported_rules)) + "\n")
 
 
@@ -191,7 +189,7 @@ def import_cursor_rules():
     # First, build a mapping of rule files to their repos and content
     rule_mapping = {}  # Dict[str, dict] mapping rule name to {repos: [], contents: {}}
     for repo in load_repos():
-        repo_rules_dir = get_cursor_rules_dir(repo.path)
+        repo_rules_dir = paths.get_cursor_rules_dir(repo.path)
         if not repo_rules_dir.exists():
             continue
 
@@ -237,7 +235,7 @@ def import_cursor_rules():
         combined_content = combine_identical_rules(rule_data["contents"])
         if combined_content:
             # Rules are identical - write combined version
-            dst_path = root_rules_dir / rule_file
+            dst_path = paths.root_rules_dir / rule_file
             imported_rules.append(rule_file)
 
             assert not dst_path.exists()
@@ -253,7 +251,7 @@ def import_cursor_rules():
             for repo_name in source_repos:
                 name, ext = os.path.splitext(rule_file)
                 dst_filename = f"{name}-{repo_name}{ext}"
-                dst_path = root_rules_dir / dst_filename
+                dst_path = paths.root_rules_dir / dst_filename
                 imported_rules.append(dst_filename)
 
                 content = rule_data["contents"][repo_name]
@@ -267,4 +265,5 @@ def import_cursor_rules():
                     f"🔄 Imported rule from {repo_name}/{rule_file} as {dst_filename} (scoped to {repo_name}/)"
                 )
 
+    track_imported_rules(imported_rules)
     update_gitignore_with_imported_rules(imported_rules)

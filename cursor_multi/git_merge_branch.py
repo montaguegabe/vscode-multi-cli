@@ -6,7 +6,7 @@ import click
 
 from cursor_multi.errors import MergeBranchError
 from cursor_multi.git_helpers import check_branch_existence, run_git
-from cursor_multi.paths import root_dir
+from cursor_multi.paths import paths
 from cursor_multi.repos import load_repos
 
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ def merge_branches_in_all_repos(source_branch: str, target_branch: str) -> None:
     Raises MergeBranchError if any operation fails.
     """
     # First merge in root repo
-    merge_branch(root_dir, source_branch, target_branch)
+    merge_branch(paths.root_dir, source_branch, target_branch)
 
     # Load repos
     repos = load_repos()

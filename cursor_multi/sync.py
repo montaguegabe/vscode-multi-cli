@@ -9,7 +9,7 @@ from cursor_multi.ignore_files import (
 )
 from cursor_multi.merge_cursor import cleanup_and_import_cursor_rules
 from cursor_multi.merge_vscode import merge_vscode_configs
-from cursor_multi.paths import root_dir
+from cursor_multi.paths import paths
 from cursor_multi.repos import load_repos
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ def clone_repos():
     repos = load_repos()
 
     # Get the current branch of the parent repo
-    current_branch = get_current_branch(root_dir)
+    current_branch = get_current_branch(paths.root_dir)
     logger.info(f"📌 Current branch: {current_branch}")
 
     for repo in repos:
@@ -34,7 +34,7 @@ def clone_repos():
         run_git(
             ["clone", repo.url, str(repo.path)],
             f"clone {repo.name}",
-            root_dir,
+            paths.root_dir,
         )
 
         # Then checkout the same branch as parent repo if it exists
@@ -56,7 +56,7 @@ def clone_repos():
     update_ignore_with_repos()
 
 
-def main():
+def sync():
     logger.info("🚀 Setting up development environment...")
 
     clone_repos()
@@ -64,7 +64,3 @@ def main():
     merge_vscode_configs()
 
     logger.info("\n✨ All setup tasks completed successfully!")
-
-
-if __name__ == "__main__":
-    main()

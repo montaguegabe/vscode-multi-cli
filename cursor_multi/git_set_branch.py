@@ -11,7 +11,7 @@ from cursor_multi.git_helpers import (
     run_git,
     validate_repo_is_clean,
 )
-from cursor_multi.paths import root_dir
+from cursor_multi.paths import paths
 from cursor_multi.repos import load_repos
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ def create_and_switch_branch(repo_path: Path, branch_name: str) -> None:
 def set_branch_in_all_repos(branch_name: str) -> None:
     # First create/switch branch in root repo
     logger.info("\n🔄 Processing root repository...")
-    create_and_switch_branch(root_dir, branch_name)
+    create_and_switch_branch(paths.root_dir, branch_name)
 
     # Load repo names
     repos = load_repos()

@@ -6,7 +6,7 @@ from cursor_multi.merge_vscode_helpers import (
     deep_merge,
     prefix_repo_name_to_path,
 )
-from cursor_multi.paths import get_vscode_config_dir, root_dir
+from cursor_multi.paths import paths
 from cursor_multi.utils import apply_defaults_to_structure, soft_read_json_file
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ def merge_launch_json(repos: List[Any]) -> Dict[str, Any]:
             logger.debug(f"Skipping {repo.name} for launch.json")
             continue
 
-        repo_launch_json_path = get_vscode_config_dir(repo.path) / "launch.json"
+        repo_launch_json_path = paths.get_vscode_config_dir(repo.path) / "launch.json"
         repo_launch_json = soft_read_json_file(repo_launch_json_path)
 
         defaults = {
@@ -58,7 +58,7 @@ def merge_launch_json(repos: List[Any]) -> Dict[str, Any]:
     required_configs = get_required_launch_configurations(merged_launch_json)
 
     if required_configs:
-        master_compound_name = os.path.basename(root_dir).title()
+        master_compound_name = os.path.basename(paths.root_dir).title()
         if "compounds" not in merged_launch_json:
             merged_launch_json["compounds"] = []
 
