@@ -1,6 +1,8 @@
 import logging
 from typing import Any, Dict
 
+import click
+
 from cursor_multi.merge_vscode_helpers import deep_merge
 from cursor_multi.paths import paths
 from cursor_multi.repos import load_repos
@@ -33,7 +35,6 @@ def merge_settings_json() -> None:
 
     # Merge in settings.shared.json
     shared_settings = soft_read_json_file(paths.vscode_settings_shared_path)
-    logger.info("Merging shared settings from settings.shared.json")
     merged_settings = deep_merge(merged_settings, shared_settings)
 
     # Add Python paths for autocomplete
@@ -47,3 +48,16 @@ def merge_settings_json() -> None:
                 merged_settings["python.autoComplete.extraPaths"].append(path_val)
 
     write_json_file(paths.vscode_settings_path, merged_settings)
+
+
+@click.command(name="settings")
+def merge_settings_cmd():
+    """Merge settings.json files from all repositories into the root .vscode directory.
+
+    This command will:
+    1. Merge VSCode settings from all repos
+    2. Apply shared settings from settings.shared.json
+    3. Configure Python autocomplete paths
+    """
+    logger.info("Merging settings.json files from all repositories...")
+    merge_settings_json()

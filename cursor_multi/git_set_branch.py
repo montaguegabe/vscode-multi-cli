@@ -54,7 +54,7 @@ def set_branch_in_all_repos(branch_name: str) -> None:
         raise
 
 
-@click.command()
+@click.command(name="set-branch")
 @click.argument("branch_name")
 def set_branch_cmd(branch_name: str) -> None:
     """Create and switch to a branch in all repositories.

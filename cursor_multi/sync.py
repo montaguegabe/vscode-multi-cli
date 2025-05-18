@@ -2,6 +2,8 @@
 
 import logging
 
+import click
+
 from cursor_multi.git_helpers import get_current_branch, run_git
 from cursor_multi.ignore_files import (
     update_gitignore_with_repos,
@@ -57,10 +59,24 @@ def clone_repos():
 
 
 def sync():
-    logger.info("🚀 Setting up development environment...")
+    logger.info("🚀 Syncing development environment...")
 
     clone_repos()
     import_cursor_rules()
     merge_vscode_configs()
 
-    logger.info("\n✨ All setup tasks completed successfully!")
+    logger.info("\n✨ Sync complete!")
+
+
+@click.command(name="sync")
+def sync_cmd():
+    """Set up the complete development environment.
+
+    This command will:
+    1. Clone all repositories from repos.json
+    2. Check out matching branches if they exist
+    3. Update .gitignore and other ignore files
+    4. Import Cursor rules from all repositories
+    5. Merge VSCode configurations (settings, launch, tasks)
+    """
+    sync()

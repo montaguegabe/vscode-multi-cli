@@ -2,6 +2,8 @@ import logging
 import os
 from typing import Any, Dict, List
 
+import click
+
 from cursor_multi.merge_vscode_helpers import (
     deep_merge,
     prefix_repo_name_to_path,
@@ -87,3 +89,16 @@ def merge_launch_json() -> None:
         )
 
     write_json_file(paths.vscode_launch_path, merged_launch_json)
+
+
+@click.command(name="launch")
+def merge_launch_cmd():
+    """Merge launch.json files from all repositories into the root .vscode directory.
+
+    This command will:
+    1. Merge debug/launch configurations from all repos
+    2. Create a master compound configuration if required configs exist
+    3. Preserve existing compounds by renaming conflicts
+    """
+    logger.info("Merging launch.json files from all repositories...")
+    merge_launch_json()

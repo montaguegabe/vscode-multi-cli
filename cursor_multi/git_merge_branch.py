@@ -52,7 +52,7 @@ def merge_branches_in_all_repos(source_branch: str, target_branch: str) -> None:
         merge_branch(repo.path, source_branch, target_branch)
 
 
-@click.command()
+@click.command(name="merge-branch")
 @click.argument("source_branch")
 @click.argument("target_branch")
 def merge_branch_cmd(source_branch: str, target_branch: str) -> None:

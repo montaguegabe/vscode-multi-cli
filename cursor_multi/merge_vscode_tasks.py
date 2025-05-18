@@ -1,6 +1,8 @@
 import logging
 from typing import Any, Dict
 
+import click
+
 from cursor_multi.merge_vscode_helpers import deep_merge
 from cursor_multi.paths import paths
 from cursor_multi.repos import load_repos
@@ -37,3 +39,15 @@ def merge_tasks_json() -> None:
         )
 
     write_json_file(paths.vscode_tasks_path, merged_tasks_json)
+
+
+@click.command(name="tasks")
+def merge_tasks_cmd():
+    """Merge tasks.json files from all repositories into the root .vscode directory.
+
+    This command will:
+    1. Merge task definitions from all repos
+    2. Set proper working directories for each task
+    """
+    logger.info("Merging tasks.json files from all repositories...")
+    merge_tasks_json()

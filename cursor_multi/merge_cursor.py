@@ -1,6 +1,8 @@
 import logging
 import os
 
+import click
+
 from cursor_multi.ignore_files import update_gitignore_with_imported_rules
 from cursor_multi.paths import paths
 from cursor_multi.repos import load_repos
@@ -112,3 +114,16 @@ def import_cursor_rules():
     update_gitignore_with_imported_rules(imported_rules)
 
     logger.info("\n✨ Cursor rules merged successfully!")
+
+
+@click.command(name="rules")
+def merge_rules_cmd():
+    """Merge Cursor rules from all repositories into the root .cursor/rules directory.
+
+    This command will:
+    1. Clean up previously imported rules
+    2. Import rules from all repositories
+    3. Combine rules with the same name when possible
+    4. Update .gitignore to exclude imported rules
+    """
+    import_cursor_rules()
