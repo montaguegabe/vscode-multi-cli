@@ -4,13 +4,17 @@ import logging
 
 import click
 
-from cursor_multi.git_helpers import get_current_branch, run_git
+from cursor_multi.git_helpers import (
+    check_all_on_same_branch,
+    get_current_branch,
+    run_git,
+)
 from cursor_multi.ignore_files import (
     update_gitignore_with_repos,
     update_ignore_with_repos,
 )
-from cursor_multi.merge_cursor import import_cursor_rules
-from cursor_multi.merge_vscode import merge_vscode_configs
+from cursor_multi.merge_cursor import import_cursor_rules, merge_rules_cmd
+from cursor_multi.merge_vscode import merge_vscode_configs, vscode_cmd
 from cursor_multi.paths import paths
 from cursor_multi.repos import load_repos
 
@@ -57,8 +61,12 @@ def clone_repos():
     update_gitignore_with_repos()
     update_ignore_with_repos()
 
+    if not check_all_on_same_branch():
+        logger.warning("Repos are not on the same branch! Please fix.")
 
-def sync():
+
+def sync_all():
+    """Run all sync operations."""
     logger.info("🚀 Syncing development environment...")
 
     clone_repos()
@@ -68,15 +76,20 @@ def sync():
     logger.info("\n✨ Sync complete!")
 
 
-@click.command(name="sync")
-def sync_cmd():
-    """Set up the complete development environment.
+@click.group(name="sync", invoke_without_command=True)
+@click.pass_context
+def sync_cmd(ctx: click.Context):
+    """Sync development environment and configurations.
 
-    This command will:
-    1. Clone all repositories from repos.json
-    2. Check out matching branches if they exist
-    3. Update .gitignore and other ignore files
-    4. Import Cursor rules from all repositories
-    5. Merge VSCode configurations (settings, launch, tasks)
+    If no subcommand is given, performs complete sync:
+    1. Clones/updates all repositories
+    2. Imports Cursor rules
+    3. Merges VSCode configurations
     """
-    sync()
+    if ctx.invoked_subcommand is None:
+        sync_all()
+
+
+# Add subcommands
+sync_cmd.add_command(vscode_cmd)
+sync_cmd.add_command(merge_rules_cmd, name="rules")

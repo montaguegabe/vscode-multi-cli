@@ -56,7 +56,7 @@ def import_cursor_rules():
     logger.info("\n🔄 Importing Cursor rules...")
 
     # Clean up any previously imported rules
-    logger.info("\n🔄 Cleaning up old imported rules...")
+    logger.debug("Cleaning up old imported rules...")
     cleanup_existing_imported_rules()
 
     # First, build a mapping of rule names to their repos to the parsed rule
@@ -107,7 +107,7 @@ def import_cursor_rules():
         assert not dst_path.exists(), "Rules should be cleared properly before import"
         with dst_path.open("w") as f:
             f.write(rule.render())
-        logger.info(f"🔄 Imported rule {rule_name}")
+        logger.debug(f"Imported rule {rule_name}")
 
     imported_rules = list(rules_for_import.keys())
     track_imported_rules(imported_rules)
