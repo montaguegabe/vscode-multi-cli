@@ -7,9 +7,9 @@ import click
 
 from cursor_multi.errors import RepoNotCleanError
 from cursor_multi.git_helpers import (
+    check_all_repos_are_clean,
     check_branch_existence,
     run_git,
-    validate_repo_is_clean,
 )
 from cursor_multi.paths import paths
 from cursor_multi.repos import load_repos
@@ -19,8 +19,6 @@ logger = logging.getLogger(__name__)
 
 def create_and_switch_branch(repo_path: Path, branch_name: str) -> None:
     """Create a branch if it doesn't exist and switch to it."""
-    if not validate_repo_is_clean(repo_path):
-        raise RepoNotCleanError()
 
     # Check if branch exists locally or remotely
     exists_locally, exists_remotely = check_branch_existence(repo_path, branch_name)
@@ -39,16 +37,21 @@ def create_and_switch_branch(repo_path: Path, branch_name: str) -> None:
 
 
 def set_branch_in_all_repos(branch_name: str) -> None:
-    # First create/switch branch in root repo
+    if not check_all_repos_are_clean():
+        raise RepoNotCleanError()
+
     logger.info("\n🔄 Processing root repository...")
     create_and_switch_branch(paths.root_dir, branch_name)
 
-    # Load repo names
-    repos = load_repos()
-
     logger.info("\n🔄 Processing sub-repositories...")
-    for repo in repos:
-        create_and_switch_branch(repo.path, branch_name)
+    try:
+        for repo in load_repos():
+            create_and_switch_branch(repo.path, branch_name)
+    except Exception:
+        logger.error(
+            "Error setting branch in all repositories. Some repos may not be on the same branch!"
+        )
+        raise
 
 
 @click.command()

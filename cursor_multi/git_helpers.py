@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 from cursor_multi.errors import GitError
+from cursor_multi.paths import paths
 
 logger = logging.getLogger(__name__)
 
@@ -43,17 +44,17 @@ def get_current_branch(repo_path: Path) -> str:
     )
 
 
-def validate_all_on_same_branch() -> bool:
+def check_all_on_same_branch() -> bool:
     """Validate that all repositories are on the same branch."""
     from cursor_multi.repos import load_repos
 
     repos = load_repos()
+    root_branch = get_current_branch(paths.root_dir)
     branches = [get_current_branch(repo.path) for repo in repos]
-    first_branch = branches[0]
-    return all(branch == first_branch for branch in branches)
+    return all(branch == root_branch for branch in branches)
 
 
-def validate_repo_is_clean(repo_path: Path) -> bool:
+def check_repo_is_clean(repo_path: Path) -> bool:
     # Check if this is a git repository
     if not check_is_git_repo_root(repo_path):
         logger.error(
@@ -71,6 +72,19 @@ def validate_repo_is_clean(repo_path: Path) -> bool:
         )
         return False
     return True
+
+
+def check_all_repos_are_clean() -> bool:
+    """Check if all repositories are clean."""
+    from cursor_multi.repos import load_repos
+
+    # Check root repo
+    if not check_repo_is_clean(paths.root_dir):
+        return False
+
+    # Check sub-repos
+    repos = load_repos()
+    return all(check_repo_is_clean(repo.path) for repo in repos)
 
 
 def check_branch_existence(repo_path: Path, branch_name: str) -> Tuple[bool, bool]:

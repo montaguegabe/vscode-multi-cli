@@ -28,32 +28,31 @@ from cursor_multi.git_helpers import run_git  # noqa: E402
 @pytest.fixture
 def setup_git_repos() -> Generator[tuple[Path, List[Path]], None, None]:
     """
-    Sets up a root Git repository, sub-repositories, and their remotes.
-    Uses a caching mechanism to speed up setup after the first run.
-    Returns a tuple of (root_repo_path, [sub_repo_dirs]).
+    Sets up a root Git repository and sub-repositories.
+    On first run (cache miss), also sets up their remotes and caches everything.
+    On subsequent runs (cache hit), restores local repos from cache. Remotes are
+    created/cached on miss but not restored from cache by this base fixture.
+    Yields a tuple of (root_repo_path, [sub_repo_dirs]).
     """
-    # Ensure the main temporary root directory exists for cache dirs
-    _TEMP_ROOT.mkdir(parents=True, exist_ok=True)
+    _TEMP_ROOT.mkdir(parents=True, exist_ok=True)  # Ensure base temp dir exists
+    sub_repo_names = [f"repo{i}" for i in range(2)]
 
-    sub_repo_names = [f"repo{i}" for i in range(2)]  # Consistent naming
-
-    if _TEMP_PROJECT_ROOT_INITIAL.exists() and _TEMP_REMOTES_ROOT_INITIAL.exists():
-        # Cache hit: Copy from initial to working directories
+    if _TEMP_PROJECT_ROOT_INITIAL.exists():
+        # Cache hit for local project files
         if _TEMP_PROJECT_ROOT.exists():
             shutil.rmtree(_TEMP_PROJECT_ROOT)
         shutil.copytree(_TEMP_PROJECT_ROOT_INITIAL, _TEMP_PROJECT_ROOT)
 
+        # Ensure remotes directory is clean but don't populate from cache here
         if _TEMP_REMOTES_ROOT.exists():
             shutil.rmtree(_TEMP_REMOTES_ROOT)
-        shutil.copytree(_TEMP_REMOTES_ROOT_INITIAL, _TEMP_REMOTES_ROOT)
+        _TEMP_REMOTES_ROOT.mkdir(parents=True, exist_ok=True)
 
-        # CURSOR_MULTI_ROOT_DIR is already set. The initial state includes post-sync.
         current_sub_repo_dirs = [_TEMP_PROJECT_ROOT / name for name in sub_repo_names]
         yield _TEMP_PROJECT_ROOT, current_sub_repo_dirs
     else:
-        # Cache miss: Create everything from scratch, then populate the cache.
-        # Clear the entire _TEMP_ROOT to ensure no stale _INITIAL or other files.
-        if _TEMP_ROOT.exists():
+        # Cache miss: Create everything from scratch, then populate both caches.
+        if _TEMP_ROOT.exists():  # Clear entire temp area for a full rebuild
             shutil.rmtree(_TEMP_ROOT)
         _TEMP_ROOT.mkdir(parents=True, exist_ok=True)
         _TEMP_PROJECT_ROOT.mkdir(parents=True, exist_ok=True)
@@ -93,21 +92,19 @@ def setup_git_repos() -> Generator[tuple[Path, List[Path]], None, None]:
             )
             created_sub_repo_dirs.append(sub_repo_dir)
 
-        # Run sync() - uses CURSOR_MULTI_ROOT_DIR env var set earlier
-        sync()
+        sync()  # Uses CURSOR_MULTI_ROOT_DIR
         run_git(["add", "."], "stage post-sync files", _TEMP_PROJECT_ROOT)
         run_git(
             ["commit", "-m", "Post-sync commit"], "post-sync commit", _TEMP_PROJECT_ROOT
         )
 
         # --- Full setup of remote repositories and linking ---
-        # Remote for root repository
         root_remote_git_path_str = str(_TEMP_REMOTES_ROOT / "root.git")
         run_git(
             ["init", "--bare", root_remote_git_path_str],
             "create root bare repo",
             _TEMP_PROJECT_ROOT,
-        )
+        )  # Bare repo in _TEMP_REMOTES_ROOT
         run_git(
             ["remote", "add", "origin", root_remote_git_path_str],
             "add remote to root repo",
@@ -119,12 +116,13 @@ def setup_git_repos() -> Generator[tuple[Path, List[Path]], None, None]:
             _TEMP_PROJECT_ROOT,
         )
 
-        # Remotes for sub-repositories
         for i, sub_repo_path_obj in enumerate(created_sub_repo_dirs):
             sub_repo_actual_name = sub_repo_names[i]
             sub_remote_git_path_str = str(
                 _TEMP_REMOTES_ROOT / f"{sub_repo_actual_name}.git"
             )
+            # Bare repo in _TEMP_REMOTES_ROOT, context for run_git is the sub_repo_path_obj for git commands if needed, but init --bare doesn't need it.
+            # Let's run it in the sub_repo_path_obj context just for consistency, though for bare it doesn't matter much.
             run_git(
                 ["init", "--bare", sub_remote_git_path_str],
                 f"create bare repo for {sub_repo_actual_name}",
@@ -141,16 +139,52 @@ def setup_git_repos() -> Generator[tuple[Path, List[Path]], None, None]:
                 sub_repo_path_obj,
             )
 
-        # Populate the cache with the newly created state
+        # Populate both caches
         shutil.copytree(_TEMP_PROJECT_ROOT, _TEMP_PROJECT_ROOT_INITIAL)
         shutil.copytree(_TEMP_REMOTES_ROOT, _TEMP_REMOTES_ROOT_INITIAL)
 
         yield _TEMP_PROJECT_ROOT, created_sub_repo_dirs
 
 
+@pytest.fixture
+def setup_git_repos_with_remotes(
+    setup_git_repos: tuple[Path, List[Path]],
+) -> Generator[tuple[Path, List[Path]], None, None]:
+    """
+    Ensures local git repos are set up (via setup_git_repos fixture) and
+    that the remote repositories are also restored from cache.
+    Yields a tuple of (root_repo_path, [sub_repo_dirs]).
+    """
+    root_repo_path, sub_repo_dirs = setup_git_repos
+
+    # Ensure _TEMP_REMOTES_ROOT_INITIAL exists (should have been created by setup_git_repos on a cache miss)
+    if not _TEMP_REMOTES_ROOT_INITIAL.exists():
+        # This case should ideally not be hit if setup_git_repos is working correctly
+        # and was called, leading to a cache miss and population of _TEMP_REMOTES_ROOT_INITIAL.
+        # For robustness, one might re-trigger the caching part or error, but here we assume it exists.
+        # Or, if it's a hard requirement, raise an error.
+        # For now, we'll proceed assuming it was created if a full setup ran.
+        raise Exception(
+            "setup_git_repos_with_remotes: _TEMP_REMOTES_ROOT_INITIAL does not exist"
+        )  # If it doesn't exist, the copytree below will fail, which is an indicator of a problem.
+
+    if (
+        _TEMP_REMOTES_ROOT_INITIAL.exists()
+    ):  # Double check, or rely on setup_git_repos logic
+        if _TEMP_REMOTES_ROOT.exists():
+            shutil.rmtree(_TEMP_REMOTES_ROOT)
+        shutil.copytree(_TEMP_REMOTES_ROOT_INITIAL, _TEMP_REMOTES_ROOT)
+    # If _TEMP_REMOTES_ROOT_INITIAL doesn't exist, it means the initial full setup
+    # in setup_git_repos didn't complete or wasn't triggered. This fixture relies on that.
+    else:
+        raise Exception(
+            "setup_git_repos_with_remotes: _TEMP_REMOTES_ROOT_INITIAL does not exist"
+        )
+
+    yield root_repo_path, sub_repo_dirs
+
+
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
-    """Clean up the temporary directory after all tests are done."""
-    # Open temp directories in Finder on Mac if tests failed to aid debugging.
-    # This does not delete the _TEMP_ROOT, so the cache (_INITIAL dirs) persists.
-    if sys.platform == "darwin" and exitstatus != 0:
+    """Clean up by opening the temporary directory in Finder on Mac if tests failed."""
+    if sys.platform == "darwin" and exitstatus:  # exitstatus non-zero means failure
         subprocess.run(["open", str(_TEMP_ROOT)])
