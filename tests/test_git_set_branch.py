@@ -61,9 +61,9 @@ def test_set_branch_with_uncommitted_changes(setup_git_repos):
     assert result == "main"  # or "master" depending on git version
 
 
-def test_set_branch_with_remote_branch(setup_git_repos_with_remotes):
+def test_set_branch_with_remote_branch(setup_git_repos):
     """Test switching to a branch that exists only on remote."""
-    root_repo, sub_repos = setup_git_repos_with_remotes
+    root_repo, sub_repos = setup_git_repos
     branch_name = "feature/remote-branch"
 
     # Create and push a branch to remote
