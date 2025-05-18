@@ -1,15 +1,24 @@
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from cursor_multi.merge_vscode_helpers import deep_merge
 from cursor_multi.paths import paths
-from cursor_multi.utils import apply_defaults_to_structure, soft_read_json_file
+from cursor_multi.repos import load_repos
+from cursor_multi.utils import (
+    apply_defaults_to_structure,
+    soft_read_json_file,
+    write_json_file,
+)
 
 logger = logging.getLogger(__name__)
 
 
-def merge_tasks_json(repos: List[Any]) -> Dict[str, Any]:
+def merge_tasks_json() -> None:
+    # Delete existing file before merging
+    paths.vscode_tasks_path.unlink(missing_ok=True)
+
     merged_tasks_json: Dict[str, Any] = {}
+    repos = load_repos()
 
     # Merge configs from each repo
     for repo in repos:
@@ -27,4 +36,4 @@ def merge_tasks_json(repos: List[Any]) -> Dict[str, Any]:
             merged_tasks_json, effective_repo_tasks_json, repo.name
         )
 
-    return merged_tasks_json
+    write_json_file(paths.vscode_tasks_path, merged_tasks_json)

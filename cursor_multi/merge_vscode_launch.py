@@ -7,7 +7,12 @@ from cursor_multi.merge_vscode_helpers import (
     prefix_repo_name_to_path,
 )
 from cursor_multi.paths import paths
-from cursor_multi.utils import apply_defaults_to_structure, soft_read_json_file
+from cursor_multi.repos import load_repos
+from cursor_multi.utils import (
+    apply_defaults_to_structure,
+    soft_read_json_file,
+    write_json_file,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +35,12 @@ def get_required_launch_configurations(launch_json: Dict[str, Any]) -> List[str]
     )  # Remove duplicates while preserving order
 
 
-def merge_launch_json(repos: List[Any]) -> Dict[str, Any]:
+def merge_launch_json() -> None:
+    # Delete existing file before merging
+    paths.vscode_launch_path.unlink(missing_ok=True)
+
     merged_launch_json: Dict[str, Any] = {}
+    repos = load_repos()
 
     # Merge configs from each repo
     for repo in repos:
@@ -77,4 +86,4 @@ def merge_launch_json(repos: List[Any]) -> Dict[str, Any]:
             f"Created/updated master compound '{master_compound_name}' in launch.json"
         )
 
-    return merged_launch_json
+    write_json_file(paths.vscode_launch_path, merged_launch_json)

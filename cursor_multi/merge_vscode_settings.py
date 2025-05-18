@@ -1,16 +1,21 @@
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from cursor_multi.merge_vscode_helpers import deep_merge
 from cursor_multi.paths import paths
+from cursor_multi.repos import load_repos
 from cursor_multi.settings import settings
-from cursor_multi.utils import soft_read_json_file
+from cursor_multi.utils import soft_read_json_file, write_json_file
 
 logger = logging.getLogger(__name__)
 
 
-def merge_settings_json(repos: List[Any]) -> Dict[str, Any]:
+def merge_settings_json() -> None:
+    # Delete existing file before merging
+    paths.vscode_settings_path.unlink(missing_ok=True)
+
     merged_settings: Dict[str, Any] = {}
+    repos = load_repos()
 
     # Merge configs from each repo
     for repo in repos:
@@ -41,4 +46,4 @@ def merge_settings_json(repos: List[Any]) -> Dict[str, Any]:
             if path_val not in merged_settings["python.autoComplete.extraPaths"]:
                 merged_settings["python.autoComplete.extraPaths"].append(path_val)
 
-    return merged_settings
+    write_json_file(paths.vscode_settings_path, merged_settings)
