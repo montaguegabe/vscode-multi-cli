@@ -1,5 +1,7 @@
 import json
 import os
+import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Generator, List
@@ -7,8 +9,8 @@ from typing import Generator, List
 import pytest
 
 # Create a temporary directory at module level that will exist for all tests
-_TEMP_ROOT = tempfile.mkdtemp()
-os.environ["CURSOR_MULTI_ROOT_DIR"] = _TEMP_ROOT
+root_repo = Path(tempfile.mkdtemp())
+os.environ["CURSOR_MULTI_ROOT_DIR"] = str(root_repo)
 
 # Now we can safely import from cursor_multi
 from cursor_multi.git_helpers import run_git  # noqa: E402
@@ -27,12 +29,9 @@ def setup_git_repos() -> Generator[tuple[Path, List[Path]], None, None]:
             {"url": "https://github.com/test/repo1"},
         ]
     }
-    multi_json_path = Path(_TEMP_ROOT) / "multi.json"
+    multi_json_path = root_repo / "multi.json"
     multi_json_path.write_text(json.dumps(multi_json, indent=2))
 
-    # Now we can set up the repos
-    root_repo = Path(_TEMP_ROOT) / "root"
-    root_repo.mkdir()
     run_git(["init"], "initialize root repository", root_repo)
 
     # Create a file and commit it to create an initial branch
@@ -68,6 +67,9 @@ def setup_git_repos() -> Generator[tuple[Path, List[Path]], None, None]:
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     """Clean up the temporary directory after all tests are done."""
-    import shutil
 
-    shutil.rmtree(_TEMP_ROOT, ignore_errors=True)
+    # Open temp directory in Finder on Mac
+    if sys.platform == "darwin":
+        subprocess.run(["open", str(root_repo)])
+
+    # shutil.rmtree(_TEMP_ROOT, ignore_errors=True)
