@@ -19,6 +19,9 @@ os.environ["CURSOR_MULTI_ROOT_DIR"] = str(_TEMP_ROOT)
 # Now we can safely import from cursor_multi
 from cursor_multi.git_helpers import run_git  # noqa: E402
 
+# Define path for remote repositories
+_TEMP_REMOTES_ROOT = Path("/tmp/cursor-multi-test-remotes")
+
 
 @pytest.fixture
 def setup_git_repos() -> Generator[tuple[Path, List[Path]], None, None]:
@@ -74,8 +77,55 @@ def setup_git_repos() -> Generator[tuple[Path, List[Path]], None, None]:
     yield _TEMP_ROOT, sub_repo_dirs
 
 
+@pytest.fixture
+def setup_git_repos_with_remotes(
+    setup_git_repos,
+) -> Generator[tuple[Path, List[Path]], None, None]:
+    """
+    Sets up a root Git repository and sub-repositories for testing, each with their own remote.
+    The remotes are bare repositories stored in a separate directory.
+    Returns a tuple of (root_repo_path, [sub_repo_dirs]).
+    """
+    # Get the repos from the parent fixture
+    root_repo, sub_repos = setup_git_repos
+
+    # Clean up and recreate the remotes directory
+    if _TEMP_REMOTES_ROOT.exists():
+        shutil.rmtree(_TEMP_REMOTES_ROOT, ignore_errors=False)
+    _TEMP_REMOTES_ROOT.mkdir(parents=True, exist_ok=True)
+
+    # Create and configure remote for root repo
+    root_remote_dir = _TEMP_REMOTES_ROOT / "root.git"
+    run_git(
+        ["init", "--bare", str(root_remote_dir)], "create root bare repo", root_repo
+    )
+    run_git(
+        ["remote", "add", "origin", str(root_remote_dir)],
+        "add remote to root repo",
+        root_repo,
+    )
+    run_git(["push", "-u", "origin", "main"], "push root repo", root_repo)
+
+    # Create and configure remotes for sub-repos
+    for i, sub_repo in enumerate(sub_repos):
+        sub_remote_dir = _TEMP_REMOTES_ROOT / f"repo{i}.git"
+        run_git(
+            ["init", "--bare", str(sub_remote_dir)],
+            f"create sub-repo {i} bare repo",
+            sub_repo,
+        )
+        run_git(
+            ["remote", "add", "origin", str(sub_remote_dir)],
+            f"add remote to sub-repo {i}",
+            sub_repo,
+        )
+        run_git(["push", "-u", "origin", "main"], f"push sub-repo {i}", sub_repo)
+
+    yield root_repo, sub_repos
+
+
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     """Clean up the temporary directory after all tests are done."""
-    # Open temp directory in Finder on Mac if tests failed
+    # Open temp directories in Finder on Mac if tests failed
     if sys.platform == "darwin" and exitstatus != 0:
         subprocess.run(["open", str(_TEMP_ROOT)])
