@@ -28,7 +28,7 @@ def setup_git_repos() -> Generator[tuple[Path, List[Path]], None, None]:
     """
     # Clean up and recreate the temporary directory at the start of each test
     if _TEMP_ROOT.exists():
-        shutil.rmtree(_TEMP_ROOT, ignore_errors=True)
+        shutil.rmtree(_TEMP_ROOT, ignore_errors=False)
     _TEMP_ROOT.mkdir(parents=True, exist_ok=True)
 
     # Create multi.json in the root

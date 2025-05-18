@@ -8,7 +8,9 @@ logger = logging.getLogger(__name__)
 
 
 def write_json_file(path: Path, data: Dict[str, Any]):
-    with open(path, "w") as f:
+    """Write a JSON file, creating the directory if it doesn't exist."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w") as f:
         json.dump(data, f, indent=4)
 
 
