@@ -18,7 +18,7 @@ def run_git(
     action_description: str,
     repo_path: Path,
     check: bool = True,
-) -> subprocess.CompletedProcess:
+) -> str:
     """Run a git command and handle errors."""
     cmd = ["git"] + args
     try:
@@ -28,7 +28,7 @@ def run_git(
             check=check,
             capture_output=True,
             text=True,
-        )
+        ).stdout.strip()
     except subprocess.CalledProcessError as e:
         logger.error(f"Failed to {action_description}")
         raise GitError(f"Failed to {action_description}") from e
@@ -36,12 +36,11 @@ def run_git(
 
 def get_current_branch(repo_path: Path) -> str:
     """Get the current branch name of a git repository."""
-    result = run_git(
+    return run_git(
         ["rev-parse", "--abbrev-ref", "HEAD"],
         "determine current branch",
         repo_path,
     )
-    return result.stdout.strip()
 
 
 def validate_all_on_same_branch() -> bool:
@@ -66,7 +65,7 @@ def validate_repo_is_clean(repo_path: Path) -> bool:
     status = run_git(
         ["status", "--porcelain"], "check working directory status", repo_path
     )
-    if status.stdout.strip():
+    if status:
         logger.error(
             f"Working directory is not clean in {repo_path}. Please commit or stash changes first."
         )
@@ -81,7 +80,7 @@ def check_branch_existence(repo_path: Path, branch_name: str) -> Tuple[bool, boo
         "check if branch exists",
         repo_path,
     )
-    exists_locally = bool(result.stdout.strip())
+    exists_locally = bool(result)
 
     # Check if branch exists remotely
     try:
@@ -90,7 +89,7 @@ def check_branch_existence(repo_path: Path, branch_name: str) -> Tuple[bool, boo
             "check if branch exists remotely",
             repo_path,
         )
-        exists_remotely = bool(result.stdout.strip())
+        exists_remotely = bool(result)
     except Exception:
         logger.warning(
             f"Could not check remote branches in {repo_path}, assuming branch doesn't exist remotely"

@@ -1,4 +1,5 @@
 import pytest
+from pytest_mock import MockerFixture
 
 from cursor_multi.errors import RepoNotCleanError
 from cursor_multi.git_helpers import run_git
@@ -15,12 +16,12 @@ def test_set_branch_creates_new_branch(setup_git_repos):
 
     # Verify the branch was created and is current in root repo
     result = run_git(["branch", "--show-current"], "get current branch", root_repo)
-    assert result.stdout.strip() == branch_name
+    assert result == branch_name
 
     # Verify the branch was created and is current in all sub-repos
     for repo in sub_repos:
         result = run_git(["branch", "--show-current"], "get current branch", repo)
-        assert result.stdout.strip() == branch_name
+        assert result == branch_name
 
 
 def test_set_branch_switches_to_existing_branch(setup_git_repos):
@@ -40,7 +41,7 @@ def test_set_branch_switches_to_existing_branch(setup_git_repos):
     # Verify we're on the branch in all repos
     for repo in all_repos:
         result = run_git(["branch", "--show-current"], "get current branch", repo)
-        assert result.stdout.strip() == branch_name
+        assert result == branch_name
 
 
 def test_set_branch_with_uncommitted_changes(setup_git_repos):
@@ -58,17 +59,19 @@ def test_set_branch_with_uncommitted_changes(setup_git_repos):
 
     # Verify we're still on the original branch
     result = run_git(["branch", "--show-current"], "get current branch", root_repo)
-    assert result.stdout.strip() == "main"  # or "master" depending on git version
+    assert result == "main"  # or "master" depending on git version
 
 
-def test_set_branch_with_remote_branch(setup_git_repos):
+def test_set_branch_with_remote_branch(setup_git_repos, mocker: MockerFixture):
     """Test switching to a branch that exists only on remote."""
     root_repo, sub_repos = setup_git_repos
     branch_name = "feature/remote-branch"
 
     # Set up a bare repo to act as remote
     run_git(
-        ["init", "--bare", str(root_repo / "../remote")], "create bare repo", root_repo
+        ["init", "--bare", str(root_repo / "../remote")],
+        "create bare repo",
+        root_repo,
     )
     run_git(
         ["remote", "add", "origin", str(root_repo / "../remote")],
@@ -85,6 +88,6 @@ def test_set_branch_with_remote_branch(setup_git_repos):
     # Now try to set the branch that only exists on remote
     set_branch_in_all_repos(branch_name)
 
-    # Verify we're on the branch
+    # Verify we're on the branch (this runs after the mock is removed)
     result = run_git(["branch", "--show-current"], "get current branch", root_repo)
-    assert result.stdout.strip() == branch_name
+    assert result == branch_name

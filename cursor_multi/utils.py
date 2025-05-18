@@ -9,6 +9,8 @@ logger = logging.getLogger(__name__)
 
 def write_json_file(path: Path, data: Dict[str, Any]):
     """Write a JSON file, creating the directory if it doesn't exist."""
+
+    # We make sure the parent exists because in the tests we are destroying the root directory every time, so create=True is not enough.
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w") as f:
         json.dump(data, f, indent=4)
