@@ -1,8 +1,6 @@
 import json
 import os
 import shutil
-import subprocess
-import sys
 from pathlib import Path
 from typing import Generator, List
 
@@ -23,6 +21,16 @@ os.environ["CURSOR_MULTI_ROOT_DIR"] = str(_TEMP_PROJECT_ROOT)
 
 # Now we can safely import from cursor_multi
 from cursor_multi.git_helpers import run_git  # noqa: E402
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_exception_interact(call):
+    raise call.excinfo.value
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_internalerror(excinfo):
+    raise excinfo.value
 
 
 @pytest.fixture
@@ -182,9 +190,3 @@ def setup_git_repos_with_remotes(
         )
 
     yield root_repo_path, sub_repo_dirs
-
-
-def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
-    """Clean up by opening the temporary directory in Finder on Mac if tests failed."""
-    if sys.platform == "darwin" and exitstatus:  # exitstatus non-zero means failure
-        subprocess.run(["open", str(_TEMP_ROOT)])

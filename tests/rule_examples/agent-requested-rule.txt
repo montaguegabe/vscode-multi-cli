@@ -1,0 +1,6 @@
+---
+description: Here is a sneak peek description of the rule.
+globs: 
+alwaysApply: false
+---
+This is the body that should be longer for when an agent requests a rule.

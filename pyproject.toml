@@ -3,7 +3,7 @@ name = "cursor-multi"
 version = "0.1.0"
 description = "Cursor Multi"
 authors = [{ name = "Gabe Montague", email = "gabemontague@outlook.com" }]
-dependencies = ["click>=8.2.0"]
+dependencies = ["click>=8.2.0", "pyyaml>=6.0.2"]
 
 [project.scripts]
 multi = "cursor_multi.cli:main"
@@ -36,4 +36,3 @@ line-ending = "auto"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-addopts = "-v --cov=cursor_multi --cov-report=term-missing"

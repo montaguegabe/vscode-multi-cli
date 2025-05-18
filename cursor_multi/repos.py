@@ -31,6 +31,16 @@ class Repository:
         for key, value in kwargs.items():
             setattr(self, key, value)
 
+    def __hash__(self) -> int:
+        """Make Repository hashable based on its URL."""
+        return hash(self.url)
+
+    def __eq__(self, other: object) -> bool:
+        """Make Repository equatable based on its URL."""
+        if not isinstance(other, Repository):
+            return NotImplemented
+        return self.url == other.url
+
     @property
     def is_python(self) -> bool:
         python_files = [

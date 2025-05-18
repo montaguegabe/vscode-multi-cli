@@ -12,3 +12,11 @@ class GitError(Exception):
 
 class RepoNotCleanError(Exception):
     pass
+
+
+class RuleParseError(Exception):
+    pass
+
+
+class RulesNotCombinableError(Exception):
+    pass

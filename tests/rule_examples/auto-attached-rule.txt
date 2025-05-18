@@ -1,0 +1,6 @@
+---
+description: 
+globs: *.py,tests/test_*.py,cursor_multi/**/*.txt
+alwaysApply: false
+---
+This is a rule with multiple globs that define when it is attached.

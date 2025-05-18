@@ -26,3 +26,4 @@ E.g.:
 - Single file merge template
 - Git operation template - (warn on bad git state after)
 - Tests
+  - But with ignore file getting overwritten.

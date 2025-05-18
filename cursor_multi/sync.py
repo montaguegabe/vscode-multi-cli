@@ -7,7 +7,7 @@ from cursor_multi.ignore_files import (
     update_gitignore_with_repos,
     update_ignore_with_repos,
 )
-from cursor_multi.merge_cursor import cleanup_and_import_cursor_rules
+from cursor_multi.merge_cursor import import_cursor_rules
 from cursor_multi.merge_vscode import merge_vscode_configs
 from cursor_multi.paths import paths
 from cursor_multi.repos import load_repos
@@ -60,7 +60,7 @@ def sync():
     logger.info("🚀 Setting up development environment...")
 
     clone_repos()
-    cleanup_and_import_cursor_rules()
+    import_cursor_rules()
     merge_vscode_configs()
 
     logger.info("\n✨ All setup tasks completed successfully!")
