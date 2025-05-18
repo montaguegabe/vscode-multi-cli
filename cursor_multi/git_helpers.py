@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import List, Tuple
 
 from cursor_multi.errors import GitError
-from cursor_multi.repos import load_repos
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +46,8 @@ def get_current_branch(repo_path: Path) -> str:
 
 def validate_all_on_same_branch() -> bool:
     """Validate that all repositories are on the same branch."""
+    from cursor_multi.repos import load_repos
+
     repos = load_repos()
     branches = [get_current_branch(repo.path) for repo in repos]
     first_branch = branches[0]

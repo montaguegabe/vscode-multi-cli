@@ -15,12 +15,12 @@ def test_set_branch_creates_new_branch(setup_git_repos):
 
     # Verify the branch was created and is current in root repo
     result = run_git(["branch", "--show-current"], "get current branch", root_repo)
-    assert result.strip() == branch_name
+    assert result.stdout.strip() == branch_name
 
     # Verify the branch was created and is current in all sub-repos
     for repo in sub_repos:
         result = run_git(["branch", "--show-current"], "get current branch", repo)
-        assert result.strip() == branch_name
+        assert result.stdout.strip() == branch_name
 
 
 def test_set_branch_switches_to_existing_branch(setup_git_repos):
@@ -40,7 +40,7 @@ def test_set_branch_switches_to_existing_branch(setup_git_repos):
     # Verify we're on the branch in all repos
     for repo in all_repos:
         result = run_git(["branch", "--show-current"], "get current branch", repo)
-        assert result.strip() == branch_name
+        assert result.stdout.strip() == branch_name
 
 
 def test_set_branch_with_uncommitted_changes(setup_git_repos):
@@ -58,7 +58,7 @@ def test_set_branch_with_uncommitted_changes(setup_git_repos):
 
     # Verify we're still on the original branch
     result = run_git(["branch", "--show-current"], "get current branch", root_repo)
-    assert result.strip() == "main"  # or "master" depending on git version
+    assert result.stdout.strip() == "main"  # or "master" depending on git version
 
 
 def test_set_branch_with_remote_branch(setup_git_repos):
@@ -87,4 +87,4 @@ def test_set_branch_with_remote_branch(setup_git_repos):
 
     # Verify we're on the branch
     result = run_git(["branch", "--show-current"], "get current branch", root_repo)
-    assert result.strip() == branch_name
+    assert result.stdout.strip() == branch_name

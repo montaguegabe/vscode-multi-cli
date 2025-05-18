@@ -6,8 +6,8 @@ logger = logging.getLogger(__name__)
 
 
 class Paths:
-    def __init__(self, root_dir: Path | None = None):
-        self.root_dir = root_dir or self.get_root()
+    def __init__(self):
+        self.root_dir = self.get_root()
         self.multi_json_path = self.root_dir / "multi.json"
 
         # Cursor
@@ -34,6 +34,10 @@ class Paths:
         Raises:
             FileNotFoundError: If no multi.json is found in any parent directory.
         """
+        override_root_dir = os.getenv("CURSOR_MULTI_ROOT_DIR")
+        if override_root_dir:
+            return Path(override_root_dir)
+
         current = Path.cwd()
 
         while True:
