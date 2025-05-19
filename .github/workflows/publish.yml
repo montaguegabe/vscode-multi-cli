@@ -8,6 +8,7 @@ on:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
+    permissions: write-all
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -20,13 +21,24 @@ jobs:
       - name: Install build tools
         run: pip install build twine pyinstaller
 
-      - name: Build package
+      # First handle the PyPI package
+      - name: Build PyPI package
         run: python -m build
 
-      - name: Run build script
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: twine upload dist/*
+
+      # Then handle the binary build in a separate directory
+      - name: Clean dist directory
+        run: rm -rf dist/*
+
+      - name: Run PyInstaller build script
         run: bash scripts/build.sh
 
-      - name: Create tarball
+      - name: Create binary tarball
         run: tar -czf multi.tar.gz -C dist multi
 
       - name: Upload binary artifact
@@ -41,9 +53,3 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: multi.tar.gz
-
-      - name: Publish to PyPI
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-        run: twine upload dist/*
