@@ -25,7 +25,7 @@ class Repository:
         self.path = paths.root_dir / self.name
 
         # Set 'skip' attribute, defaulting to False if not provided in kwargs
-        self.skip = kwargs.pop("skip", False)
+        self.skip_vscode = kwargs.pop("skipVSCode", False)
 
         # Set any other attributes passed in kwargs (top-level keys from repo config)
         for key, value in kwargs.items():

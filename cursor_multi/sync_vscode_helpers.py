@@ -142,7 +142,7 @@ class VSCodeFileMerger(ABC):
         repos_list = load_repos()
 
         for repo_item in repos_list:
-            if repo_item.skip:
+            if repo_item.skip_vscode:
                 logger.debug(f"Skipping {repo_item.name} for {destination_path.name}")
                 continue
 

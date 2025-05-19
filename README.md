@@ -7,7 +7,7 @@
 
 ## Getting started
 
-- First create a multi.json file in the root directory under which you would like the sub-repos to live:
+- First create a `multi.json` file in the root directory under which you would like the sub-repos to live:
 
 E.g.:
 
@@ -21,11 +21,7 @@ E.g.:
 }
 ```
 
-## TODO:
+## TODO
 
-x Fix `*` bug
-x Test vscode sync
-
-- Rename merge to sync
-- Skip key should be called something about skipping
-- Underscore in JSON file
+- Setup command to create bar `multi.json`
+- Git run command

@@ -22,7 +22,7 @@ class SettingsFileMerger(VSCodeFileMerger):
 
     def _get_skip_keys(self, repo: Repository) -> List[str] | None:
         """Return the list of settings keys to skip during merge."""
-        return settings["vscode"].get("skip_settings", [])
+        return settings["vscode"].get("skipSettings", [])
 
     def _post_process_json(self, merged_json: Dict[str, Any]) -> Dict[str, Any]:
         # Merge in settings.shared.json

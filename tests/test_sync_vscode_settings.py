@@ -56,7 +56,7 @@ python = ">=3.8"
     )
 
     # Mock the settings module to return our desired skip_keys
-    mock_settings = {"vscode": {"skip_settings": ["toBeSkipped"]}}
+    mock_settings = {"vscode": {"skipSettings": ["toBeSkipped"]}}
     # Mock the settings import in merge_vscode_settings.py
     mocker.patch("cursor_multi.merge_vscode_settings.settings", mock_settings)
 
