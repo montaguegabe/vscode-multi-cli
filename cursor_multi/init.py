@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 
 import click
 
@@ -27,9 +28,6 @@ def collect_repo_urls() -> list[str]:
                     continue
             break
         urls.append(url)
-        if click.confirm("Add another repository?", default=True):
-            continue
-        break
     return urls
 
 
@@ -37,7 +35,7 @@ def create_multi_json(urls: list[str]) -> None:
     """Create the multi.json file with the provided repository URLs."""
     config = {"repos": [{"url": url} for url in urls]}
 
-    with open(paths.root_dir / "multi.json", "w") as f:
+    with open(os.path.join(os.getcwd(), "multi.json"), "w") as f:
         json.dump(config, f, indent=2)
         f.write("\n")  # Add newline at end of file
 
@@ -59,7 +57,7 @@ def commit_changes() -> None:
     )
 
 
-@click.command()
+@click.command(name="init")
 def init_cmd():
     """Initialize a new cursor-multi workspace.
 
@@ -83,7 +81,7 @@ def init_cmd():
     init_git_repo()
 
     # Run sync
-    sync()
+    sync(ensure_on_same_branch=False)
 
     # Commit changes
     commit_changes()

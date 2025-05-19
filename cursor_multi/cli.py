@@ -26,7 +26,7 @@ main.add_command(common_command_wrapper(merge_branch_cmd))
 main.add_command(common_command_wrapper(set_branch_cmd))
 main.add_command(common_command_wrapper(sync_cmd))
 main.add_command(common_command_wrapper(git_cmd))
-main.add_command(init_cmd)
+main.add_command(common_command_wrapper(init_cmd))
 
 if __name__ == "__main__":
     main()

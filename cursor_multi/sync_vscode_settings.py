@@ -31,7 +31,7 @@ class SettingsFileMerger(VSCodeFileMerger):
             shared_settings = soft_read_json_file(shared_settings_path)
             merged_json = deep_merge(merged_json, shared_settings)
         else:
-            logger.warning(
+            logger.debug(
                 f"Shared settings file not found at {shared_settings_path.name}, skipping."
             )
 

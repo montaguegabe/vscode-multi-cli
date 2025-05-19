@@ -5,7 +5,6 @@ import logging
 import click
 
 from cursor_multi.git_helpers import (
-    check_all_on_same_branch,
     get_current_branch,
     run_git,
 )
@@ -21,13 +20,16 @@ from cursor_multi.sync_vscode import merge_vscode_configs, vscode_cmd
 logger = logging.getLogger(__name__)
 
 
-def clone_repos():
+def clone_repos(ensure_on_same_branch: bool = True):
     """Clone all repositories from the repos.json file."""
     repos = load_repos()
 
     # Get the current branch of the parent repo
-    current_branch = get_current_branch(paths.root_dir)
-    logger.info(f"Current branch: {current_branch}")
+    current_branch = (
+        get_current_branch(paths.root_dir) if ensure_on_same_branch else None
+    )
+    if ensure_on_same_branch:
+        logger.info(f"Current branch: {current_branch}")
 
     for repo in repos:
         if repo.path.exists():
@@ -44,32 +46,30 @@ def clone_repos():
         )
 
         # Then checkout the same branch as parent repo if it exists
-        try:
-            run_git(
-                ["checkout", current_branch],
-                f"checkout branch {current_branch}",
-                repo.path,
-            )
-            logger.info(
-                f"✅ Cloned {repo.name} and checked out branch {current_branch}"
-            )
-        except SystemExit:
-            logger.warning(
-                f"Branch {current_branch} not found in {repo.name}, staying on default branch."
-            )
+        if current_branch:
+            try:
+                run_git(
+                    ["checkout", current_branch],
+                    f"checkout branch {current_branch}",
+                    repo.path,
+                )
+                logger.info(
+                    f"✅ Cloned {repo.name} and checked out branch {current_branch}"
+                )
+            except SystemExit:
+                logger.warning(
+                    f"Branch {current_branch} not found in {repo.name}, staying on default branch."
+                )
 
     update_gitignore_with_repos()
     update_ignore_with_repos()
 
-    if not check_all_on_same_branch():
-        logger.warning("Repos are not on the same branch! Please fix.")
 
-
-def sync():
+def sync(ensure_on_same_branch: bool = True):
     """Run all sync operations."""
     logger.info("Syncing...")
 
-    clone_repos()
+    clone_repos(ensure_on_same_branch)
     sync_cursor_rules()
     merge_vscode_configs()
 
