@@ -3,7 +3,7 @@ name = "cursor-multi"
 version = "0.1.0"
 description = "Cursor Multi"
 authors = [{ name = "Gabe Montague", email = "gabemontague@outlook.com" }]
-dependencies = ["click>=8.2.0", "pyyaml>=6.0.2"]
+dependencies = ["click>=8.2.0"]
 
 [project.scripts]
 multi = "cursor_multi.cli:main"
@@ -14,6 +14,7 @@ dev = [
     "pytest>=8.3.5",
     "pytest-cov>=6.1.1",
     "pytest-mock>=3.14.0",
+    "pyinstaller>=6.9.0",
 ]
 
 [build-system]
