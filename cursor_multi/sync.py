@@ -27,14 +27,14 @@ def clone_repos():
 
     # Get the current branch of the parent repo
     current_branch = get_current_branch(paths.root_dir)
-    logger.info(f"📌 Current branch: {current_branch}")
+    logger.info(f"Current branch: {current_branch}")
 
     for repo in repos:
         if repo.path.exists():
-            logger.info(f"📁 {repo.name} already exists, skipping...")
+            logger.debug(f"{repo.name} already exists, skipping...")
             continue
 
-        logger.info(f"\n🔄 Cloning {repo.name}...")
+        logger.debug(f"Cloning {repo.name}...")
 
         # First clone the default branch
         run_git(
@@ -51,11 +51,11 @@ def clone_repos():
                 repo.path,
             )
             logger.info(
-                f"✅ Successfully cloned {repo.name} and checked out branch {current_branch}"
+                f"✅ Cloned {repo.name} and checked out branch {current_branch}"
             )
         except SystemExit:
             logger.warning(
-                f"Branch {current_branch} not found in {repo.name}, staying on default branch"
+                f"Branch {current_branch} not found in {repo.name}, staying on default branch."
             )
 
     update_gitignore_with_repos()
@@ -67,7 +67,7 @@ def clone_repos():
 
 def sync_all():
     """Run all sync operations."""
-    logger.info("🔄 Syncing...")
+    logger.info("Syncing...")
 
     clone_repos()
     sync_cursor_rules()
