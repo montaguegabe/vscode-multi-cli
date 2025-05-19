@@ -9,7 +9,10 @@
 
 ### Using `brew`
 
-- Run:
+Run:
+`brew tap montaguegabe/cursor-multi`
+then
+`brew install cursor-multi`
 
 ### Using `pipx` (MacOS, Linux, Windows):
 

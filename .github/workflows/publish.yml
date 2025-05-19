@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-and-publish:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest # Changed to macOS for Homebrew compatibility
     permissions: write-all
     steps:
       - name: Check out code
