@@ -50,13 +50,13 @@ def suffixed_rule_name(rule_name_with_ext: str, repo_name: str) -> str:
     return f"{name_part}-{repo_name}{ext_part}"
 
 
-def import_cursor_rules():
+def sync_cursor_rules():
     """Import .cursor/rules files from each repository into root .cursor/rules."""
 
-    logger.info("\n🔄 Importing Cursor rules...")
+    logger.info("Importing Cursor rules...")
 
     # Clean up any previously imported rules
-    logger.debug("Cleaning up old imported rules...")
+    logger.debug("Cleaning up old imported rules")
     cleanup_existing_imported_rules()
 
     # First, build a mapping of rule names to their repos to the parsed rule
@@ -77,7 +77,7 @@ def import_cursor_rules():
             try:
                 rule = Rule.parse(content)
             except RuleParseError:
-                logger.error(f"Error parsing rule {rule_file}. Continuing...")
+                logger.error(f"Error parsing rule {rule_file}.  Skipping...")
                 continue
 
             # Initialize rule entry if not exists
@@ -113,11 +113,11 @@ def import_cursor_rules():
     track_imported_rules(imported_rules)
     update_gitignore_with_imported_rules(imported_rules)
 
-    logger.info("\n✨ Cursor rules merged successfully!")
+    logger.info("✨ Cursor rules merged successfully!")
 
 
 @click.command(name="rules")
-def merge_rules_cmd():
+def sync_cursor_rules_cmd():
     """Merge Cursor rules from all repositories into the root .cursor/rules directory.
 
     This command will:
@@ -126,4 +126,4 @@ def merge_rules_cmd():
     3. Combine rules with the same name when possible
     4. Update .gitignore to exclude imported rules
     """
-    import_cursor_rules()
+    sync_cursor_rules()

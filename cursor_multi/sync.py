@@ -13,10 +13,10 @@ from cursor_multi.ignore_files import (
     update_gitignore_with_repos,
     update_ignore_with_repos,
 )
-from cursor_multi.merge_cursor import import_cursor_rules, merge_rules_cmd
 from cursor_multi.merge_vscode import merge_vscode_configs, vscode_cmd
 from cursor_multi.paths import paths
 from cursor_multi.repos import load_repos
+from cursor_multi.sync_cursor_rules import sync_cursor_rules, sync_cursor_rules_cmd
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ def sync_all():
     logger.info("🚀 Syncing development environment...")
 
     clone_repos()
-    import_cursor_rules()
+    sync_cursor_rules()
     merge_vscode_configs()
 
     logger.info("\n✨ Sync complete!")
@@ -92,4 +92,4 @@ def sync_cmd(ctx: click.Context):
 
 # Add subcommands
 sync_cmd.add_command(vscode_cmd)
-sync_cmd.add_command(merge_rules_cmd, name="rules")
+sync_cmd.add_command(sync_cursor_rules_cmd, name="rules")

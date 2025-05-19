@@ -1,10 +1,10 @@
 import os
 from pathlib import Path
 
-from cursor_multi.merge_cursor import import_cursor_rules
 from cursor_multi.paths import paths
 from cursor_multi.repos import Repository
 from cursor_multi.rules import Rule
+from cursor_multi.sync_cursor_rules import sync_cursor_rules
 
 
 # Helper function to create a rule file in a sub-repo
@@ -47,7 +47,7 @@ def test_basic_rule_import(setup_git_repos):
     )
     create_rule_file(sub_repo_path, rule_name, rule_content, repo_name=sub_repo_name)
 
-    import_cursor_rules()
+    sync_cursor_rules()
 
     # 1. Check if the rule file was copied to the root rules directory
     imported_rule_path = paths.root_rules_dir / rule_name
@@ -91,7 +91,7 @@ def test_always_apply_rule_import(setup_git_repos):
     )
     create_rule_file(sub_repo_path, rule_name, rule_content, repo_name=sub_repo_name)
 
-    import_cursor_rules()
+    sync_cursor_rules()
 
     imported_rule_path = paths.root_rules_dir / rule_name
     assert imported_rule_path.exists()
@@ -136,7 +136,7 @@ def test_agent_requested_rule_import(setup_git_repos):
         sub_repo_path, rule_name, original_content, repo_name=sub_repo_name
     )
 
-    import_cursor_rules()
+    sync_cursor_rules()
 
     imported_rule_path = paths.root_rules_dir / rule_name
     assert imported_rule_path.exists()
@@ -188,7 +188,7 @@ def test_conflict_identical_content_merge_globs(setup_git_repos):
     create_rule_file(sub_repo_path1, rule_name, content1, repo_name=sub_repo_name1)
     create_rule_file(sub_repo_path2, rule_name, content2, repo_name=sub_repo_name2)
 
-    import_cursor_rules()
+    sync_cursor_rules()
 
     # 1. Check that only one rule file was created (original name)
     imported_rule_path = paths.root_rules_dir / rule_name
@@ -253,7 +253,7 @@ def test_conflict_different_content_suffix_filenames(setup_git_repos):
     create_rule_file(sub_repo_path1, rule_name, content1, repo_name=sub_repo_name1)
     create_rule_file(sub_repo_path2, rule_name, content2, repo_name=sub_repo_name2)
 
-    import_cursor_rules()
+    sync_cursor_rules()
 
     original_rule_path = paths.root_rules_dir / rule_name
     assert not original_rule_path.exists()  # Original name should not exist
@@ -329,7 +329,7 @@ def test_cleanup_old_imported_rules(setup_git_repos):
 
     # 3. Call the main function (which includes cleanup)
     # No sub-repos will contribute new rules, so we just test cleanup
-    import_cursor_rules()
+    sync_cursor_rules()
 
     # 4. Assert dummy rule files are deleted
     assert not (paths.root_rules_dir / old_rule_name1).exists()
@@ -445,7 +445,7 @@ def test_mixed_scenario_e2e(setup_git_repos):
     )
 
     # --- Execute ---
-    import_cursor_rules()
+    sync_cursor_rules()
 
     # --- Assertions ---
     # 1. Basic rule
