@@ -67,13 +67,13 @@ def clone_repos():
 
 def sync_all():
     """Run all sync operations."""
-    logger.info("🚀 Syncing development environment...")
+    logger.info("🔄 Syncing...")
 
     clone_repos()
     sync_cursor_rules()
     merge_vscode_configs()
 
-    logger.info("\n✨ Sync complete!")
+    logger.info("✅ Sync complete")
 
 
 @click.group(name="sync", invoke_without_command=True)
