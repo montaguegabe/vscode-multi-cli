@@ -39,7 +39,7 @@ jobs:
         run: bash scripts/build.sh
 
       - name: Create binary tarball
-        run: tar -czf multi.tar.gz -C dist multi
+        run: tar -czf multi.tar.gz -C dist/multi .
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
