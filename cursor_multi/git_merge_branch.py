@@ -4,8 +4,9 @@ from pathlib import Path
 
 import click
 
-from cursor_multi.errors import MergeBranchError, RepoNotCleanError
+from cursor_multi.errors import MergeBranchError
 from cursor_multi.git_helpers import (
+    check_all_on_same_branch,
     check_all_repos_are_clean,
     check_branch_existence,
     run_git,
@@ -32,7 +33,7 @@ def merge_branch(repo_path: Path, source_branch: str, target_branch: str) -> Non
     # Perform the merge
     run_git(["merge", source_branch], "merge branches", repo_path)
     logger.info(
-        f"Successfully merged '{source_branch}' into '{target_branch}' in {repo_path}"
+        f"✅ Successfully merged '{source_branch}' into '{target_branch}' in {repo_path}"
     )
 
 
@@ -41,13 +42,10 @@ def merge_branches_in_all_repos(source_branch: str, target_branch: str) -> None:
     Merge source branch into target branch across all repositories.
     Raises MergeBranchError if any operation fails.
     """
-    if not check_all_repos_are_clean():
-        raise RepoNotCleanError()
+    check_all_repos_are_clean(raise_error=True)
+    check_all_on_same_branch(raise_error=True)
 
-    # First merge in root repo
     merge_branch(paths.root_dir, source_branch, target_branch)
-
-    # Merge sub-repositories
     for repo in load_repos():
         merge_branch(repo.path, source_branch, target_branch)
 

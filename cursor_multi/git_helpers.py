@@ -3,13 +3,13 @@ import subprocess
 from pathlib import Path
 from typing import List, Tuple
 
-from cursor_multi.errors import GitError
+from cursor_multi.errors import GitError, RepoNotCleanError
 from cursor_multi.paths import paths
 
 logger = logging.getLogger(__name__)
 
 
-def check_is_git_repo_root(repo_path: Path) -> bool:
+def is_git_repo_root(repo_path: Path) -> bool:
     # Will fail for submodules and worktrees, but these aren't used by us
     return (repo_path / ".git").is_dir()
 
@@ -44,47 +44,52 @@ def get_current_branch(repo_path: Path) -> str:
     )
 
 
-def check_all_on_same_branch() -> bool:
+def check_all_on_same_branch(raise_error: bool = True) -> bool:
     """Validate that all repositories are on the same branch."""
     from cursor_multi.repos import load_repos
 
-    repos = load_repos()
     root_branch = get_current_branch(paths.root_dir)
-    branches = [get_current_branch(repo.path) for repo in repos]
-    return all(branch == root_branch for branch in branches)
+    repo_branches = [(repo, get_current_branch(repo.path)) for repo in load_repos()]
+    for repo, branch in repo_branches:
+        if branch != root_branch:
+            if raise_error:
+                raise GitError(
+                    f"Repository {repo.name} is not on the same branch as the root repository.  Please fix.  {repo.name}: {branch}, Root: {root_branch}"
+                )
+            return False
+    return True
 
 
-def check_repo_is_clean(repo_path: Path) -> bool:
+def check_repo_is_clean(repo_path: Path, raise_error: bool = True) -> bool:
     # Check if this is a git repository
-    if not check_is_git_repo_root(repo_path):
-        logger.error(
+    if not is_git_repo_root(repo_path):
+        raise GitError(
             f"{repo_path} is not a git repository or has not been initialized properly (no .git folder)"
         )
-        return False
 
     # Make sure we have a clean working directory
     status = run_git(
         ["status", "--porcelain"], "check working directory status", repo_path
     )
     if status:
-        logger.error(
-            f"Working directory is not clean in {repo_path}. Please commit or stash changes first."
-        )
+        if raise_error:
+            raise RepoNotCleanError(
+                f"Working directory is not clean in {repo_path}. Please commit or stash changes first."
+            )
         return False
     return True
 
 
-def check_all_repos_are_clean() -> bool:
+def check_all_repos_are_clean(raise_error: bool = True) -> bool:
     """Check if all repositories are clean."""
     from cursor_multi.repos import load_repos
 
     # Check root repo
-    if not check_repo_is_clean(paths.root_dir):
+    if not check_repo_is_clean(paths.root_dir, raise_error):
         return False
 
     # Check sub-repos
-    repos = load_repos()
-    return all(check_repo_is_clean(repo.path) for repo in repos)
+    return all(check_repo_is_clean(repo.path, raise_error) for repo in load_repos())
 
 
 def check_branch_existence(repo_path: Path, branch_name: str) -> Tuple[bool, bool]:
@@ -105,7 +110,7 @@ def check_branch_existence(repo_path: Path, branch_name: str) -> Tuple[bool, boo
         )
         exists_remotely = bool(result)
     except Exception:
-        logger.warning(
+        logger.debug(
             f"Could not check remote branches in {repo_path}, assuming branch doesn't exist remotely"
         )
         exists_remotely = False

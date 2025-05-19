@@ -5,6 +5,8 @@ import traceback
 
 import click
 
+from cursor_multi.errors import GitError
+from cursor_multi.git_helpers import check_all_on_same_branch
 from cursor_multi.logging import configure_logging
 
 
@@ -32,6 +34,7 @@ def common_command_wrapper(command_to_wrap: click.Command) -> click.Command:
         log_level = logging.DEBUG if verbose_value else logging.INFO
         configure_logging(level=log_level)
 
+        exit_code = None
         try:
             # Call the original command's callback with its intended kwargs
             return original_callback(**kwargs)
@@ -42,7 +45,16 @@ def common_command_wrapper(command_to_wrap: click.Command) -> click.Command:
                 # For verbose mode, also print traceback directly to stderr
                 click.secho("\nDebug traceback:", fg="yellow", err=True)
                 click.secho(traceback.format_exc(), fg="yellow", err=True)
-            sys.exit(1)
+            exit_code = 1
+
+        # After every command, check that all sub-repos are on the same branch as the root repo
+        try:
+            check_all_on_same_branch(raise_error=True)
+        except GitError as e:
+            click.secho(e.args[0], fg="red", err=True)
+
+        if exit_code is not None:
+            sys.exit(exit_code)
 
     # Replace the command's callback with our new wrapped version
     command_to_wrap.callback = new_wrapped_callback

@@ -78,6 +78,7 @@ def update_gitignore_with_imported_rules(imported_rules: List[str]) -> None:
     rule_entries = [f".cursor/rules/{rule}" for rule in imported_rules]
     gitignore = IgnoreFile(paths.gitignore_path)
     gitignore.add_lines_if_missing(rule_entries, "# Ignore imported cursor rules")
+    logger.debug("Updated .gitignore with new cursor rules")
 
 
 def update_gitignore_with_repos():
@@ -86,6 +87,7 @@ def update_gitignore_with_repos():
     repo_entries = [f"{repo.name}/" for repo in repos]
     gitignore = IgnoreFile(paths.gitignore_path)
     gitignore.add_lines_if_missing(repo_entries, "# Ignore repository directories")
+    logger.debug("Updated .gitignore with new repositories")
 
 
 def update_ignore_with_repos():
@@ -97,4 +99,4 @@ def update_ignore_with_repos():
         repo_entries,
         "# Allow us to search inside these gitignored directories",
     )
-    logger.info("Updated .ignore with new repositories")
+    logger.debug("Updated .ignore with new repositories")
