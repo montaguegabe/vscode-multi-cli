@@ -1,6 +1,6 @@
 [project]
 name = "cursor-multi"
-version = "1.1.6"
+version = "1.1.5"
 description = "Cursor Multi"
 authors = [{ name = "Gabe Montague", email = "gabemontague@outlook.com" }]
 dependencies = ["click>=8.2.0"]
