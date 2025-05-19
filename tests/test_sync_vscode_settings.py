@@ -1,6 +1,6 @@
 import json
 
-from cursor_multi.merge_vscode_settings import merge_settings_json
+from cursor_multi.sync_vscode_settings import merge_settings_json
 
 
 def test_merge_settings_files(setup_git_repos, mocker):

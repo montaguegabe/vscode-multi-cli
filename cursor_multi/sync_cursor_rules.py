@@ -113,7 +113,7 @@ def sync_cursor_rules():
     track_imported_rules(imported_rules)
     update_gitignore_with_imported_rules(imported_rules)
 
-    logger.info("✨ Cursor rules merged successfully!")
+    logger.info("Cursor rules imported successfully!")
 
 
 @click.command(name="rules")

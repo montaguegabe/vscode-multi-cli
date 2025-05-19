@@ -4,9 +4,9 @@ from typing import Any, Dict
 
 import click
 
-from cursor_multi.merge_vscode_helpers import VSCodeFileMerger
 from cursor_multi.paths import paths
 from cursor_multi.repos import Repository
+from cursor_multi.sync_vscode_helpers import VSCodeFileMerger
 
 logger = logging.getLogger(__name__)
 

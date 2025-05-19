@@ -28,3 +28,4 @@ x Test vscode sync
 
 - Rename merge to sync
 - Skip key should be called something about skipping
+- Underscore in JSON file

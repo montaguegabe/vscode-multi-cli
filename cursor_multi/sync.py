@@ -13,10 +13,10 @@ from cursor_multi.ignore_files import (
     update_gitignore_with_repos,
     update_ignore_with_repos,
 )
-from cursor_multi.merge_vscode import merge_vscode_configs, vscode_cmd
 from cursor_multi.paths import paths
 from cursor_multi.repos import load_repos
 from cursor_multi.sync_cursor_rules import sync_cursor_rules, sync_cursor_rules_cmd
+from cursor_multi.sync_vscode import merge_vscode_configs, vscode_cmd
 
 logger = logging.getLogger(__name__)
 

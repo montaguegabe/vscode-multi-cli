@@ -1,10 +1,10 @@
 import json
 import os
 
-from cursor_multi.merge_vscode_launch import merge_launch_json
 from cursor_multi.paths import (
     paths,  # To get the root dir for master compound name calculation
 )
+from cursor_multi.sync_vscode_launch import merge_launch_json
 
 
 def test_merge_launch_files(setup_git_repos):

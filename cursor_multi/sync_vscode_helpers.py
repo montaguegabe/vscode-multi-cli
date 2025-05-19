@@ -155,4 +155,4 @@ class VSCodeFileMerger(ABC):
 
         merged_json = self._post_process_json(merged_json)
         write_json_file(destination_path, merged_json)
-        logger.info(f"Successfully merged files into {destination_path}")
+        logger.info(f"Successfully merged files into {destination_path.name}")
