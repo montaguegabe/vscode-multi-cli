@@ -24,7 +24,7 @@ E.g.:
 ## TODO:
 
 x Fix `*` bug
+x Test vscode sync
 
-- Test vscode sync
 - Rename merge to sync
 - Skip key should be called something about skipping

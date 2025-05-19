@@ -33,6 +33,14 @@ def pytest_internalerror(excinfo):
     raise excinfo.value
 
 
+@pytest.fixture(scope="session", autouse=True)
+def clear_temp_root():
+    """Clear the temp root directory at the start of the test session."""
+    if _TEMP_ROOT.exists():
+        shutil.rmtree(_TEMP_ROOT)
+    _TEMP_ROOT.mkdir(parents=True, exist_ok=True)
+
+
 @pytest.fixture
 def setup_git_repos() -> Generator[tuple[Path, List[Path]], None, None]:
     """
