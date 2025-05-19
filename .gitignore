@@ -179,3 +179,5 @@ ENV/
 Thumbs.db
 
 staticfiles
+
+.env

@@ -5,21 +5,27 @@
 - Automatic syncing of Cursor rule .mcd files from the sub-repos
 - Automatic syncing of your `.vscode` folder: `launch.json`, `tasks.json`, `settings.json`
 
+## Installation
+
+### Using `brew`
+
+- Run:
+
+### Using `pipx` (MacOS, Linux, Windows):
+
+- Install [pipx](https://github.com/pypa/pipx)
+- Run `pipx install cursor-multi`
+
 ## Getting started
 
-- First create a `multi.json` file in the root directory under which you would like the sub-repos to live:
+To get started, create a new directory that will house all your related repos and run:
 
-E.g.:
-
-```json
-{
-  "repos": [
-    {
-      "url": "https://github.com/myorg/myproject-backend"
-    },
-    {
-      "url": "https://github.com/myorg/myproject-frontend"
-    }
-  ]
-}
 ```
+multi init
+```
+
+Then paste in the URLs of all the repositories you want to use with Cursor. You can optionally specify descriptions of what they do, which will be used to create a new repo-directories.mdc Cursor rule.
+
+It is recommended you also install the [VSCode/Cursor Extension]() that automatically keeps your project synced based on edits to files. To manually sync, you can run `multi sync`.
+
+## Git operations

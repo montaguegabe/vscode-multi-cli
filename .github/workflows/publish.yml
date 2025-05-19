@@ -18,10 +18,28 @@ jobs:
           python-version: "3.11"
 
       - name: Install build tools
-        run: pip install build twine
+        run: pip install build twine pyinstaller
 
       - name: Build package
         run: python -m build
+
+      - name: Run build script
+        run: bash scripts/build.sh
+
+      - name: Create tarball
+        run: tar -czf multi.tar.gz -C dist multi
+
+      - name: Upload binary archive
+        uses: actions/upload-artifact@v3
+        with:
+          name: multi-binary
+          path: multi.tar.gz
+
+      - name: Upload to Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: multi.tar.gz
 
       - name: Publish to PyPI
         env:

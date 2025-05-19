@@ -41,7 +41,7 @@ build-backend = "hatchling.build"
 
 [tool.ruff]
 line-length = 88
-target-version = "py39"
+target-version = "py313"
 select = ["E", "F", "I", "B", "W", "C90"]
 ignore = ["C901", "E501", "F821"]
 
