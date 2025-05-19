@@ -29,11 +29,12 @@ jobs:
       - name: Create tarball
         run: tar -czf multi.tar.gz -C dist multi
 
-      - name: Upload binary archive
-        uses: actions/upload-artifact@v3
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
         with:
           name: multi-binary
           path: multi.tar.gz
+          retention-days: 5
 
       - name: Upload to Release
         if: startsWith(github.ref, 'refs/tags/')
