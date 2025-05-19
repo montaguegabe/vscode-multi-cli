@@ -1,4 +1,16 @@
+import logging
+from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Any, Dict, List
+
+from cursor_multi.repos import Repository, load_repos
+from cursor_multi.utils import (
+    apply_defaults_to_structure,
+    soft_read_json_file,
+    write_json_file,
+)
+
+logger = logging.getLogger(__name__)
 
 
 def prefix_repo_name_to_path(path: str, repo_name: str) -> str:
@@ -65,3 +77,71 @@ def deep_merge(
 
     # Perform the primary merge of base and (processed) override
     return _deep_merge_recursive(base, effective_override, skip_keys)
+
+
+class VSCodeFileMerger(ABC):
+    @abstractmethod
+    def _get_destination_json_path(self) -> Path:
+        """Get the destination path for the merged JSON file."""
+        pass
+
+    @abstractmethod
+    def _get_source_json_path(self, repo_path: Path) -> Path:
+        """Get the source JSON file path for a given repository."""
+        pass
+
+    def _get_repo_defaults(self, repo: Repository) -> Dict[str, Any] | None:
+        """
+        Get default values to apply to the repo's JSON.
+        Subclasses can override this to provide specific defaults.
+        """
+        return None
+
+    def _merge_repo_json(
+        self,
+        merged_json: Dict[str, Any],
+        repo_json: Dict[str, Any],
+        repo: Repository,
+    ) -> Dict[str, Any]:
+        """
+        Merge the repo's JSON into the merged_json.
+        Subclasses can override this to customize the merge behavior,
+        for example, by applying defaults.
+        """
+        defaults = self._get_repo_defaults(repo)
+        effective_repo_json = repo_json
+        if defaults:
+            effective_repo_json = apply_defaults_to_structure(repo_json, defaults)
+
+        return deep_merge(merged_json, effective_repo_json, repo.name)
+
+    def _post_process_json(self, merged_json: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Perform any post-processing on the merged JSON before saving.
+        Subclasses can override this to add or modify configurations.
+        """
+        return merged_json
+
+    def merge(self) -> None:
+        """
+        Merges JSON files from all repositories into a single destination file.
+        """
+        destination_path = self._get_destination_json_path()
+        destination_path.unlink(missing_ok=True)
+
+        merged_json: Dict[str, Any] = {}
+        repos_list = load_repos()
+
+        for repo in repos_list:
+            if repo.skip:
+                logger.debug(f"Skipping {repo.name} for {destination_path.name}")
+                continue
+
+            repo_json_path = self._get_source_json_path(repo.path)
+            repo_json = soft_read_json_file(repo_json_path)
+
+            merged_json = self._merge_repo_json(merged_json, repo_json, repo)
+
+        merged_json = self._post_process_json(merged_json)
+        write_json_file(destination_path, merged_json)
+        logger.info(f"Successfully merged files into {destination_path}")

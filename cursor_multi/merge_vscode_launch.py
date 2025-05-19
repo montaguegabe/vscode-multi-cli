@@ -1,20 +1,16 @@
 import logging
 import os
+from pathlib import Path
 from typing import Any, Dict, List
 
 import click
 
 from cursor_multi.merge_vscode_helpers import (
-    deep_merge,
+    VSCodeFileMerger,
     prefix_repo_name_to_path,
 )
 from cursor_multi.paths import paths
-from cursor_multi.repos import load_repos
-from cursor_multi.utils import (
-    apply_defaults_to_structure,
-    soft_read_json_file,
-    write_json_file,
-)
+from cursor_multi.repos import Repository
 
 logger = logging.getLogger(__name__)
 
@@ -30,65 +26,60 @@ def get_required_launch_configurations(launch_json: Dict[str, Any]) -> List[str]
     # Collect standalone required configurations
     for config in launch_json.get("configurations", []):
         if isinstance(config, dict) and config.get("required", False):
-            required_configs.append(config.get("name"))
+            name = config.get("name")
+            if name:
+                required_configs.append(name)
 
     return list(
-        dict.fromkeys(required_configs)
-    )  # Remove duplicates while preserving order
+        dict.fromkeys(config for config in required_configs if config is not None)
+    )
 
 
-def merge_launch_json() -> None:
-    # Delete existing file before merging
-    paths.vscode_launch_path.unlink(missing_ok=True)
+class LaunchFileMerger(VSCodeFileMerger):
+    def _get_destination_json_path(self) -> Path:
+        return paths.vscode_launch_path
 
-    merged_launch_json: Dict[str, Any] = {}
-    repos = load_repos()
+    def _get_source_json_path(self, repo_path: Path) -> Path:
+        return paths.get_vscode_config_dir(repo_path) / "launch.json"
 
-    # Merge configs from each repo
-    for repo in repos:
-        if repo.skip:
-            logger.debug(f"Skipping {repo.name} for launch.json")
-            continue
-
-        repo_launch_json_path = paths.get_vscode_config_dir(repo.path) / "launch.json"
-        repo_launch_json = soft_read_json_file(repo_launch_json_path)
-
-        defaults = {
+    def _get_repo_defaults(self, repo: Repository) -> Dict[str, Any]:
+        return {
             "configurations": {
                 "*": {"cwd": prefix_repo_name_to_path("${workspaceFolder}", repo.name)}
             }
         }
-        effective_repo_launch_json = apply_defaults_to_structure(
-            repo_launch_json, defaults
-        )
-        merged_launch_json = deep_merge(
-            merged_launch_json, effective_repo_launch_json, repo.name
-        )
 
-    # Create a master compound that includes all configurations marked with required: true
-    required_configs = get_required_launch_configurations(merged_launch_json)
+    def _post_process_json(self, merged_json: Dict[str, Any]) -> Dict[str, Any]:
+        required_configs = get_required_launch_configurations(merged_json)
 
-    if required_configs:
-        master_compound_name = os.path.basename(paths.root_dir).title()
-        if "compounds" not in merged_launch_json:
-            merged_launch_json["compounds"] = []
+        if required_configs:
+            master_compound_name = os.path.basename(paths.root_dir).title()
+            if "compounds" not in merged_json:
+                merged_json["compounds"] = []
 
-        # Rename any existing compound with the same name instead of removing it
-        for compound in merged_launch_json["compounds"]:
-            if compound.get("name") == master_compound_name:
-                compound["name"] = f"{master_compound_name} (Original)"
+            # Rename any existing compound with the same name instead of removing it
+            for compound in merged_json.get("compounds", []):
+                if compound.get("name") == master_compound_name:
+                    compound["name"] = f"{master_compound_name} (Original)"
+                    logger.info(
+                        f"Renamed existing compound '{master_compound_name}' to '{compound['name']}'"
+                    )
 
-        master_compound = {
-            "name": master_compound_name,
-            "configurations": required_configs,
-        }
+            master_compound = {
+                "name": master_compound_name,
+                "configurations": required_configs,
+            }
 
-        merged_launch_json["compounds"].append(master_compound)
-        logger.info(
-            f"Created/updated master compound '{master_compound_name}' in launch.json"
-        )
+            merged_json["compounds"].append(master_compound)
+            logger.info(
+                f"Created/updated master compound '{master_compound_name}' in launch.json"
+            )
+        return merged_json
 
-    write_json_file(paths.vscode_launch_path, merged_launch_json)
+
+def merge_launch_json() -> None:
+    merger = LaunchFileMerger()
+    merger.merge()
 
 
 @click.command(name="launch")
@@ -96,9 +87,9 @@ def merge_launch_cmd():
     """Merge launch.json files from all repositories into the root .vscode directory.
 
     This command will:
-    1. Merge debug/launch configurations from all repos
-    2. Create a master compound configuration if required configs exist
-    3. Preserve existing compounds by renaming conflicts
+    1. Merge debug/launch configurations from all repos using the new merger class.
+    2. Create a master compound configuration if required configs exist.
+    3. Preserve existing compounds by renaming conflicts.
     """
     logger.info("Merging launch.json files from all repositories...")
     merge_launch_json()
