@@ -65,7 +65,7 @@ def clone_repos():
         logger.warning("Repos are not on the same branch! Please fix.")
 
 
-def sync_all():
+def sync():
     """Run all sync operations."""
     logger.info("Syncing...")
 
@@ -87,7 +87,7 @@ def sync_cmd(ctx: click.Context):
     3. Merges VSCode configurations
     """
     if ctx.invoked_subcommand is None:
-        sync_all()
+        sync()
 
 
 # Add subcommands

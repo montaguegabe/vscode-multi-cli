@@ -23,7 +23,7 @@ E.g.:
 
 ## TODO:
 
-- Single file merge template
-- Git operation template - (warn on bad git state after)
-- Tests
-  - But with ignore file getting overwritten.
+- Fix `*` bug
+- Test vscode sync
+- Rename merge to sync
+- Skip key should be called something about skipping

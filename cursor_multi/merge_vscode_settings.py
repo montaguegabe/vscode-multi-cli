@@ -1,53 +1,58 @@
 import logging
-from typing import Any, Dict
+from pathlib import Path
+from typing import Any, Dict, List
 
 import click
 
-from cursor_multi.merge_vscode_helpers import deep_merge
+from cursor_multi.merge_vscode_helpers import VSCodeFileMerger, deep_merge
 from cursor_multi.paths import paths
-from cursor_multi.repos import load_repos
+from cursor_multi.repos import Repository, load_repos
 from cursor_multi.settings import settings
-from cursor_multi.utils import soft_read_json_file, write_json_file
+from cursor_multi.utils import soft_read_json_file
 
 logger = logging.getLogger(__name__)
 
 
+class SettingsFileMerger(VSCodeFileMerger):
+    def _get_destination_json_path(self) -> Path:
+        return paths.vscode_settings_path
+
+    def _get_source_json_path(self, repo_path: Path) -> Path:
+        return paths.get_vscode_config_dir(repo_path) / "settings.json"
+
+    def _get_skip_keys(self, repo: Repository) -> List[str] | None:
+        """Return the list of settings keys to skip during merge."""
+        return settings["vscode"].get("skip_settings", [])
+
+    def _post_process_json(self, merged_json: Dict[str, Any]) -> Dict[str, Any]:
+        # Merge in settings.shared.json
+        shared_settings_path = paths.vscode_settings_shared_path
+        if shared_settings_path.exists():
+            shared_settings = soft_read_json_file(shared_settings_path)
+            merged_json = deep_merge(merged_json, shared_settings)
+        else:
+            logger.warning(
+                f"Shared settings file not found at {shared_settings_path}, skipping."
+            )
+
+        # Add Python paths for autocomplete
+        repos = load_repos()
+        python_paths_to_add = [repo.name for repo in repos if repo.is_python]
+        if python_paths_to_add:
+            logger.info("Adding Python paths for autocomplete")
+            current_extra_paths = merged_json.setdefault(
+                "python.autoComplete.extraPaths", []
+            )
+
+            for path_val in python_paths_to_add:
+                if path_val not in current_extra_paths:
+                    current_extra_paths.append(path_val)
+        return merged_json
+
+
 def merge_settings_json() -> None:
-    # Delete existing file before merging
-    paths.vscode_settings_path.unlink(missing_ok=True)
-
-    merged_settings: Dict[str, Any] = {}
-    repos = load_repos()
-
-    # Merge configs from each repo
-    for repo in repos:
-        if repo.skip:
-            continue
-
-        repo_settings_path = paths.get_vscode_config_dir(repo.path) / "settings.json"
-        repo_settings = soft_read_json_file(repo_settings_path)
-        merged_settings = deep_merge(
-            merged_settings,
-            repo_settings,
-            repo.name,
-            skip_keys=settings["vscode"]["skip_settings"],
-        )
-
-    # Merge in settings.shared.json
-    shared_settings = soft_read_json_file(paths.vscode_settings_shared_path)
-    merged_settings = deep_merge(merged_settings, shared_settings)
-
-    # Add Python paths for autocomplete
-    python_paths = [repo.name for repo in repos if repo.is_python]
-    if python_paths:
-        logger.info("Adding Python paths for autocomplete")
-        if "python.autoComplete.extraPaths" not in merged_settings:
-            merged_settings["python.autoComplete.extraPaths"] = []
-        for path_val in python_paths:
-            if path_val not in merged_settings["python.autoComplete.extraPaths"]:
-                merged_settings["python.autoComplete.extraPaths"].append(path_val)
-
-    write_json_file(paths.vscode_settings_path, merged_settings)
+    merger = SettingsFileMerger()
+    merger.merge()
 
 
 @click.command(name="settings")
@@ -55,9 +60,9 @@ def merge_settings_cmd():
     """Merge settings.json files from all repositories into the root .vscode directory.
 
     This command will:
-    1. Merge VSCode settings from all repos
-    2. Apply shared settings from settings.shared.json
-    3. Configure Python autocomplete paths
+    1. Merge VSCode settings from all repos using the new merger class.
+    2. Apply shared settings from settings.shared.json.
+    3. Configure Python autocomplete paths.
     """
     logger.info("Merging settings.json files from all repositories...")
     merge_settings_json()

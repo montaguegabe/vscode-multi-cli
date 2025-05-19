@@ -97,6 +97,14 @@ class VSCodeFileMerger(ABC):
         """
         return None
 
+    def _get_skip_keys(self, repo: Repository) -> List[str] | None:
+        """
+        Get a list of keys to skip during the deep merge for this repo.
+        Subclasses can override this to provide specific keys to skip.
+        Defaults to None, meaning no keys are skipped by default.
+        """
+        return None
+
     def _merge_repo_json(
         self,
         merged_json: Dict[str, Any],
@@ -109,11 +117,12 @@ class VSCodeFileMerger(ABC):
         for example, by applying defaults.
         """
         defaults = self._get_repo_defaults(repo)
+        skip_keys = self._get_skip_keys(repo)
         effective_repo_json = repo_json
         if defaults:
             effective_repo_json = apply_defaults_to_structure(repo_json, defaults)
 
-        return deep_merge(merged_json, effective_repo_json, repo.name)
+        return deep_merge(merged_json, effective_repo_json, repo.name, skip_keys)
 
     def _post_process_json(self, merged_json: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -132,15 +141,17 @@ class VSCodeFileMerger(ABC):
         merged_json: Dict[str, Any] = {}
         repos_list = load_repos()
 
-        for repo in repos_list:
-            if repo.skip:
-                logger.debug(f"Skipping {repo.name} for {destination_path.name}")
+        for repo_item in repos_list:
+            if repo_item.skip:
+                logger.debug(f"Skipping {repo_item.name} for {destination_path.name}")
                 continue
 
-            repo_json_path = self._get_source_json_path(repo.path)
-            repo_json = soft_read_json_file(repo_json_path)
+            repo_json_path = self._get_source_json_path(repo_item.path)
+            repo_json_content = soft_read_json_file(repo_json_path)
 
-            merged_json = self._merge_repo_json(merged_json, repo_json, repo)
+            merged_json = self._merge_repo_json(
+                merged_json, repo_json_content, repo_item
+            )
 
         merged_json = self._post_process_json(merged_json)
         write_json_file(destination_path, merged_json)

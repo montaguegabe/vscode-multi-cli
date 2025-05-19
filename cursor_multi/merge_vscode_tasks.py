@@ -1,44 +1,30 @@
 import logging
+from pathlib import Path
 from typing import Any, Dict
 
 import click
 
-from cursor_multi.merge_vscode_helpers import deep_merge
+from cursor_multi.merge_vscode_helpers import VSCodeFileMerger
 from cursor_multi.paths import paths
-from cursor_multi.repos import load_repos
-from cursor_multi.utils import (
-    apply_defaults_to_structure,
-    soft_read_json_file,
-    write_json_file,
-)
+from cursor_multi.repos import Repository
 
 logger = logging.getLogger(__name__)
 
 
+class TasksFileMerger(VSCodeFileMerger):
+    def _get_destination_json_path(self) -> Path:
+        return paths.vscode_tasks_path
+
+    def _get_source_json_path(self, repo_path: Path) -> Path:
+        return paths.get_vscode_config_dir(repo_path) / "tasks.json"
+
+    def _get_repo_defaults(self, repo: Repository) -> Dict[str, Any]:
+        return {"tasks": {"*": {"options": {"cwd": "${workspaceFolder}"}}}}
+
+
 def merge_tasks_json() -> None:
-    # Delete existing file before merging
-    paths.vscode_tasks_path.unlink(missing_ok=True)
-
-    merged_tasks_json: Dict[str, Any] = {}
-    repos = load_repos()
-
-    # Merge configs from each repo
-    for repo in repos:
-        if repo.skip:
-            logger.debug(f"Skipping {repo.name} for tasks.json")
-            continue
-
-        repo_tasks_json_path = paths.get_vscode_config_dir(repo.path) / "tasks.json"
-        repo_tasks_json = soft_read_json_file(repo_tasks_json_path)
-        defaults = {"tasks": {"*": {"options": {"cwd": "${workspaceFolder}"}}}}
-        effective_repo_tasks_json = apply_defaults_to_structure(
-            repo_tasks_json, defaults
-        )
-        merged_tasks_json = deep_merge(
-            merged_tasks_json, effective_repo_tasks_json, repo.name
-        )
-
-    write_json_file(paths.vscode_tasks_path, merged_tasks_json)
+    merger = TasksFileMerger()
+    merger.merge()
 
 
 @click.command(name="tasks")
@@ -46,8 +32,8 @@ def merge_tasks_cmd():
     """Merge tasks.json files from all repositories into the root .vscode directory.
 
     This command will:
-    1. Merge task definitions from all repos
-    2. Set proper working directories for each task
+    1. Merge task definitions from all repos using the new merger class.
+    2. Set proper working directories for each task using defaults.
     """
     logger.info("Merging tasks.json files from all repositories...")
     merge_tasks_json()
