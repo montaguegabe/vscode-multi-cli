@@ -6,8 +6,8 @@ on:
       - "v*" # Only runs on version tags like v1.0.0
 
 jobs:
-  build-and-publish:
-    runs-on: macos-latest # Changed to macOS for Homebrew compatibility
+  publish-pypi:
+    runs-on: ubuntu-latest
     permissions: write-all
     steps:
       - name: Check out code
@@ -19,9 +19,8 @@ jobs:
           python-version: "3.11"
 
       - name: Install build tools
-        run: pip install build twine pyinstaller
+        run: pip install build twine
 
-      # First handle the PyPI package
       - name: Build PyPI package
         run: python -m build
 
@@ -31,9 +30,20 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: twine upload dist/*
 
-      # Then handle the binary build in a separate directory
-      - name: Clean dist directory
-        run: rm -rf dist/*
+  build-homebrew:
+    runs-on: macos-latest
+    permissions: write-all
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install build tools
+        run: pip install pyinstaller
 
       - name: Run PyInstaller build script
         run: bash scripts/build.sh

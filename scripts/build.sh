@@ -19,6 +19,7 @@ pyinstaller --name multi \
     --clean \
     --strip \
     --noupx \
+    --target-architecture universal2 \
     cursor_multi/cli.py \
     --collect-all click
 
