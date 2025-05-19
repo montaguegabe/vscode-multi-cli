@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+`cursor-multi` is a CLI tool (executable named `multi`) that allows Cursor to work on multiple Git repos at once. It operates by cloning "sub-repos" (simply referred to as "repos" in the codebase) inside the main VS Code workspace. The root workspace that houses all the sub-repos is also a git repo itself, but does not track the sub-repos through submodules or any other mechanism. The sub-repos are simply .gitignored and are managed through the CLI, which makes sure they are all on the same branch. 
+
+The CLI also offers features to:
+- Import Cursor rule .mcd files from the sub-repos to the top level repo
+- Merge the `.vscode` folder of the sub-repos: `launch.json`, `tasks.json`, `settings.json`
