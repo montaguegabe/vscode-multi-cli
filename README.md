@@ -23,7 +23,8 @@ E.g.:
 
 ## TODO:
 
-- Fix `*` bug
+x Fix `*` bug
+
 - Test vscode sync
 - Rename merge to sync
 - Skip key should be called something about skipping

@@ -19,7 +19,7 @@ class TasksFileMerger(VSCodeFileMerger):
         return paths.get_vscode_config_dir(repo_path) / "tasks.json"
 
     def _get_repo_defaults(self, repo: Repository) -> Dict[str, Any]:
-        return {"tasks": {"*": {"options": {"cwd": "${workspaceFolder}"}}}}
+        return {"tasks": [{"options": {"cwd": "${workspaceFolder}"}}]}
 
 
 def merge_tasks_json() -> None:

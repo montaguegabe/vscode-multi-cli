@@ -44,9 +44,9 @@ class LaunchFileMerger(VSCodeFileMerger):
 
     def _get_repo_defaults(self, repo: Repository) -> Dict[str, Any]:
         return {
-            "configurations": {
-                "*": {"cwd": prefix_repo_name_to_path("${workspaceFolder}", repo.name)}
-            }
+            "configurations": [
+                {"cwd": prefix_repo_name_to_path("${workspaceFolder}", repo.name)}
+            ]
         }
 
     def _post_process_json(self, merged_json: Dict[str, Any]) -> Dict[str, Any]:
