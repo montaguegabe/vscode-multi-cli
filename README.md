@@ -15,13 +15,11 @@ E.g.:
 {
   "repos": [
     {
-      "url": "https://github.com/myorg/myrepo"
+      "url": "https://github.com/myorg/myproject-backend"
+    },
+    {
+      "url": "https://github.com/myorg/myproject-frontend"
     }
   ]
 }
 ```
-
-## TODO
-
-- Setup command to create bar `multi.json`
-- Git run command

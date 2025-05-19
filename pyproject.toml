@@ -1,9 +1,25 @@
 [project]
 name = "cursor-multi"
-version = "0.1.0"
+version = "1.1.0"
 description = "Cursor Multi"
 authors = [{ name = "Gabe Montague", email = "gabemontague@outlook.com" }]
 dependencies = ["click>=8.2.0"]
+license = "PolyForm Internal Use License 1.0.0"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Topic :: Software Development :: Version Control :: Git",
+]
+
+[project.urls]
+Repository = "https://github.com/gabemontague/cursor-multi"
+Issues = "https://github.com/gabemontague/cursor-multi/issues"
 
 [project.scripts]
 multi = "cursor_multi.cli:main"
