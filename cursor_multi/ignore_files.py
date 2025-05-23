@@ -100,3 +100,16 @@ def update_ignore_with_repos():
         "# Allow us to search inside these gitignored directories",
     )
     logger.debug("Updated .ignore with new repositories")
+
+
+def update_gitignore_with_vscode_files():
+    """Add VS Code generated configuration files to gitignore entries."""
+    vscode_entries = [
+        ".vscode/launch.json",
+        ".vscode/settings.json",
+        ".vscode/tasks.json",
+        ".vscode/extensions.json",
+    ]
+    gitignore = IgnoreFile(paths.gitignore_path)
+    gitignore.add_lines_if_missing(vscode_entries, "# Generated files")
+    logger.debug("Updated .gitignore with VS Code configuration files")

@@ -51,6 +51,10 @@ class Paths:
     def vscode_settings_shared_path(self) -> Path:
         return self.root_vscode_dir / "settings.shared.json"
 
+    @cached_property
+    def vscode_extensions_path(self) -> Path:
+        return self.root_vscode_dir / "extensions.json"
+
     def _get_root(self) -> Path:
         """Get the root directory by finding the first parent directory containing multi.json.
 

@@ -14,10 +14,8 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
     "Topic :: Software Development :: Version Control :: Git",
+    "License :: OSI Approved :: MIT License",
 ]
-
-[project.license]
-file = "LICENSE"
 
 [project.urls]
 Repository = "https://github.com/gabemontague/cursor-multi"

@@ -12,5 +12,6 @@
     "python.experiments.optInto": [
         "pythonTestAdapter"
     ],
-    "python.experiments.enabled": true
+    "python.experiments.enabled": true,
+    "python.defaultInterpreterPath": "${workspaceFolder}/venv/bin/python"
 }

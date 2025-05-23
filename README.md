@@ -32,3 +32,7 @@ Then paste in the URLs of all the repositories you want to use with Cursor. You 
 It is recommended you also install the [VSCode/Cursor Extension]() that automatically keeps your project synced based on edits to files. To manually sync, you can run `multi sync`.
 
 ## Git operations
+
+## TODO:
+
+https://github.com/dawidd6/action-homebrew-bump-formula
