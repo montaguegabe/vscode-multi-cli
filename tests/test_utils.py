@@ -76,23 +76,12 @@ def test_apply_defaults_to_empty_list():
 
 def test_apply_defaults_to_list_of_non_dicts():
     """Test applying defaults to a list of non-dictionary items."""
-    target = ["item1", 100, None]
-    defaults = [{"default_key": "default_value"}]
+    target = {"outer": ["item1", 100, None]}
+    defaults = {"outer": [{"default_key": "default_value"}]}
     # Since items are not dicts, the dict default shouldn't apply to them
-    expected = ["item1", 100, None]
+    expected = {"outer": ["item1", 100, None]}
     result = apply_defaults_to_structure(target, defaults)
     assert result == expected
-
-
-def test_apply_defaults_to_list_no_defaults():
-    """Test behavior when target is a list but defaults_definition is not a list item default."""
-    target = [{"a": 1}, {"b": 2}]
-    defaults = {"some_other_key": "value"}  # Not a list item default
-    expected = [{"a": 1}, {"b": 2}]
-    result = apply_defaults_to_structure(target, defaults)
-    assert result == expected
-    # Also ensure the original is not modified
-    assert target == [{"a": 1}, {"b": 2}]
 
 
 def test_input_target_immutability_for_list():
@@ -116,7 +105,7 @@ def test_dict_with_list_value_defaults():
         "simple_key": "simple_value",
     }
     defaults = {
-        "configurations": [{"value": 0, "type": "default_type"}],
+        "configurations": {"apply_to_list_items": {"value": 0, "type": "default_type"}},
         "simple_key": "default_simple",
         "new_key": "new_value",
     }
@@ -136,7 +125,7 @@ def test_dict_with_missing_list_value():
     """Test dictionary where a key's value should be a list (based on defaults) but is missing."""
     target = {"other_key": "value"}
     defaults = {
-        "configurations": [{"name": "default_name", "value": 0}],
+        "configurations": {"apply_to_list_items": {"name": "default_name", "value": 0}},
         "other_key": "default_value",
     }
     expected = {
