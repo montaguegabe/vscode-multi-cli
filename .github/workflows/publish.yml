@@ -1,65 +1,76 @@
 name: Publish to PyPI
 
 on:
-  push:
-    tags:
-      - "v*" # Only runs on version tags like v1.0.0
+    push:
+        tags:
+            - "v*" # Only runs on version tags like v1.0.0
 
 jobs:
-  publish-pypi:
-    runs-on: ubuntu-latest
-    permissions: write-all
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v3
+    publish-pypi:
+        runs-on: ubuntu-latest
+        permissions: write-all
+        steps:
+            - name: Check out code
+              uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
+            - name: Set up Python
+              uses: actions/setup-python@v4
+              with:
+                  python-version: "3.11"
 
-      - name: Install build tools
-        run: pip install build twine
+            - name: Install build tools
+              run: pip install build twine
 
-      - name: Build PyPI package
-        run: python -m build
+            - name: Build PyPI package
+              run: python -m build
 
-      - name: Publish to PyPI
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-        run: twine upload dist/*
+            - name: Publish to PyPI
+              env:
+                  TWINE_USERNAME: __token__
+                  TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+              run: twine upload dist/*
 
-  build-homebrew:
-    runs-on: macos-latest
-    permissions: write-all
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v3
+    build-homebrew:
+        runs-on: macos-latest
+        permissions: write-all
+        steps:
+            - name: Check out code
+              uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
+            - name: Set up Python
+              uses: actions/setup-python@v4
+              with:
+                  python-version: "3.11"
 
-      - name: Install build tools
-        run: pip install pyinstaller
+            - name: Install build tools
+              run: pip install pyinstaller
 
-      - name: Run PyInstaller build script
-        run: bash scripts/build.sh
+            - name: Run PyInstaller build script
+              run: bash scripts/build.sh
 
-      - name: Create binary tarball
-        run: tar -czf multi.tar.gz -C dist/multi .
+            - name: Create binary tarball
+              run: tar -czf multi.tar.gz -C dist/multi .
 
-      - name: Upload binary artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: multi-binary
-          path: multi.tar.gz
-          retention-days: 5
+            - name: Upload binary artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: multi-binary
+                  path: multi.tar.gz
+                  retention-days: 5
 
-      - name: Upload to Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
-        with:
-          files: multi.tar.gz
+            - name: Upload to Release
+              if: startsWith(github.ref, 'refs/tags/')
+              uses: softprops/action-gh-release@v1
+              with:
+                  files: multi.tar.gz
+
+            - name: Update Homebrew formula
+              uses: dawidd6/action-homebrew-bump-formula@v4
+              with:
+                  token: ${{secrets.GH_TOKEN}}
+                  # Optional, use the origin repository instead of forking
+                  no_fork: true
+                  # Optional, defaults to homebrew/core
+                  tap: montaguegabe/homebrew-cursor-multi
+                  # Formula name, required
+                  formula: cursor-multi
