@@ -181,3 +181,4 @@ Thumbs.db
 staticfiles
 
 .env
+_version.py

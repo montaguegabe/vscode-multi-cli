@@ -1,10 +1,11 @@
 import json
 import logging
-import os
+from pathlib import Path
 
 import click
 
 from cursor_multi.git_helpers import is_git_repo_root, run_git
+from cursor_multi.ignore_files import update_gitignore_with_vscode_files
 from cursor_multi.init_readme import init_readme
 from cursor_multi.paths import paths
 from cursor_multi.rules import Rule
@@ -54,7 +55,8 @@ def create_multi_json(urls: list[str]) -> None:
     """Create the multi.json file with the provided repository URLs."""
     config = {"repos": [{"url": url} for url in urls]}
 
-    with open(os.path.join(os.getcwd(), "multi.json"), "w") as f:
+    multi_json_path = Path.cwd() / "multi.json"
+    with multi_json_path.open("w") as f:
         json.dump(config, f, indent=2)
         f.write("\n")  # Add newline at end of file
 
@@ -81,13 +83,12 @@ def create_repo_directories_rule(urls: list[str], descriptions: list[str]) -> No
     )
 
     # Ensure .cursor directory exists
-    cursor_dir = os.path.join(os.getcwd(), ".cursor")
-    os.makedirs(cursor_dir, exist_ok=True)
+    cursor_dir = Path.cwd() / ".cursor"
+    cursor_dir.mkdir(exist_ok=True)
 
     # Write the rule file
-    rule_path = os.path.join(cursor_dir, "repo-directories.mdc")
-    with open(rule_path, "w") as f:
-        f.write(rule.render())
+    rule_path = cursor_dir / "rules" / "repo-directories.mdc"
+    rule_path.write_text(rule.render())
 
 
 def init_git_repo() -> None:
@@ -113,7 +114,7 @@ def create_readme(urls: list[str]) -> None:
     if readme_path.exists():
         return
 
-    # Create a bulleted list of repos with hyperlinks
+    # Extract repo name and create the hyperlink
     repo_entries = []
     for url in urls:
         # Extract repo name and create the hyperlink
@@ -178,6 +179,9 @@ def init_cmd():
 
     # Create README.md if it doesn't exist
     create_readme(urls)
+
+    # Update gitignore to include vscode files
+    update_gitignore_with_vscode_files()
 
     # Run sync
     sync(ensure_on_same_branch=False)
