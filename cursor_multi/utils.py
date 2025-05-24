@@ -3,6 +3,8 @@ import logging
 from pathlib import Path
 from typing import Any, Dict
 
+import pyjson5
+
 logger = logging.getLogger(__name__)
 
 
@@ -16,13 +18,15 @@ def write_json_file(path: Path, data: Dict[str, Any]):
 
 
 def soft_read_json_file(path: Path) -> Dict[str, Any]:
-    """Load a JSON file if it exists, otherwise return an empty dict."""
+    """Load a JSON file if it exists, otherwise return an empty dict.
+    Uses pyjson5 to support JSON5 format which includes comments and trailing commas."""
     if path.exists():
         try:
             with path.open("r") as f:
-                return json.load(f)
-        except json.JSONDecodeError:
-            logger.warning(f"Could not parse {path}, skipping...")
+                content = f.read()
+                return pyjson5.decode(content)
+        except Exception as e:
+            logger.warning(f"Could not parse {path}: {str(e)}, skipping...")
     return {}
 
 
