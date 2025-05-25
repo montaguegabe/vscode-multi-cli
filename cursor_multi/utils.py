@@ -3,8 +3,6 @@ import logging
 from pathlib import Path
 from typing import Any, Dict
 
-import pyjson5
-
 logger = logging.getLogger(__name__)
 
 
@@ -19,12 +17,46 @@ def write_json_file(path: Path, data: Dict[str, Any]):
 
 def soft_read_json_file(path: Path) -> Dict[str, Any]:
     """Load a JSON file if it exists, otherwise return an empty dict.
-    Uses pyjson5 to support JSON5 format which includes comments and trailing commas."""
+    Handles comments by removing anything after // that's not in a string."""
     if path.exists():
         try:
             with path.open("r") as f:
-                content = f.read()
-                return pyjson5.decode(content)
+                lines = []
+                for line in f:
+                    processed_line = ""
+                    in_string = False
+                    string_char = None  # Track whether we're in ' or " string
+                    i = 0
+                    while i < len(line):
+                        char = line[i]
+
+                        # Handle string boundaries
+                        if char in ['"', "'"] and (i == 0 or line[i - 1] != "\\"):
+                            if not in_string:
+                                in_string = True
+                                string_char = char
+                            elif (
+                                string_char == char
+                            ):  # Make sure we match the same quote type
+                                in_string = False
+                                string_char = None
+
+                        # Look for comments outside of strings
+                        if (
+                            not in_string
+                            and char == "/"
+                            and i + 1 < len(line)
+                            and line[i + 1] == "/"
+                        ):
+                            break
+
+                        processed_line += char
+                        i += 1
+
+                    lines.append(processed_line)
+
+                content = "".join(lines)
+                return json.loads(content)
         except Exception as e:
             logger.warning(f"Could not parse {path}: {str(e)}, skipping...")
     return {}
