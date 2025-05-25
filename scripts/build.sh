@@ -21,7 +21,7 @@ pyinstaller --name multi \
     --noupx \
     --target-architecture universal2 \
     cursor_multi/cli.py \
-    --collect-all click
+    --collect-all click pyjson5
 
 # Code sign the binary for better macOS performance
 if command -v codesign &> /dev/null; then
