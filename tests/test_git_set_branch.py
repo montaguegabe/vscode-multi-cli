@@ -1,8 +1,8 @@
 import pytest
 
-from cursor_multi.errors import RepoNotCleanError
-from cursor_multi.git_helpers import run_git
-from cursor_multi.git_set_branch import set_branch_in_all_repos
+from vscode_multi.errors import RepoNotCleanError
+from vscode_multi.git_helpers import run_git
+from vscode_multi.git_set_branch import set_branch_in_all_repos
 
 
 def test_set_branch_creates_new_branch(setup_git_repos):

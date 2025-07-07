@@ -3,8 +3,8 @@ import logging
 from functools import cached_property
 from typing import Any, Dict
 
-from cursor_multi.paths import paths
-from cursor_multi.utils import apply_defaults_to_structure
+from vscode_multi.paths import paths
+from vscode_multi.utils import apply_defaults_to_structure
 
 logger = logging.getLogger(__name__)
 

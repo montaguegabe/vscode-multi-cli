@@ -5,9 +5,9 @@ import traceback
 
 import click
 
-from cursor_multi.errors import GitError
-from cursor_multi.git_helpers import check_all_on_same_branch
-from cursor_multi.logging import configure_logging
+from vscode_multi.errors import GitError
+from vscode_multi.git_helpers import check_all_on_same_branch
+from vscode_multi.logging import configure_logging
 
 
 def common_command_wrapper(command_to_wrap: click.Command) -> click.Command:

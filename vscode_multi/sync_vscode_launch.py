@@ -5,9 +5,9 @@ from typing import Any, Dict, List
 
 import click
 
-from cursor_multi.paths import paths
-from cursor_multi.repos import Repository
-from cursor_multi.sync_vscode_helpers import (
+from vscode_multi.paths import paths
+from vscode_multi.repos import Repository
+from vscode_multi.sync_vscode_helpers import (
     VSCodeFileMerger,
     prefix_repo_name_to_path,
 )

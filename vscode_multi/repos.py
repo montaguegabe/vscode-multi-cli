@@ -1,9 +1,9 @@
 from functools import lru_cache
 from typing import Any, List
 
-from cursor_multi.errors import NoRepositoriesError
-from cursor_multi.paths import paths
-from cursor_multi.settings import settings
+from vscode_multi.errors import NoRepositoriesError
+from vscode_multi.paths import paths
+from vscode_multi.settings import settings
 
 
 class Repository:

@@ -3,8 +3,8 @@ import subprocess
 from pathlib import Path
 from typing import List, Tuple
 
-from cursor_multi.errors import GitError, RepoNotCleanError
-from cursor_multi.paths import paths
+from vscode_multi.errors import GitError, RepoNotCleanError
+from vscode_multi.paths import paths
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ def get_current_branch(repo_path: Path) -> str:
 
 def check_all_on_same_branch(raise_error: bool = True) -> bool:
     """Validate that all repositories are on the same branch."""
-    from cursor_multi.repos import load_repos
+    from vscode_multi.repos import load_repos
 
     root_branch = get_current_branch(paths.root_dir)
     repo_branches = [(repo, get_current_branch(repo.path)) for repo in load_repos()]
@@ -82,7 +82,7 @@ def check_repo_is_clean(repo_path: Path, raise_error: bool = True) -> bool:
 
 def check_all_repos_are_clean(raise_error: bool = True) -> bool:
     """Check if all repositories are clean."""
-    from cursor_multi.repos import load_repos
+    from vscode_multi.repos import load_repos
 
     # Check root repo
     if not check_repo_is_clean(paths.root_dir, raise_error):

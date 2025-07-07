@@ -1,18 +1,18 @@
 import click
 
-from cursor_multi._version import __version__
-from cursor_multi.cli_helpers import common_command_wrapper
-from cursor_multi.git_merge_branch import merge_branch_cmd
-from cursor_multi.git_run import git_cmd
-from cursor_multi.git_set_branch import set_branch_cmd
-from cursor_multi.init import init_cmd
-from cursor_multi.sync import sync_cmd
+from vscode_multi._version import __version__
+from vscode_multi.cli_helpers import common_command_wrapper
+from vscode_multi.git_merge_branch import merge_branch_cmd
+from vscode_multi.git_run import git_cmd
+from vscode_multi.git_set_branch import set_branch_cmd
+from vscode_multi.init import init_cmd
+from vscode_multi.sync import sync_cmd
 
 
 def print_version(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
-    click.echo(f"cursor-multi {__version__}")
+    click.echo(f"vscode-multi {__version__}")
     ctx.exit()
 
 
@@ -26,12 +26,11 @@ def print_version(ctx, param, value):
     help="Show the version and exit.",
 )
 def main():
-    """Cursor Multi - Manage multiple Git repositories in Cursor IDE.
+    """VS Code Multi - Manage multiple Git repositories in VS Code.
 
-    This CLI tool enables seamless work across multiple Git repositories within Cursor IDE.
+    This CLI tool enables seamless work across multiple Git repositories within VS Code.
     Key features:
     - Synchronize Git operations across root and sub-repositories
-    - Auto-sync Cursor rule (.mcd) files from sub-repositories
     - Merge .vscode configurations (launch.json, tasks.json, settings.json)
     - Manage consistent branch states across all repositories
     """

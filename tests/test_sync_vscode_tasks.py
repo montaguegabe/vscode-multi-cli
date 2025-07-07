@@ -1,6 +1,6 @@
 import json
 
-from cursor_multi.sync_vscode_tasks import merge_tasks_json
+from vscode_multi.sync_vscode_tasks import merge_tasks_json
 
 
 def test_merge_tasks_files(setup_git_repos):

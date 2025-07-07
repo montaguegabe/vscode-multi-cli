@@ -4,11 +4,11 @@ from typing import Any, Dict, List
 
 import click
 
-from cursor_multi.paths import paths
-from cursor_multi.repos import Repository, load_repos
-from cursor_multi.settings import settings
-from cursor_multi.sync_vscode_helpers import VSCodeFileMerger, deep_merge
-from cursor_multi.utils import soft_read_json_file
+from vscode_multi.paths import paths
+from vscode_multi.repos import Repository, load_repos
+from vscode_multi.settings import settings
+from vscode_multi.sync_vscode_helpers import VSCodeFileMerger, deep_merge
+from vscode_multi.utils import soft_read_json_file
 
 logger = logging.getLogger(__name__)
 

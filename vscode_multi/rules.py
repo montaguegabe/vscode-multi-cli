@@ -1,7 +1,7 @@
 import logging
 from typing import List, Optional
 
-from cursor_multi.errors import RuleParseError, RulesNotCombinableError
+from vscode_multi.errors import RuleParseError, RulesNotCombinableError
 
 logger = logging.getLogger(__name__)
 

@@ -4,12 +4,12 @@ from pathlib import Path
 
 import click
 
-from cursor_multi.git_helpers import is_git_repo_root, run_git
-from cursor_multi.ignore_files import update_gitignore_with_vscode_files
-from cursor_multi.init_readme import init_readme
-from cursor_multi.paths import paths
-from cursor_multi.rules import Rule
-from cursor_multi.sync import sync
+from vscode_multi.git_helpers import is_git_repo_root, run_git
+from vscode_multi.ignore_files import update_gitignore_with_vscode_files
+from vscode_multi.init_readme import init_readme
+from vscode_multi.paths import paths
+from vscode_multi.sync import sync
+from vscode_multi.rules import Rule
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +102,7 @@ def commit_changes() -> None:
     """Stage and commit all changes."""
     run_git(["add", "."], "stage changes", paths.root_dir)
     run_git(
-        ["commit", "-m", "Multi init: Configure cursor-multi workspace"],
+        ["commit", "-m", "Multi init: Configure vscode-multi workspace"],
         "commit changes",
         paths.root_dir,
     )
@@ -149,7 +149,7 @@ def create_readme(urls: list[str]) -> None:
 
 @click.command(name="init")
 def init_cmd():
-    """Initialize a new cursor-multi workspace.
+    """Initialize a new vscode-multi workspace.
 
     This command will:
     1. Collect repository URLs interactively (optionally with descriptions)
@@ -160,7 +160,7 @@ def init_cmd():
     6. Sync all repositories and configurations
     7. Commit the changes
     """
-    logger.info("Initializing cursor-multi workspace...")
+    logger.info("Initializing vscode-multi workspace...")
 
     # Collect repository URLs and descriptions
     urls, descriptions = collect_repo_urls()

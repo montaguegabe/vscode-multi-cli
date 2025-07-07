@@ -16,14 +16,6 @@ class Paths:
         return self.root_dir / "multi.json"
 
     @cached_property
-    def root_rules_dir(self) -> Path:
-        return self.get_cursor_rules_dir(self.root_dir, create=True)
-
-    @cached_property
-    def imported_rules_path(self) -> Path:
-        return self.root_dir / ".importedrules"
-
-    @cached_property
     def gitignore_path(self) -> Path:
         return self.root_dir / ".gitignore"
 
@@ -64,7 +56,7 @@ class Paths:
         Raises:
             FileNotFoundError: If no multi.json is found in any parent directory.
         """
-        override_root_dir = os.getenv("CURSOR_MULTI_ROOT_DIR")
+        override_root_dir = os.getenv("vscode_multi_ROOT_DIR")
         if override_root_dir:
             return Path(override_root_dir)
 
@@ -80,12 +72,6 @@ class Paths:
                 raise FileNotFoundError(msg)
 
             current = current.parent
-
-    def get_cursor_rules_dir(self, repo_dir: Path, create: bool = False) -> Path:
-        result = repo_dir / ".cursor" / "rules"
-        if create:
-            os.makedirs(result, exist_ok=True)
-        return result
 
     def get_vscode_config_dir(self, repo_dir: Path, create: bool = False) -> Path:
         result = repo_dir / ".vscode"

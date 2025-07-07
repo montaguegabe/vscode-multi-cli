@@ -4,18 +4,17 @@ import logging
 
 import click
 
-from cursor_multi.git_helpers import (
+from vscode_multi.git_helpers import (
     get_current_branch,
     run_git,
 )
-from cursor_multi.ignore_files import (
+from vscode_multi.ignore_files import (
     update_gitignore_with_repos,
     update_ignore_with_repos,
 )
-from cursor_multi.paths import paths
-from cursor_multi.repos import load_repos
-from cursor_multi.sync_cursor_rules import sync_cursor_rules, sync_cursor_rules_cmd
-from cursor_multi.sync_vscode import merge_vscode_configs, vscode_cmd
+from vscode_multi.paths import paths
+from vscode_multi.repos import load_repos
+from vscode_multi.sync_vscode import merge_vscode_configs, vscode_cmd
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +69,6 @@ def sync(ensure_on_same_branch: bool = True):
     logger.info("Syncing...")
 
     clone_repos(ensure_on_same_branch)
-    sync_cursor_rules()
     merge_vscode_configs()
 
     logger.info("✅ Sync complete")
@@ -83,8 +81,7 @@ def sync_cmd(ctx: click.Context):
 
     If no subcommand is given, performs complete sync:
     1. Clones/updates all repositories
-    2. Imports Cursor rules
-    3. Merges VSCode configurations
+    2. Merges VSCode configurations
     """
     if ctx.invoked_subcommand is None:
         sync()
@@ -92,4 +89,3 @@ def sync_cmd(ctx: click.Context):
 
 # Add subcommands
 sync_cmd.add_command(vscode_cmd)
-sync_cmd.add_command(sync_cursor_rules_cmd, name="rules")

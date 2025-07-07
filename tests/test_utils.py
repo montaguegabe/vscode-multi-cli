@@ -1,6 +1,6 @@
 import copy
 
-from cursor_multi.utils import apply_defaults_to_structure
+from vscode_multi.utils import apply_defaults_to_structure
 
 
 def test_apply_defaults_to_list_of_dicts():

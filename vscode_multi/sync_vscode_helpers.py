@@ -3,8 +3,8 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List
 
-from cursor_multi.repos import Repository, load_repos
-from cursor_multi.utils import (
+from vscode_multi.repos import Repository, load_repos
+from vscode_multi.utils import (
     apply_defaults_to_structure,
     soft_read_json_file,
     write_json_file,

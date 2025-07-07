@@ -2,8 +2,8 @@ import logging
 from pathlib import Path
 from typing import List, Optional
 
-from cursor_multi.paths import paths
-from cursor_multi.repos import load_repos
+from vscode_multi.paths import paths
+from vscode_multi.repos import load_repos
 
 logger = logging.getLogger(__name__)
 
@@ -68,17 +68,6 @@ class IgnoreFile:
 
         # Update cached lines
         self._existing_lines = existing_lines
-
-
-def update_gitignore_with_imported_rules(imported_rules: List[str]) -> None:
-    """Add imported cursor rules to gitignore entries."""
-    if not imported_rules:
-        return
-
-    rule_entries = [f".cursor/rules/{rule}" for rule in imported_rules]
-    gitignore = IgnoreFile(paths.gitignore_path)
-    gitignore.add_lines_if_missing(rule_entries, "# Ignore imported cursor rules")
-    logger.debug("Updated .gitignore with new cursor rules")
 
 
 def update_gitignore_with_repos():

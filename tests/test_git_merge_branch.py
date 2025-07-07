@@ -1,8 +1,8 @@
 import pytest
 
-from cursor_multi.errors import MergeBranchError, RepoNotCleanError
-from cursor_multi.git_helpers import run_git
-from cursor_multi.git_merge_branch import merge_branches_in_all_repos
+from vscode_multi.errors import MergeBranchError, RepoNotCleanError
+from vscode_multi.git_helpers import run_git
+from vscode_multi.git_merge_branch import merge_branches_in_all_repos
 
 
 def test_successful_merge(setup_git_repos):

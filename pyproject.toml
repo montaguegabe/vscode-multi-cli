@@ -1,6 +1,6 @@
 [project]
-name = "cursor-multi"
-description = "Cursor Multi"
+name = "vscode-multi"
+description = "VS Code Multi"
 authors = [{ name = "Gabe Montague", email = "gabemontague@outlook.com" }]
 dependencies = ["click>=8.2.0"]
 readme = "README.md"
@@ -18,11 +18,11 @@ classifiers = [
 ]
 
 [project.urls]
-Repository = "https://github.com/gabemontague/cursor-multi"
-Issues = "https://github.com/gabemontague/cursor-multi/issues"
+Repository = "https://github.com/gabemontague/vscode-multi"
+Issues = "https://github.com/gabemontague/vscode-multi/issues"
 
 [project.scripts]
-multi = "cursor_multi.cli:main"
+multi = "vscode_multi.cli:main"
 
 [project.optional-dependencies]
 dev = [
@@ -41,7 +41,7 @@ build-backend = "hatchling.build"
 source = "vcs"
 
 [tool.hatch.build.hooks.vcs]
-version-file = "cursor_multi/_version.py"
+version-file = "vscode_multi/_version.py"
 
 [tool.ruff]
 line-length = 88

@@ -6,10 +6,10 @@ from typing import Generator, List
 
 import pytest
 
-from cursor_multi.sync import sync
+from vscode_multi.sync import sync
 
 # Define a consistent temporary directory path structure
-_TEMP_ROOT = Path("/tmp/cursor-multi-test")
+_TEMP_ROOT = Path("/tmp/vscode-multi-test")
 _TEMP_PROJECT_ROOT = _TEMP_ROOT / "root"
 _TEMP_REMOTES_ROOT = _TEMP_ROOT / "remotes"
 _TEMP_PROJECT_ROOT_INITIAL = _TEMP_ROOT / "root_initial"
@@ -17,10 +17,10 @@ _TEMP_REMOTES_ROOT_INITIAL = _TEMP_ROOT / "remotes_initial"
 
 # Set the environment variable to our consistent temp project root directory
 # This is needed for sync() to correctly determine the project root.
-os.environ["CURSOR_MULTI_ROOT_DIR"] = str(_TEMP_PROJECT_ROOT)
+os.environ["vscode_multi_ROOT_DIR"] = str(_TEMP_PROJECT_ROOT)
 
-# Now we can safely import from cursor_multi
-from cursor_multi.git_helpers import run_git  # noqa: E402
+# Now we can safely import from vscode_multi
+from vscode_multi.git_helpers import run_git  # noqa: E402
 
 
 @pytest.hookimpl(tryfirst=True)
@@ -108,7 +108,7 @@ def setup_git_repos() -> Generator[tuple[Path, List[Path]], None, None]:
             )
             created_sub_repo_dirs.append(sub_repo_dir)
 
-        sync()  # Uses CURSOR_MULTI_ROOT_DIR
+        sync()  # Uses vscode_multi_ROOT_DIR
         run_git(["add", "."], "stage post-sync files", _TEMP_PROJECT_ROOT)
         run_git(
             ["commit", "-m", "Post-sync commit"], "post-sync commit", _TEMP_PROJECT_ROOT

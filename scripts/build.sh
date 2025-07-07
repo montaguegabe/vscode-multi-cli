@@ -20,7 +20,7 @@ pyinstaller --name multi \
     --strip \
     --noupx \
     --target-architecture universal2 \
-    cursor_multi/cli.py \
+    vscode_multi/cli.py \
     --collect-all click
 
 # Code sign the binary for better macOS performance

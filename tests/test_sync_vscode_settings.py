@@ -1,6 +1,6 @@
 import json
 
-from cursor_multi.sync_vscode_settings import merge_settings_json
+from vscode_multi.sync_vscode_settings import merge_settings_json
 
 
 def test_merge_settings_files(setup_git_repos, mocker):
@@ -58,7 +58,7 @@ python = ">=3.8"
     # Mock the settings module to return our desired skip_keys
     mock_settings = {"vscode": {"skipSettings": ["toBeSkipped"]}}
     # Mock the settings import in sync_vscode_settings.py
-    mocker.patch("cursor_multi.sync_vscode_settings.settings", mock_settings)
+    mocker.patch("vscode_multi.sync_vscode_settings.settings", mock_settings)
 
     # Call the merge function
     merge_settings_json()

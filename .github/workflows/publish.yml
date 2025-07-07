@@ -73,6 +73,6 @@ jobs:
                   # Optional, use the origin repository instead of forking
                   no_fork: true
                   # Optional, defaults to homebrew/core
-                  tap: montaguegabe/homebrew-cursor-multi
+                  tap: montaguegabe/homebrew-vscode-multi
                   # Formula name, required
-                  formula: cursor-multi
+                  formula: vscode-multi

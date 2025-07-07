@@ -4,9 +4,9 @@ from typing import List
 
 import click
 
-from cursor_multi.git_helpers import check_all_on_same_branch, run_git
-from cursor_multi.paths import paths
-from cursor_multi.repos import load_repos
+from vscode_multi.git_helpers import check_all_on_same_branch, run_git
+from vscode_multi.paths import paths
+from vscode_multi.repos import load_repos
 
 logger = logging.getLogger(__name__)
 
