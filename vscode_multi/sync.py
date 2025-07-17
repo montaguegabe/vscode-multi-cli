@@ -4,6 +4,7 @@ import logging
 
 import click
 
+from vscode_multi.cli_helpers import common_command_wrapper
 from vscode_multi.git_helpers import (
     get_current_branch,
     run_git,
@@ -14,6 +15,7 @@ from vscode_multi.ignore_files import (
 )
 from vscode_multi.paths import paths
 from vscode_multi.repos import load_repos
+from vscode_multi.sync_claude import convert_claude_cmd
 from vscode_multi.sync_vscode import merge_vscode_configs, vscode_cmd
 
 logger = logging.getLogger(__name__)
@@ -89,3 +91,4 @@ def sync_cmd(ctx: click.Context):
 
 # Add subcommands
 sync_cmd.add_command(vscode_cmd)
+sync_cmd.add_command(common_command_wrapper(convert_claude_cmd))
