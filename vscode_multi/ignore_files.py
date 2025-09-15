@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 from typing import List, Optional
 
-from vscode_multi.paths import paths
+from vscode_multi.paths import Paths
 from vscode_multi.repos import load_repos
 
 logger = logging.getLogger(__name__)
@@ -70,18 +70,18 @@ class IgnoreFile:
         self._existing_lines = existing_lines
 
 
-def update_gitignore_with_repos():
+def update_gitignore_with_repos(paths: Paths):
     """Ensure all repos are in gitignore entries."""
-    repos = load_repos()
+    repos = load_repos(paths=paths)
     repo_entries = [f"{repo.name}/" for repo in repos]
     gitignore = IgnoreFile(paths.gitignore_path)
     gitignore.add_lines_if_missing(repo_entries, "# Ignore repository directories")
     logger.debug("Updated .gitignore with new repositories")
 
 
-def update_ignore_with_repos():
+def update_ignore_with_repos(paths: Paths):
     """Update .ignore to allow searching in gitignored directories."""
-    repos = load_repos()
+    repos = load_repos(paths=paths)
     repo_entries = [f"!{repo.name}/" for repo in repos]
     vscode_ignore = IgnoreFile(paths.vscode_ignore_path)
     vscode_ignore.add_lines_if_missing(
@@ -91,7 +91,7 @@ def update_ignore_with_repos():
     logger.debug("Updated .ignore with new repositories")
 
 
-def update_gitignore_with_vscode_files():
+def update_gitignore_with_vscode_files(paths: Paths):
     """Add VS Code generated configuration files to gitignore entries."""
     vscode_entries = [
         ".vscode/launch.json",

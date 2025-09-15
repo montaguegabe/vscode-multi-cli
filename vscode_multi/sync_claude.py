@@ -3,7 +3,7 @@ from pathlib import Path
 
 import click
 
-from vscode_multi.paths import paths
+from vscode_multi.paths import Paths
 from vscode_multi.repos import load_repos
 from vscode_multi.rules import Rule
 
@@ -51,18 +51,19 @@ def convert_cursor_rules_to_claude_md(cursor_dir: Path) -> None:
     logger.info(f"✅ Generated CLAUDE.md with {len(rules)} rules at {claude_md_path}")
 
 
-def convert_all_cursor_rules() -> None:
+def convert_all_cursor_rules(root_dir: Path) -> None:
     """Convert cursor rules to CLAUDE.md files for all repositories."""
     logger.info("Converting cursor rules to CLAUDE.md files...")
 
     # Check root directory for .cursor
-    root_cursor_dir = paths.root_dir / ".cursor"
+    root_cursor_dir = root_dir / ".cursor"
     if root_cursor_dir.exists():
         logger.debug(f"Processing root cursor directory: {root_cursor_dir}")
         convert_cursor_rules_to_claude_md(root_cursor_dir)
 
     # Check each sub-repository for .cursor
-    repos = load_repos()
+    paths = Paths(root_dir)
+    repos = load_repos(paths=paths)
     for repo in repos:
         cursor_dir = repo.path / ".cursor"
         if cursor_dir.exists():
@@ -84,4 +85,4 @@ def convert_claude_cmd():
     3. Generate CLAUDE.md files alongside each .cursor directory
     """
     logger.info("Converting cursor rules to CLAUDE.md files...")
-    convert_all_cursor_rules()
+    convert_all_cursor_rules(Path.cwd())

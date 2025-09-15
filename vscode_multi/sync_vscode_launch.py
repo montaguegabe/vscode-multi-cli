@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 
 import click
 
-from vscode_multi.paths import paths
+from vscode_multi.paths import Paths
 from vscode_multi.repos import Repository
 from vscode_multi.sync_vscode_helpers import (
     VSCodeFileMerger,
@@ -36,11 +36,14 @@ def get_required_launch_configurations(launch_json: Dict[str, Any]) -> List[str]
 
 
 class LaunchFileMerger(VSCodeFileMerger):
+    def __init__(self, paths: Paths):
+        self.paths = paths
+
     def _get_destination_json_path(self) -> Path:
-        return paths.vscode_launch_path
+        return self.paths.vscode_launch_path
 
     def _get_source_json_path(self, repo_path: Path) -> Path:
-        return paths.get_vscode_config_dir(repo_path) / "launch.json"
+        return self.paths.get_vscode_config_dir(repo_path) / "launch.json"
 
     def _get_repo_defaults(self, repo: Repository) -> Dict[str, Any]:
         return {
@@ -55,7 +58,7 @@ class LaunchFileMerger(VSCodeFileMerger):
         required_configs = get_required_launch_configurations(merged_json)
 
         if required_configs:
-            master_compound_name = os.path.basename(paths.root_dir).title()
+            master_compound_name = os.path.basename(self.paths.root_dir).title()
             if "compounds" not in merged_json:
                 merged_json["compounds"] = []
 
@@ -79,8 +82,8 @@ class LaunchFileMerger(VSCodeFileMerger):
         return merged_json
 
 
-def merge_launch_json() -> None:
-    merger = LaunchFileMerger()
+def merge_launch_json(root_dir: Path) -> None:
+    merger = LaunchFileMerger(paths=Paths(root_dir))
     merger.merge()
 
 
@@ -94,4 +97,4 @@ def merge_launch_cmd():
     3. Preserve existing compounds by renaming conflicts.
     """
     logger.info("Merging launch.json files from all repositories...")
-    merge_launch_json()
+    merge_launch_json(root_dir=Path.cwd())

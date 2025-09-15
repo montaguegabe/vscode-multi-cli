@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 from vscode_multi.errors import GitError, RepoNotCleanError
-from vscode_multi.paths import paths
+from vscode_multi.paths import Paths
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +44,14 @@ def get_current_branch(repo_path: Path) -> str:
     )
 
 
-def check_all_on_same_branch(raise_error: bool = True) -> bool:
+def check_all_on_same_branch(paths: Paths, raise_error: bool = True) -> bool:
     """Validate that all repositories are on the same branch."""
     from vscode_multi.repos import load_repos
 
     root_branch = get_current_branch(paths.root_dir)
-    repo_branches = [(repo, get_current_branch(repo.path)) for repo in load_repos()]
+    repo_branches = [
+        (repo, get_current_branch(repo.path)) for repo in load_repos(paths)
+    ]
     for repo, branch in repo_branches:
         if branch != root_branch:
             if raise_error:
@@ -80,7 +82,7 @@ def check_repo_is_clean(repo_path: Path, raise_error: bool = True) -> bool:
     return True
 
 
-def check_all_repos_are_clean(raise_error: bool = True) -> bool:
+def check_all_repos_are_clean(paths: Paths, raise_error: bool = True) -> bool:
     """Check if all repositories are clean."""
     from vscode_multi.repos import load_repos
 
@@ -89,7 +91,9 @@ def check_all_repos_are_clean(raise_error: bool = True) -> bool:
         return False
 
     # Check sub-repos
-    return all(check_repo_is_clean(repo.path, raise_error) for repo in load_repos())
+    return all(
+        check_repo_is_clean(repo.path, raise_error) for repo in load_repos(paths)
+    )
 
 
 def check_branch_existence(repo_path: Path, branch_name: str) -> Tuple[bool, bool]:

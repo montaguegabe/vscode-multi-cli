@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List
 
+from vscode_multi.paths import Paths
 from vscode_multi.repos import Repository, load_repos
 from vscode_multi.utils import (
     apply_defaults_to_structure,
@@ -80,6 +81,9 @@ def deep_merge(
 
 
 class VSCodeFileMerger(ABC):
+    def __init__(self, paths: Paths):
+        self.paths = paths
+
     @abstractmethod
     def _get_destination_json_path(self) -> Path:
         """Get the destination path for the merged JSON file."""
@@ -139,7 +143,7 @@ class VSCodeFileMerger(ABC):
         destination_path.unlink(missing_ok=True)
 
         merged_json: Dict[str, Any] = {}
-        repos_list = load_repos()
+        repos_list = load_repos(self.paths)
 
         for repo_item in repos_list:
             if repo_item.skip_vscode:

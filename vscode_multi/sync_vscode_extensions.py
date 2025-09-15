@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 import click
 
-from vscode_multi.paths import paths
+from vscode_multi.paths import Paths
 from vscode_multi.sync_vscode_helpers import VSCodeFileMerger
 
 logger = logging.getLogger(__name__)
@@ -12,10 +12,10 @@ logger = logging.getLogger(__name__)
 
 class ExtensionsFileMerger(VSCodeFileMerger):
     def _get_destination_json_path(self) -> Path:
-        return paths.vscode_extensions_path
+        return self.paths.vscode_extensions_path
 
     def _get_source_json_path(self, repo_path: Path) -> Path:
-        return paths.get_vscode_config_dir(repo_path) / "extensions.json"
+        return self.paths.get_vscode_config_dir(repo_path) / "extensions.json"
 
     def _post_process_json(self, merged_json: Dict[str, Any]) -> Dict[str, Any]:
         # Ensure we have a recommendations array
@@ -35,8 +35,8 @@ class ExtensionsFileMerger(VSCodeFileMerger):
         return merged_json
 
 
-def merge_extensions_json() -> None:
-    merger = ExtensionsFileMerger()
+def merge_extensions_json(root_dir: Path) -> None:
+    merger = ExtensionsFileMerger(paths=Paths(root_dir))
     merger.merge()
 
 
@@ -49,4 +49,4 @@ def merge_extensions_cmd():
     2. Remove duplicate recommendations while preserving order.
     """
     logger.info("Merging extensions.json files from all repositories...")
-    merge_extensions_json()
+    merge_extensions_json(Path.cwd())

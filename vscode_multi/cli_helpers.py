@@ -2,12 +2,14 @@ import functools
 import logging
 import sys
 import traceback
+from pathlib import Path
 
 import click
 
 from vscode_multi.errors import GitError
 from vscode_multi.git_helpers import check_all_on_same_branch
 from vscode_multi.logging import configure_logging
+from vscode_multi.paths import Paths
 
 
 def common_command_wrapper(command_to_wrap: click.Command) -> click.Command:
@@ -49,7 +51,8 @@ def common_command_wrapper(command_to_wrap: click.Command) -> click.Command:
 
         # After every command, check that all sub-repos are on the same branch as the root repo
         try:
-            check_all_on_same_branch(raise_error=True)
+            paths = Paths(Path.cwd())
+            check_all_on_same_branch(paths=paths, raise_error=True)
         except GitError as e:
             click.secho(e.args[0], fg="red", err=True)
 

@@ -5,7 +5,7 @@ from typing import List
 import click
 
 from vscode_multi.git_helpers import check_all_on_same_branch, run_git
-from vscode_multi.paths import paths
+from vscode_multi.paths import Paths
 from vscode_multi.repos import load_repos
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ def run_git_command(repo_path: Path, git_args: List[str]) -> None:
         logger.info(f"Output from {repo_path}:\n{output}")
 
 
-def run_git_in_all_repos(git_args: List[str]) -> None:
+def run_git_in_all_repos(paths: Paths, git_args: List[str]) -> None:
     """Run git command across all repositories."""
     # First check if all repos are on the same branch
     check_all_on_same_branch(raise_error=True)
@@ -30,7 +30,7 @@ def run_git_in_all_repos(git_args: List[str]) -> None:
     run_git_command(paths.root_dir, git_args)
 
     # Then run in all sub-repos
-    for repo in load_repos():
+    for repo in load_repos(paths.settings):
         run_git_command(repo.path, git_args)
 
 

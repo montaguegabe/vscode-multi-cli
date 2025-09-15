@@ -4,13 +4,13 @@ from pathlib import Path
 
 import click
 
-from vscode_multi.paths import paths
+from vscode_multi.paths import Paths
 from vscode_multi.repos import load_repos
 
 logger = logging.getLogger(__name__)
 
 
-def copy_ruff_config_from_repo(repo_path: Path) -> bool:
+def copy_ruff_config_from_repo(repo_path: Path, paths: Paths) -> bool:
     """Copy ruff.toml from a repository to the root directory.
 
     Args:
@@ -35,7 +35,7 @@ def copy_ruff_config_from_repo(repo_path: Path) -> bool:
         return False
 
 
-def sync_all_ruff_configs() -> None:
+def sync_all_ruff_configs(root_dir: Path) -> None:
     """Copy ruff.toml files from all repositories to the root directory.
 
     This will search all sub-repositories for ruff.toml files and copy the first
@@ -45,13 +45,14 @@ def sync_all_ruff_configs() -> None:
     logger.info("Syncing ruff configuration files...")
 
     # Check each sub-repository for ruff.toml
-    repos = load_repos()
+    paths = Paths(root_dir)
+    repos = load_repos(paths=paths)
     configs_found = 0
 
     for repo in repos:
         if repo.path.exists():
             logger.debug(f"Checking {repo.name} for ruff.toml")
-            if copy_ruff_config_from_repo(repo.path):
+            if copy_ruff_config_from_repo(repo.path, paths=paths):
                 configs_found += 1
         else:
             logger.debug(f"Repository {repo.name} not found at {repo.path}")
@@ -81,4 +82,4 @@ def sync_ruff_cmd():
     3. If multiple ruff.toml files exist, the last one processed will be used
     """
     logger.info("Syncing ruff configuration files...")
-    sync_all_ruff_configs()
+    sync_all_ruff_configs(root_dir=Path.cwd())

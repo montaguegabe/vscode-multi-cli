@@ -4,9 +4,8 @@ from typing import Any, Dict, List
 
 import click
 
-from vscode_multi.paths import paths
+from vscode_multi.paths import Paths
 from vscode_multi.repos import Repository, load_repos
-from vscode_multi.settings import settings
 from vscode_multi.sync_vscode_helpers import VSCodeFileMerger, deep_merge
 from vscode_multi.utils import soft_read_json_file
 
@@ -15,14 +14,14 @@ logger = logging.getLogger(__name__)
 
 class SettingsFileMerger(VSCodeFileMerger):
     def _get_destination_json_path(self) -> Path:
-        return paths.vscode_settings_path
+        return self.paths.vscode_settings_path
 
     def _get_source_json_path(self, repo_path: Path) -> Path:
-        return paths.get_vscode_config_dir(repo_path) / "settings.json"
+        return self.paths.get_vscode_config_dir(repo_path) / "settings.json"
 
     def _get_skip_keys(self, repo: Repository) -> List[str] | None:
         """Return the list of settings keys to skip during merge."""
-        return settings["vscode"].get("skipSettings", [])
+        return self.paths.settings["vscode"].get("skipSettings", [])
 
     def _merge_repo_json(
         self,
@@ -35,9 +34,11 @@ class SettingsFileMerger(VSCodeFileMerger):
         If a merge occurs, write the updated repo_json back to the repo's settings.json file.
         """
         shared_settings_path = (
-            paths.get_vscode_config_dir(repo.path) / "settings.shared.json"
+            self.paths.get_vscode_config_dir(repo.path) / "settings.shared.json"
         )
-        repo_settings_path = paths.get_vscode_config_dir(repo.path) / "settings.json"
+        repo_settings_path = (
+            self.paths.get_vscode_config_dir(repo.path) / "settings.json"
+        )
         merged_with_shared = False
         if shared_settings_path.exists():
             shared_settings = soft_read_json_file(shared_settings_path)
@@ -56,7 +57,7 @@ class SettingsFileMerger(VSCodeFileMerger):
 
     def _post_process_json(self, merged_json: Dict[str, Any]) -> Dict[str, Any]:
         # Merge in settings.shared.json
-        shared_settings_path = paths.vscode_settings_shared_path
+        shared_settings_path = self.paths.vscode_settings_shared_path
         if shared_settings_path.exists():
             shared_settings = soft_read_json_file(shared_settings_path)
             merged_json = deep_merge(merged_json, shared_settings)
@@ -66,7 +67,7 @@ class SettingsFileMerger(VSCodeFileMerger):
             )
 
         # Add Python paths for autocomplete
-        repos = load_repos()
+        repos = load_repos(self.paths)
         python_paths_to_add = [repo.name for repo in repos if repo.is_python]
         if python_paths_to_add:
             logger.info("Adding Python paths for autocomplete")
@@ -80,8 +81,9 @@ class SettingsFileMerger(VSCodeFileMerger):
         return merged_json
 
 
-def merge_settings_json() -> None:
-    merger = SettingsFileMerger()
+def merge_settings_json(root_dir: Path) -> None:
+    paths = Paths(root_dir)
+    merger = SettingsFileMerger(paths=paths)
     merger.merge()
 
 
@@ -95,4 +97,4 @@ def merge_settings_cmd():
     3. Configure Python autocomplete paths.
     """
     logger.info("Merging settings.json files from all repositories...")
-    merge_settings_json()
+    merge_settings_json(root_dir=Path.cwd())

@@ -7,9 +7,8 @@ import click
 from vscode_multi.git_helpers import is_git_repo_root, run_git
 from vscode_multi.ignore_files import update_gitignore_with_vscode_files
 from vscode_multi.init_readme import init_readme
-from vscode_multi.paths import paths
-from vscode_multi.sync import sync
 from vscode_multi.rules import Rule
+from vscode_multi.sync import sync
 
 logger = logging.getLogger(__name__)
 

@@ -1,53 +1,54 @@
 import logging
 import os
-from functools import cached_property
 from pathlib import Path
+
+from vscode_multi.settings import Settings
 
 logger = logging.getLogger(__name__)
 
 
 class Paths:
-    @cached_property
-    def root_dir(self) -> Path:
-        return self._get_root()
+    def __init__(self, target_dir: Path | str | None = None):
+        self.target_dir = Path(target_dir) or Path.cwd()
+        self.root_dir = self._get_root(self.target_dir)
 
-    @cached_property
+    @property
     def multi_json_path(self) -> Path:
         return self.root_dir / "multi.json"
 
-    @cached_property
+    @property
     def gitignore_path(self) -> Path:
         return self.root_dir / ".gitignore"
 
-    @cached_property
+    @property
     def vscode_ignore_path(self) -> Path:
         return self.root_dir / ".ignore"
 
-    @cached_property
+    @property
     def root_vscode_dir(self) -> Path:
         return self.get_vscode_config_dir(self.root_dir, create=True)
 
-    @cached_property
+    @property
     def vscode_launch_path(self) -> Path:
         return self.root_vscode_dir / "launch.json"
 
-    @cached_property
+    @property
     def vscode_tasks_path(self) -> Path:
         return self.root_vscode_dir / "tasks.json"
 
-    @cached_property
+    @property
     def vscode_settings_path(self) -> Path:
         return self.root_vscode_dir / "settings.json"
 
-    @cached_property
+    @property
     def vscode_settings_shared_path(self) -> Path:
         return self.root_vscode_dir / "settings.shared.json"
 
-    @cached_property
+    @property
     def vscode_extensions_path(self) -> Path:
         return self.root_vscode_dir / "extensions.json"
 
-    def _get_root(self) -> Path:
+    def _get_root(self, start_dir: Path) -> Path:
         """Get the root directory by finding the first parent directory containing multi.json.
 
         Returns:
@@ -56,11 +57,7 @@ class Paths:
         Raises:
             FileNotFoundError: If no multi.json is found in any parent directory.
         """
-        override_root_dir = os.getenv("vscode_multi_ROOT_DIR")
-        if override_root_dir:
-            return Path(override_root_dir)
-
-        current = Path.cwd()
+        current = start_dir
 
         while True:
             if (current / "multi.json").exists():
@@ -83,6 +80,6 @@ class Paths:
         """Get the cursor rules directory for a given repository."""
         return repo_dir / ".cursor" / "rules"
 
-
-# Global instance that can be mocked in tests
-paths = Paths()
+    @property
+    def settings(self) -> Settings:
+        return Settings.from_multi_json_file(self.multi_json_path)

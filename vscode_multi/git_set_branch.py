@@ -12,7 +12,6 @@ from vscode_multi.git_helpers import (
     check_branch_existence,
     run_git,
 )
-from vscode_multi.paths import paths
 from vscode_multi.repos import load_repos
 
 logger = logging.getLogger(__name__)

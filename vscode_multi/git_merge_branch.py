@@ -11,7 +11,7 @@ from vscode_multi.git_helpers import (
     check_branch_existence,
     run_git,
 )
-from vscode_multi.paths import paths
+from vscode_multi.paths import Paths
 from vscode_multi.repos import load_repos
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,9 @@ def merge_branch(repo_path: Path, source_branch: str, target_branch: str) -> Non
     )
 
 
-def merge_branches_in_all_repos(source_branch: str, target_branch: str) -> None:
+def merge_branches_in_all_repos(
+    paths: Paths, source_branch: str, target_branch: str
+) -> None:
     """
     Merge source branch into target branch across all repositories.
     Raises MergeBranchError if any operation fails.
@@ -46,7 +48,7 @@ def merge_branches_in_all_repos(source_branch: str, target_branch: str) -> None:
     check_all_on_same_branch(raise_error=True)
 
     merge_branch(paths.root_dir, source_branch, target_branch)
-    for repo in load_repos():
+    for repo in load_repos(paths):
         merge_branch(repo.path, source_branch, target_branch)
 
 

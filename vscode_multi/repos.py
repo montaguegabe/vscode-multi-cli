@@ -1,9 +1,7 @@
-from functools import lru_cache
 from typing import Any, List
 
 from vscode_multi.errors import NoRepositoriesError
-from vscode_multi.paths import paths
-from vscode_multi.settings import settings
+from vscode_multi.paths import Paths
 
 
 class Repository:
@@ -17,12 +15,13 @@ class Repository:
               Other attributes may be dynamically added from the config.
     """
 
-    def __init__(self, url: str, **kwargs: Any):
+    def __init__(self, url: str, paths: Paths, **kwargs: Any):
         """Initialize Repository, deriving name and path, and setting other attributes from kwargs."""
         self.url = url
         # Derive name and path from URL
         self.name = self.url.split("/")[-1]
-        self.path = paths.root_dir / self.name
+        self.paths = paths
+        self.path = self.paths.root_dir / self.name
 
         # Set 'skip' attribute, defaulting to False if not provided in kwargs
         self.skip_vscode = kwargs.pop("skipVSCode", False)
@@ -54,8 +53,7 @@ class Repository:
         return any((self.path / file).exists() for file in python_files)
 
 
-@lru_cache(maxsize=1)
-def load_repos() -> List[Repository]:
+def load_repos(paths: Paths) -> List[Repository]:
     """Load repository information from the "repos" key in multi.json settings.
 
     Each repository config in the list should be an object. Example:
@@ -69,7 +67,7 @@ def load_repos() -> List[Repository]:
         ]
     }
     """
-    repo_configs_list = settings.get("repos", [])
+    repo_configs_list = paths.settings.get("repos", [])
 
     result = []
     for config_dict in repo_configs_list:
@@ -82,7 +80,7 @@ def load_repos() -> List[Repository]:
             )
 
         # Directly pass the config_dict; __init__ will handle parsing.
-        result.append(Repository(**config_dict))
+        result.append(Repository(**config_dict, paths=paths))
 
     if not result:
         raise NoRepositoriesError("No repositories found in multi.json settings.")
