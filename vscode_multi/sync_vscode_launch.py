@@ -78,9 +78,7 @@ class LaunchFileMerger(VSCodeFileMerger):
             # Add preLaunchTask to run the master task if it exists
             master_task_name = f"All Required Tasks - {master_compound_name}"
             master_compound["preLaunchTask"] = master_task_name
-            logger.info(
-                f"Added preLaunchTask '{master_task_name}' to master compound"
-            )
+            logger.debug(f"Added preLaunchTask '{master_task_name}' to master compound")
 
             merged_json["compounds"].append(master_compound)
             logger.info(

@@ -44,7 +44,9 @@ class TasksFileMerger(VSCodeFileMerger):
         required_tasks = get_required_tasks(merged_json)
 
         if required_tasks:
-            master_task_name = f"All Required Tasks - {os.path.basename(self.paths.root_dir).title()}"
+            master_task_name = (
+                f"All Required Tasks - {os.path.basename(self.paths.root_dir).title()}"
+            )
             if "tasks" not in merged_json:
                 merged_json["tasks"] = []
 
@@ -61,7 +63,7 @@ class TasksFileMerger(VSCodeFileMerger):
                 "label": master_task_name,
                 "dependsOn": required_tasks,
                 "dependsOrder": "parallel",  # Run all required tasks in parallel
-                "problemMatcher": []
+                "problemMatcher": [],
             }
 
             merged_json["tasks"].append(master_task)
