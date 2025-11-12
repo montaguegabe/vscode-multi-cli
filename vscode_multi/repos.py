@@ -19,7 +19,10 @@ class Repository:
         """Initialize Repository, deriving name and path, and setting other attributes from kwargs."""
         self.url = url
         # Derive name and path from URL
-        self.name = self.url.split("/")[-1]
+        if "name" in kwargs:
+            self.name = kwargs.pop("name")
+        else:
+            self.name = self.url.split("/")[-1]
         self.paths = paths
         self.path = self.paths.root_dir / self.name
 
