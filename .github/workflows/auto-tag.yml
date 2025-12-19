@@ -1,4 +1,4 @@
-name: Auto Tag on Push to Main
+name: Auto Release on Push to Main
 
 on:
     push:
@@ -6,7 +6,7 @@ on:
             - main
 
 jobs:
-    auto-tag:
+    release:
         runs-on: ubuntu-latest
         permissions:
             contents: write
@@ -43,3 +43,20 @@ jobs:
                   git config user.email "github-actions[bot]@users.noreply.github.com"
                   git tag ${{ steps.tag.outputs.new_tag }}
                   git push origin ${{ steps.tag.outputs.new_tag }}
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
+
+            - name: Install build tools
+              run: pip install build twine hatch hatch-vcs
+
+            - name: Build PyPI package
+              run: hatch build
+
+            - name: Publish to PyPI
+              env:
+                  TWINE_USERNAME: __token__
+                  TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+              run: twine upload dist/*
