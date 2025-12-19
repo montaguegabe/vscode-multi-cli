@@ -64,6 +64,7 @@ def load_repos(paths: Paths) -> List[Repository]:
         "repos": [
             {
                 "url": "https://github.com/user/repo",
+                "name": "repo", // Optional, defaults to the last part of the URL
                 "skip": false, // Optional, defaults to false
                 "custom_setting": "value" // Other top-level settings become attributes
             }
