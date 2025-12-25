@@ -17,6 +17,9 @@ logger = logging.getLogger(__name__)
 def prefix_repo_name_to_path(path: str, repo_name: str) -> str:
     if f"${{workspaceFolder}}/{repo_name}" in path:
         return path
+    # Normalize ${workspaceFolder}/.. to just ${workspaceFolder} (pointing to workspace root)
+    if "${workspaceFolder}/.." in path:
+        return path.replace("${workspaceFolder}/..", "${workspaceFolder}")
     return path.replace("${workspaceFolder}", f"${{workspaceFolder}}/{repo_name}")
 
 
