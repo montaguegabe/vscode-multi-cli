@@ -1,7 +1,7 @@
 from typing import Any, List
 
-from vscode_multi.errors import NoRepositoriesError
-from vscode_multi.paths import Paths
+from multi.errors import NoRepositoriesError
+from multi.paths import Paths
 
 
 class Repository:

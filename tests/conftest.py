@@ -1,12 +1,12 @@
 import json
-import os
 import shutil
 from pathlib import Path
 from typing import Generator, List
 
+import git
 import pytest
 
-from vscode_multi.sync import sync
+from multi.sync import sync
 
 # Define a consistent temporary directory path structure
 _TEMP_ROOT = Path("/tmp/vscode-multi-test")
@@ -14,13 +14,6 @@ _TEMP_PROJECT_ROOT = _TEMP_ROOT / "root"
 _TEMP_REMOTES_ROOT = _TEMP_ROOT / "remotes"
 _TEMP_PROJECT_ROOT_INITIAL = _TEMP_ROOT / "root_initial"
 _TEMP_REMOTES_ROOT_INITIAL = _TEMP_ROOT / "remotes_initial"
-
-# Set the environment variable to our consistent temp project root directory
-# This is needed for sync() to correctly determine the project root.
-os.environ["vscode_multi_ROOT_DIR"] = str(_TEMP_PROJECT_ROOT)
-
-# Now we can safely import from vscode_multi
-from vscode_multi.git_helpers import run_git  # noqa: E402
 
 
 @pytest.hookimpl(tryfirst=True)
@@ -83,77 +76,40 @@ def setup_git_repos() -> Generator[tuple[Path, List[Path]], None, None]:
         multi_json_path = _TEMP_PROJECT_ROOT / "multi.json"
         multi_json_path.write_text(json.dumps(multi_json_content, indent=2))
 
-        run_git(["init"], "initialize root repository", _TEMP_PROJECT_ROOT)
+        root_repo = git.Repo.init(_TEMP_PROJECT_ROOT)
         readme_path = _TEMP_PROJECT_ROOT / "README.md"
         readme_path.write_text("# Root Repository")
-        run_git(["add", "README.md", "multi.json"], "stage files", _TEMP_PROJECT_ROOT)
-        run_git(
-            ["commit", "-m", "Initial commit"],
-            "create initial commit",
-            _TEMP_PROJECT_ROOT,
-        )
+        root_repo.git.add(["README.md", "multi.json"])
+        root_repo.index.commit("Initial commit")
 
         created_sub_repo_dirs = []
         for name in sub_repo_names:
             sub_repo_dir = _TEMP_PROJECT_ROOT / name
             sub_repo_dir.mkdir()
-            run_git(["init"], f"initialize sub-repo {name}", sub_repo_dir)
+            sub_repo = git.Repo.init(sub_repo_dir)
             readme_sub_path = sub_repo_dir / "README.md"
             readme_sub_path.write_text(f"# Sub Repository {name}")
-            run_git(["add", "README.md"], "stage README", sub_repo_dir)
-            run_git(
-                ["commit", "-m", "Initial commit"],
-                f"create initial commit in {name}",
-                sub_repo_dir,
-            )
+            sub_repo.git.add(["README.md"])
+            sub_repo.index.commit("Initial commit")
             created_sub_repo_dirs.append(sub_repo_dir)
 
-        sync()  # Uses vscode_multi_ROOT_DIR
-        run_git(["add", "."], "stage post-sync files", _TEMP_PROJECT_ROOT)
-        run_git(
-            ["commit", "-m", "Post-sync commit"], "post-sync commit", _TEMP_PROJECT_ROOT
-        )
+        sync(root_dir=_TEMP_PROJECT_ROOT)
+        root_repo.git.add(all=True)
+        root_repo.index.commit("Post-sync commit")
 
         # --- Full setup of remote repositories and linking ---
-        root_remote_git_path_str = str(_TEMP_REMOTES_ROOT / "root.git")
-        run_git(
-            ["init", "--bare", root_remote_git_path_str],
-            "create root bare repo",
-            _TEMP_PROJECT_ROOT,
-        )  # Bare repo in _TEMP_REMOTES_ROOT
-        run_git(
-            ["remote", "add", "origin", root_remote_git_path_str],
-            "add remote to root repo",
-            _TEMP_PROJECT_ROOT,
-        )
-        run_git(
-            ["push", "-u", "origin", "main"],
-            "push root repo to its remote",
-            _TEMP_PROJECT_ROOT,
-        )
+        root_remote_git_path = _TEMP_REMOTES_ROOT / "root.git"
+        git.Repo.init(root_remote_git_path, bare=True)
+        root_repo.create_remote("origin", str(root_remote_git_path))
+        root_repo.remotes.origin.push(refspec="main:main", set_upstream=True)
 
         for i, sub_repo_path_obj in enumerate(created_sub_repo_dirs):
             sub_repo_actual_name = sub_repo_names[i]
-            sub_remote_git_path_str = str(
-                _TEMP_REMOTES_ROOT / f"{sub_repo_actual_name}.git"
-            )
-            # Bare repo in _TEMP_REMOTES_ROOT, context for run_git is the sub_repo_path_obj for git commands if needed, but init --bare doesn't need it.
-            # Let's run it in the sub_repo_path_obj context just for consistency, though for bare it doesn't matter much.
-            run_git(
-                ["init", "--bare", sub_remote_git_path_str],
-                f"create bare repo for {sub_repo_actual_name}",
-                sub_repo_path_obj,
-            )
-            run_git(
-                ["remote", "add", "origin", sub_remote_git_path_str],
-                f"add remote to {sub_repo_actual_name}",
-                sub_repo_path_obj,
-            )
-            run_git(
-                ["push", "-u", "origin", "main"],
-                f"push {sub_repo_actual_name} to its remote",
-                sub_repo_path_obj,
-            )
+            sub_remote_git_path = _TEMP_REMOTES_ROOT / f"{sub_repo_actual_name}.git"
+            git.Repo.init(sub_remote_git_path, bare=True)
+            sub_repo = git.Repo(sub_repo_path_obj)
+            sub_repo.create_remote("origin", str(sub_remote_git_path))
+            sub_repo.remotes.origin.push(refspec="main:main", set_upstream=True)
 
         # Populate both caches
         shutil.copytree(_TEMP_PROJECT_ROOT, _TEMP_PROJECT_ROOT_INITIAL)

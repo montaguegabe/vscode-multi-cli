@@ -1,10 +1,12 @@
 import logging
-import subprocess
 from pathlib import Path
-from typing import List, Tuple
+from typing import Tuple
 
-from vscode_multi.errors import GitError, RepoNotCleanError
-from vscode_multi.paths import Paths
+import git
+from git.exc import InvalidGitRepositoryError
+
+from multi.errors import GitError, RepoNotCleanError
+from multi.paths import Paths
 
 logger = logging.getLogger(__name__)
 
@@ -14,39 +16,22 @@ def is_git_repo_root(repo_path: Path) -> bool:
     return (repo_path / ".git").is_dir()
 
 
-def run_git(
-    args: List[str],
-    action_description: str,
-    repo_path: Path,
-    check: bool = True,
-) -> str:
-    """Run a git command and handle errors."""
-    cmd = ["git"] + args
-    try:
-        return subprocess.run(
-            cmd,
-            cwd=repo_path,
-            check=check,
-            capture_output=True,
-            text=True,
-        ).stdout.strip()
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Failed to {action_description}")
-        raise GitError(f"Failed to {action_description}") from e
-
-
 def get_current_branch(repo_path: Path) -> str:
     """Get the current branch name of a git repository."""
-    return run_git(
-        ["rev-parse", "--abbrev-ref", "HEAD"],
-        "determine current branch",
-        repo_path,
-    )
+    try:
+        repo = git.Repo(repo_path)
+        return repo.active_branch.name
+    except InvalidGitRepositoryError as e:
+        logger.error("Failed to determine current branch")
+        raise GitError("Failed to determine current branch") from e
+    except TypeError:
+        # Detached HEAD state - active_branch raises TypeError
+        return "HEAD"
 
 
 def check_all_on_same_branch(paths: Paths, raise_error: bool = True) -> bool:
     """Validate that all repositories are on the same branch."""
-    from vscode_multi.repos import load_repos
+    from multi.repos import load_repos
 
     root_branch = get_current_branch(paths.root_dir)
     repo_branches = [
@@ -70,10 +55,15 @@ def check_repo_is_clean(repo_path: Path, raise_error: bool = True) -> bool:
         )
 
     # Make sure we have a clean working directory
-    status = run_git(
-        ["status", "--porcelain"], "check working directory status", repo_path
-    )
-    if status:
+    try:
+        repo = git.Repo(repo_path)
+        # is_dirty checks for modified/staged files, untracked_files checks for new files
+        is_clean = not repo.is_dirty(untracked_files=True)
+    except InvalidGitRepositoryError as e:
+        logger.error("Failed to check working directory status")
+        raise GitError("Failed to check working directory status") from e
+
+    if not is_clean:
         if raise_error:
             raise RepoNotCleanError(
                 f"Working directory is not clean in {repo_path}. Please commit or stash changes first."
@@ -84,7 +74,7 @@ def check_repo_is_clean(repo_path: Path, raise_error: bool = True) -> bool:
 
 def check_all_repos_are_clean(paths: Paths, raise_error: bool = True) -> bool:
     """Check if all repositories are clean."""
-    from vscode_multi.repos import load_repos
+    from multi.repos import load_repos
 
     # Check root repo
     if not check_repo_is_clean(paths.root_dir, raise_error):
@@ -97,22 +87,19 @@ def check_all_repos_are_clean(paths: Paths, raise_error: bool = True) -> bool:
 
 
 def check_branch_existence(repo_path: Path, branch_name: str) -> Tuple[bool, bool]:
+    try:
+        repo = git.Repo(repo_path)
+    except InvalidGitRepositoryError as e:
+        logger.error("Failed to check if branch exists")
+        raise GitError("Failed to check if branch exists") from e
+
     # Check if branch exists locally
-    result = run_git(
-        ["branch", "--list", branch_name],
-        "check if branch exists",
-        repo_path,
-    )
-    exists_locally = bool(result)
+    exists_locally = branch_name in [head.name for head in repo.heads]
 
     # Check if branch exists remotely
     try:
-        result = run_git(
-            ["ls-remote", "--heads", "origin", branch_name],
-            "check if branch exists remotely",
-            repo_path,
-        )
-        exists_remotely = bool(result)
+        remote_refs = [ref.name for ref in repo.remotes.origin.refs]
+        exists_remotely = f"origin/{branch_name}" in remote_refs
     except Exception:
         logger.debug(
             f"Could not check remote branches in {repo_path}, assuming branch doesn't exist remotely"

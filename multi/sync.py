@@ -1,24 +1,21 @@
-#!/usr/bin/env python3
-
 import logging
 from pathlib import Path
 
 import click
+import git
+from git.exc import GitCommandError
 
-from vscode_multi.cli_helpers import common_command_wrapper
-from vscode_multi.git_helpers import (
-    get_current_branch,
-    run_git,
-)
-from vscode_multi.ignore_files import (
+from multi.cli_helpers import common_command_wrapper
+from multi.git_helpers import get_current_branch
+from multi.ignore_files import (
     update_gitignore_with_repos,
     update_ignore_with_repos,
 )
-from vscode_multi.paths import Paths
-from vscode_multi.repos import load_repos
-from vscode_multi.sync_claude import convert_all_cursor_rules, convert_claude_cmd
-from vscode_multi.sync_ruff import sync_all_ruff_configs, sync_ruff_cmd
-from vscode_multi.sync_vscode import merge_vscode_configs, vscode_cmd
+from multi.paths import Paths
+from multi.repos import load_repos
+from multi.sync_claude import convert_all_cursor_rules, convert_claude_cmd
+from multi.sync_ruff import sync_all_ruff_configs, sync_ruff_cmd
+from multi.sync_vscode import merge_vscode_configs, vscode_cmd
 
 logger = logging.getLogger(__name__)
 
@@ -34,34 +31,26 @@ def clone_repos(paths: Paths, ensure_on_same_branch: bool = True):
     if ensure_on_same_branch:
         logger.info(f"Current branch: {current_branch}")
 
-    for repo in repos:
-        if repo.path.exists():
-            logger.debug(f"{repo.name} already exists, skipping...")
+    for repo_config in repos:
+        if repo_config.path.exists():
+            logger.debug(f"{repo_config.name} already exists, skipping...")
             continue
 
-        logger.debug(f"Cloning {repo.name}...")
+        logger.debug(f"Cloning {repo_config.name}...")
 
         # First clone the default branch
-        run_git(
-            ["clone", repo.url, str(repo.path)],
-            f"clone {repo.name}",
-            paths.root_dir,
-        )
+        cloned_repo = git.Repo.clone_from(repo_config.url, repo_config.path)
 
         # Then checkout the same branch as parent repo if it exists
         if current_branch:
             try:
-                run_git(
-                    ["checkout", current_branch],
-                    f"checkout branch {current_branch}",
-                    repo.path,
-                )
+                cloned_repo.git.checkout(current_branch)
                 logger.info(
-                    f"✅ Cloned {repo.name} and checked out branch {current_branch}"
+                    f"✅ Cloned {repo_config.name} and checked out branch {current_branch}"
                 )
-            except SystemExit:
+            except GitCommandError:
                 logger.warning(
-                    f"Branch {current_branch} not found in {repo.name}, staying on default branch."
+                    f"Branch {current_branch} not found in {repo_config.name}, staying on default branch."
                 )
 
     update_gitignore_with_repos(paths=paths)

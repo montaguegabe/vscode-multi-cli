@@ -1,4 +1,4 @@
-from vscode_multi.ignore_files import IgnoreFile
+from multi.ignore_files import IgnoreFile
 
 
 def test_add_lines_preserves_existing_content(tmp_path):

@@ -6,10 +6,10 @@ from pathlib import Path
 
 import click
 
-from vscode_multi.errors import GitError
-from vscode_multi.git_helpers import check_all_on_same_branch
-from vscode_multi.logging import configure_logging
-from vscode_multi.paths import Paths
+from multi.errors import GitError
+from multi.git_helpers import check_all_on_same_branch
+from multi.logging import configure_logging
+from multi.paths import Paths
 
 
 def common_command_wrapper(command_to_wrap: click.Command) -> click.Command:

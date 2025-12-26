@@ -4,10 +4,10 @@ from typing import Any, Dict, List
 
 import click
 
-from vscode_multi.paths import Paths
-from vscode_multi.repos import Repository, load_repos
-from vscode_multi.sync_vscode_helpers import VSCodeFileMerger, deep_merge
-from vscode_multi.utils import soft_read_json_file
+from multi.paths import Paths
+from multi.repos import Repository, load_repos
+from multi.sync_vscode_helpers import VSCodeFileMerger, deep_merge
+from multi.utils import soft_read_json_file
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ class SettingsFileMerger(VSCodeFileMerger):
                     f"settings.shared.json for {repo.name} exists but is empty or invalid, skipping merge."
                 )
         if merged_with_shared:
-            from vscode_multi.utils import write_json_file
+            from multi.utils import write_json_file
 
             write_json_file(repo_settings_path, repo_json)
         return super()._merge_repo_json(merged_json, repo_json, repo)

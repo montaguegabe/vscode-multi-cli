@@ -2,7 +2,7 @@ import logging
 import os
 from pathlib import Path
 
-from vscode_multi.settings import Settings
+from multi.settings import Settings
 
 logger = logging.getLogger(__name__)
 

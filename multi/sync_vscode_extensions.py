@@ -4,8 +4,8 @@ from typing import Any, Dict
 
 import click
 
-from vscode_multi.paths import Paths
-from vscode_multi.sync_vscode_helpers import VSCodeFileMerger
+from multi.paths import Paths
+from multi.sync_vscode_helpers import VSCodeFileMerger
 
 logger = logging.getLogger(__name__)
 

@@ -3,14 +3,14 @@ from pathlib import Path
 
 import click
 
-from vscode_multi.cli_helpers import common_command_wrapper
-from vscode_multi.sync_vscode_extensions import (
+from multi.cli_helpers import common_command_wrapper
+from multi.sync_vscode_extensions import (
     merge_extensions_cmd,
     merge_extensions_json,
 )
-from vscode_multi.sync_vscode_launch import merge_launch_cmd, merge_launch_json
-from vscode_multi.sync_vscode_settings import merge_settings_cmd, merge_settings_json
-from vscode_multi.sync_vscode_tasks import merge_tasks_cmd, merge_tasks_json
+from multi.sync_vscode_launch import merge_launch_cmd, merge_launch_json
+from multi.sync_vscode_settings import merge_settings_cmd, merge_settings_json
+from multi.sync_vscode_tasks import merge_tasks_cmd, merge_tasks_json
 
 logger = logging.getLogger(__name__)
 

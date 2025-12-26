@@ -3,9 +3,9 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List
 
-from vscode_multi.paths import Paths
-from vscode_multi.repos import Repository, load_repos
-from vscode_multi.utils import (
+from multi.paths import Paths
+from multi.repos import Repository, load_repos
+from multi.utils import (
     apply_defaults_to_structure,
     soft_read_json_file,
     write_json_file,

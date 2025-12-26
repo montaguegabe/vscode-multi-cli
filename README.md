@@ -1,22 +1,24 @@
-# vscode-multi
+# multi
 
-`vscode-multi` is the best way to work with VS Code on multiple Git repos at once. It allows more flexibility than VS Code multi root workspaces.
+`multi` is the best way to work with VS Code/Cursor on multiple Git repos at once. It is an alternative to [multi-root workspaces](https://code.visualstudio.com/docs/editing/workspaces/multi-root-workspaces) that offers more flexibility and control. With `multi`, you can gain control over how tasks, debug runnables, and various IDE and linter settings are combined from multiple project repos ("sub-repos") located in the same folder.
 
--   Automatic syncing of your `.vscode` folder: `launch.json`, `tasks.json`, `settings.json`
+Features:
+
+- Generates files in your root `.vscode` folder from sub-repo `launch.json`, `tasks.json`, and `settings.json` files.
+- Generates `CLAUDE.md` files from Cursor rules.
+-
 
 ## Installation
 
-### Using `brew`
+### Using `pipx`:
 
-Run:
-`brew tap montaguegabe/vscode-multi`
-then
-`brew install vscode-multi`
+- Install [pipx](https://github.com/pypa/pipx)
+- Run `pipx install multi-sync`
 
-### Using `pipx` (MacOS, Linux, Windows):
+### Using `uv`
 
--   Install [pipx](https://github.com/pypa/pipx)
--   Run `pipx install vscode-multi`
+- Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
+- Run `uv tool install multi-sync`
 
 ## Getting started
 
@@ -29,9 +31,3 @@ multi init
 Then paste in the URLs of all the repositories you want to use with VS Code. You can optionally specify descriptions of what they do, which will be used to create a new repo-directories.mdc Cursor rule.
 
 It is recommended you also install the [VS Code Extension]() that automatically keeps your project synced based on edits to files. To manually sync, you can run `multi sync`.
-
-## Git operations
-
-## TODO:
-
-https://github.com/dawidd6/action-homebrew-bump-formula

@@ -1,7 +1,7 @@
 import logging
 from typing import List, Optional
 
-from vscode_multi.errors import RuleParseError, RulesNotCombinableError
+from multi.errors import RuleParseError
 
 logger = logging.getLogger(__name__)
 
@@ -98,76 +98,3 @@ class Rule:
         frontmatter_str = "\n".join(frontmatter_parts) + "\n"  # Add trailing newline
 
         return f"---\n{frontmatter_str}---\n{self.body}"
-
-    def scoped_to_repo(self, repo_name: str) -> "Rule":
-        """Return a new Rule with globs scoped to the specified repo directory.
-
-        If the rule has alwaysApply=True, it will return a rule with a repo-wide glob instead.
-        If the rule has specific globs, they will be prefixed with the repo name.
-        Rules with no globs and alwaysApply=False are returned unchanged.
-
-        Args:
-            repo_name: Name of the repository to scope the rule to
-
-        Returns:
-            A new Rule instance with scoped globs
-        """
-        # Check if this is an agent-requested rule (no globs and no alwaysApply: true)
-        if not self.globs and not self.alwaysApply:
-            return Rule(
-                description=self.description,
-                globs=self.globs,
-                alwaysApply=self.alwaysApply,
-                body=self.body,
-            )
-
-        # For alwaysApply: true rules, we override with repo-wide glob
-        if self.alwaysApply:
-            return Rule(
-                description=self.description,
-                globs=[f"{repo_name}/**/*"],
-                alwaysApply=False,
-                body=self.body,
-            )
-
-        # For normal glob rules, scope the globs to the repo
-        return Rule(
-            description=self.description,
-            globs=[f"{repo_name}/{g}" for g in self.globs] if self.globs else None,
-            alwaysApply=self.alwaysApply,
-            body=self.body,
-        )
-
-
-def rules_are_equal_ignoring_globs(rule1: Rule, rule2: Rule) -> bool:
-    """Two rules are equal if they have the same description, body and alwaysApply flag."""
-    return (
-        rule1.description == rule2.description
-        and rule1.body == rule2.body
-        and rule1.alwaysApply == rule2.alwaysApply
-    )
-
-
-def combine_rules(rules: List[Rule]) -> Rule:
-    assert len(rules) > 0, "No rules to combine"
-    reference_rule = rules[0]
-
-    # Check all rules are identical (ignoring globs)
-    if not all(rules_are_equal_ignoring_globs(rule, reference_rule) for rule in rules):
-        raise RulesNotCombinableError
-
-    # Combine all globs
-    all_globs = set()
-    for rule in rules:
-        if rule.globs:
-            all_globs.update(rule.globs)
-
-    # Create combined rule
-    combined_rule = Rule(
-        description=reference_rule.description,
-        globs=sorted(all_globs) if all_globs else None,
-        alwaysApply=reference_rule.alwaysApply,
-        body=reference_rule.body,
-    )
-
-    return combined_rule

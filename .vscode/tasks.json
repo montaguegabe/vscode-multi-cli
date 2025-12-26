@@ -4,7 +4,7 @@
         {
             "label": "Run pytest with coverage",
             "type": "shell",
-            "command": "${workspaceFolder}/venv/bin/pytest . --cov=vscode_multi --cov-report=html && open htmlcov/index.html",
+            "command": "${workspaceFolder}/venv/bin/pytest . --cov=multi --cov-report=html && open htmlcov/index.html",
             "group": {
                 "kind": "test",
                 "isDefault": true

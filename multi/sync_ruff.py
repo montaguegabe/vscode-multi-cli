@@ -4,8 +4,8 @@ from pathlib import Path
 
 import click
 
-from vscode_multi.paths import Paths
-from vscode_multi.repos import load_repos
+from multi.paths import Paths
+from multi.repos import load_repos
 
 logger = logging.getLogger(__name__)
 

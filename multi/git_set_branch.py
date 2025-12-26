@@ -1,18 +1,17 @@
-#!/usr/bin/env python3
-
 import logging
 from pathlib import Path
 
 import click
+import git
 
-from vscode_multi.errors import GitError
-from vscode_multi.git_helpers import (
+from multi.errors import GitError
+from multi.git_helpers import (
     check_all_on_same_branch,
     check_all_repos_are_clean,
     check_branch_existence,
-    run_git,
 )
-from vscode_multi.repos import load_repos
+from multi.paths import Paths
+from multi.repos import load_repos
 
 logger = logging.getLogger(__name__)
 
@@ -21,30 +20,28 @@ def create_and_switch_branch(
     repo_path: Path, branch_name: str, allow_create: bool = True
 ) -> None:
     """Create a branch if it doesn't exist and switch to it."""
+    repo = git.Repo(repo_path)
 
     # Check if branch exists locally or remotely
     exists_locally, exists_remotely = check_branch_existence(repo_path, branch_name)
 
     if exists_locally or exists_remotely:
         logger.info(f"Branch '{branch_name}' already exists in {repo_path}")
-        run_git(["checkout", branch_name], "checkout existing branch", repo_path)
+        repo.git.checkout(branch_name)
     else:
         if not allow_create:
             raise GitError(
                 f"Branch '{branch_name}' does not exist in {repo_path}.  Normally we would create a new branch, but you started with different repos checked out to different branches, so there is no base branch to create from."
             )
         # Create a new branch from current HEAD
-        run_git(
-            ["checkout", "-b", branch_name],
-            "create and checkout new branch",
-            repo_path,
-        )
+        repo.create_head(branch_name).checkout()
     logger.info(f"✅ Switched to branch '{branch_name}' in {repo_path}")
 
 
-def set_branch_in_all_repos(branch_name: str) -> None:
-    check_all_repos_are_clean(raise_error=True)
-    all_on_same_branch = check_all_on_same_branch(raise_error=False)
+def set_branch_in_all_repos(root_dir: Path, branch_name: str) -> None:
+    paths = Paths(root_dir)
+    check_all_repos_are_clean(paths=paths, raise_error=True)
+    all_on_same_branch = check_all_on_same_branch(paths=paths, raise_error=False)
     if not all_on_same_branch:
         logger.warning(
             "Some repos are not on the same branch as the root repo.  If the branch already exists for all repos, this command will fix the situation."
@@ -53,7 +50,7 @@ def set_branch_in_all_repos(branch_name: str) -> None:
     create_and_switch_branch(
         paths.root_dir, branch_name, allow_create=all_on_same_branch
     )
-    for repo in load_repos():
+    for repo in load_repos(paths=paths):
         create_and_switch_branch(
             repo.path, branch_name, allow_create=all_on_same_branch
         )
@@ -66,4 +63,4 @@ def set_branch_cmd(branch_name: str) -> None:
 
     BRANCH_NAME: Name of the branch to create and switch to
     """
-    set_branch_in_all_repos(branch_name)
+    set_branch_in_all_repos(root_dir=Path.cwd(), branch_name=branch_name)

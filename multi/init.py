@@ -1,14 +1,16 @@
 import json
 import logging
+from importlib.resources import files
 from pathlib import Path
 
 import click
 
-from vscode_multi.git_helpers import is_git_repo_root, run_git
-from vscode_multi.ignore_files import update_gitignore_with_vscode_files
-from vscode_multi.init_readme import init_readme
-from vscode_multi.rules import Rule
-from vscode_multi.sync import sync
+from multi.git_helpers import is_git_repo_root
+from multi.ignore_files import update_gitignore_with_vscode_files
+from multi.rules import Rule
+from multi.sync import sync
+
+init_readme_template = (files("multi") / "resources" / "init_readme.md").read_text()
 
 logger = logging.getLogger(__name__)
 
@@ -92,19 +94,20 @@ def create_repo_directories_rule(urls: list[str], descriptions: list[str]) -> No
 
 def init_git_repo() -> None:
     """Initialize a git repository if one doesn't exist."""
+    import git
+
     if not is_git_repo_root(paths.root_dir):
         logger.info("Initializing git repository...")
-        run_git(["init"], "initialize git repository", paths.root_dir)
+        git.Repo.init(paths.root_dir)
 
 
 def commit_changes() -> None:
     """Stage and commit all changes."""
-    run_git(["add", "."], "stage changes", paths.root_dir)
-    run_git(
-        ["commit", "-m", "Multi init: Configure vscode-multi workspace"],
-        "commit changes",
-        paths.root_dir,
-    )
+    import git
+
+    repo = git.Repo(paths.root_dir)
+    repo.git.add(all=True)
+    repo.index.commit("Multi init: Configure vscode-multi workspace")
 
 
 def create_readme(urls: list[str]) -> None:
@@ -139,7 +142,7 @@ def create_readme(urls: list[str]) -> None:
     workspace_name = paths.root_dir.name
 
     # Format and write the README
-    readme_content = init_readme.format(
+    readme_content = init_readme_template.format(
         __name__=workspace_name, __repo_list__=repo_list
     )
     readme_path.write_text(readme_content)

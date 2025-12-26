@@ -1,6 +1,6 @@
 import json
 
-from vscode_multi.sync_vscode_tasks import merge_tasks_json
+from multi.sync_vscode_tasks import merge_tasks_json
 
 
 def test_merge_tasks_files(setup_git_repos):
@@ -43,7 +43,7 @@ def test_merge_tasks_files(setup_git_repos):
     (repo1_path / ".vscode" / "tasks.json").write_text(json.dumps(repo1_tasks_content))
 
     # Call the merge function
-    merge_tasks_json()
+    merge_tasks_json(root_repo_path)
 
     # Assertions
     merged_file_path = root_repo_path / ".vscode" / "tasks.json"

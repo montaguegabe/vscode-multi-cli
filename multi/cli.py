@@ -1,12 +1,11 @@
 import click
 
-from vscode_multi._version import __version__
-from vscode_multi.cli_helpers import common_command_wrapper
-from vscode_multi.git_merge_branch import merge_branch_cmd
-from vscode_multi.git_run import git_cmd
-from vscode_multi.git_set_branch import set_branch_cmd
-from vscode_multi.init import init_cmd
-from vscode_multi.sync import sync_cmd
+from multi._version import __version__
+from multi.cli_helpers import common_command_wrapper
+from multi.git_run import git_cmd
+from multi.git_set_branch import set_branch_cmd
+from multi.init import init_cmd
+from multi.sync import sync_cmd
 
 
 def print_version(ctx, param, value):
@@ -37,7 +36,6 @@ def main():
     pass
 
 
-main.add_command(common_command_wrapper(merge_branch_cmd))
 main.add_command(common_command_wrapper(set_branch_cmd))
 main.add_command(common_command_wrapper(sync_cmd))
 main.add_command(common_command_wrapper(git_cmd))

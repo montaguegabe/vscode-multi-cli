@@ -1,10 +1,7 @@
 import json
 import os
 
-from vscode_multi.paths import (
-    paths,  # To get the root dir for master compound name calculation
-)
-from vscode_multi.sync_vscode_launch import merge_launch_json
+from multi.sync_vscode_launch import merge_launch_json
 
 
 def test_merge_launch_files(setup_git_repos):
@@ -73,7 +70,7 @@ def test_merge_launch_files(setup_git_repos):
     )
 
     # Call the merge function
-    merge_launch_json()
+    merge_launch_json(root_dir=root_repo_path)
 
     # Assertions
     merged_file_path = root_repo_path / ".vscode" / "launch.json"
@@ -112,7 +109,7 @@ def test_merge_launch_files(setup_git_repos):
     # Check master compound
     # Master compound name is based on the root project directory name
     # The fixture uses /tmp/vscode-multi-test/root -> master_compound_name = "Root"
-    master_compound_name = os.path.basename(str(paths.root_dir)).title()
+    master_compound_name = os.path.basename(str(root_repo_path)).title()
 
     master_compound = next(
         (c for c in merged_data["compounds"] if c["name"] == master_compound_name), None

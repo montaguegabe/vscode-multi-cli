@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, Self
 
-from vscode_multi.utils import apply_defaults_to_structure
+from multi.utils import apply_defaults_to_structure
 
 logger = logging.getLogger(__name__)
 

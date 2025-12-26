@@ -1,9 +1,9 @@
 import json
 
-from vscode_multi.sync_vscode_settings import merge_settings_json
+from multi.sync_vscode_settings import merge_settings_json
 
 
-def test_merge_settings_files(setup_git_repos, mocker):
+def test_merge_settings_files(setup_git_repos):
     root_repo_path, sub_repo_dirs = setup_git_repos
     repo0_path = sub_repo_dirs[0]  # repo0
     repo1_path = sub_repo_dirs[1]  # repo1
@@ -55,13 +55,16 @@ python = ">=3.8"
         json.dumps(shared_settings_content)
     )
 
-    # Mock the settings module to return our desired skip_keys
-    mock_settings = {"vscode": {"skipSettings": ["toBeSkipped"]}}
-    # Mock the settings import in sync_vscode_settings.py
-    mocker.patch("vscode_multi.sync_vscode_settings.settings", mock_settings)
+    # Add skipSettings to multi.json
+    multi_json_path = root_repo_path / "multi.json"
+    with open(multi_json_path, "r") as f:
+        multi_json = json.load(f)
+    multi_json["vscode"] = {"skipSettings": ["toBeSkipped"]}
+    with open(multi_json_path, "w") as f:
+        json.dump(multi_json, f, indent=2)
 
     # Call the merge function
-    merge_settings_json()
+    merge_settings_json(root_repo_path)
 
     # Assertions
     merged_file_path = root_repo_path / ".vscode" / "settings.json"

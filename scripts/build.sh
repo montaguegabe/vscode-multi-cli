@@ -1,7 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Exit on error
-set -e
+set -euo pipefail
 
 # Ensure we're in the project root
 cd "$(dirname "$0")/.."
@@ -20,7 +19,7 @@ pyinstaller --name multi \
     --strip \
     --noupx \
     --target-architecture universal2 \
-    vscode_multi/cli.py \
+    multi/cli.py \
     --collect-all click
 
 # Code sign the binary for better macOS performance
