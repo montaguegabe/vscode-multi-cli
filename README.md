@@ -2,6 +2,8 @@
 
 `multi` is a better way to work with VS Code/Cursor on multiple Git repos at once. It is an alternative to [multi-root workspaces](https://code.visualstudio.com/docs/editing/workspaces/multi-root-workspaces) that offers more flexibility and control. With `multi`, you can gain control over how tasks, debug runnables, and various IDE and linter settings are combined from multiple project repos ("sub-repos") located within a root workspace folder.
 
+**[Documentation](https://multi.gabemontague.com/)**
+
 Features:
 
 - Generates files in your root `.vscode` folder from sub-repo `launch.json`, `tasks.json`, and `settings.json` files.
