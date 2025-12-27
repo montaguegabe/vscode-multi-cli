@@ -12,12 +12,12 @@ Features:
 ### Using `pipx`:
 
 - Install [pipx](https://github.com/pypa/pipx)
-- Run `pipx install multi-sync`
+- Run `pipx install multi-workspace`
 
 ### Using `uv`
 
 - Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
-- Run `uv tool install multi-sync`
+- Run `uv tool install multi-workspace`
 
 ## Getting started
 
