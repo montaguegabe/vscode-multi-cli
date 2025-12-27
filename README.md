@@ -29,4 +29,4 @@ multi init
 
 When prompted, paste in the URLs of all the repositories you want to have in your workspace. You can optionally specify descriptions of what they do, which will be used to create a new repo-directories.mdc Cursor/Claude rule.
 
-It is recommended you also install the [VS Code Extension](https://marketplace.visualstudio.com/items?itemName=montaguegabe.multi-sync) that automatically keeps your project synced when edits are made to synced files. To manually sync, you can run `multi sync`.
+It is recommended you also install the [VS Code Extension](https://marketplace.visualstudio.com/items?itemName=montaguegabe.multi-workspace) that automatically keeps your project synced when edits are made to synced files. To manually sync, you can run `multi sync`.
