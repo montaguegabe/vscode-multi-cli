@@ -2,6 +2,7 @@ import json
 import os
 
 from multi.sync_vscode_launch import merge_launch_json
+from multi.utils import soft_read_json_file
 
 
 def test_merge_launch_files(setup_git_repos):
@@ -76,8 +77,7 @@ def test_merge_launch_files(setup_git_repos):
     merged_file_path = root_repo_path / ".vscode" / "launch.json"
     assert merged_file_path.exists()
 
-    with open(merged_file_path, "r") as f:
-        merged_data = json.load(f)
+    merged_data = soft_read_json_file(merged_file_path)
 
     assert "configurations" in merged_data
     assert "compounds" in merged_data

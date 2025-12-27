@@ -1,6 +1,7 @@
 import json
 
 from multi.sync_vscode_settings import merge_settings_json
+from multi.utils import soft_read_json_file
 
 
 def test_merge_settings_files(setup_git_repos):
@@ -70,8 +71,7 @@ python = ">=3.8"
     merged_file_path = root_repo_path / ".vscode" / "settings.json"
     assert merged_file_path.exists()
 
-    with open(merged_file_path, "r") as f:
-        merged_data = json.load(f)
+    merged_data = soft_read_json_file(merged_file_path)
 
     assert (
         merged_data.get("python.pythonPath")

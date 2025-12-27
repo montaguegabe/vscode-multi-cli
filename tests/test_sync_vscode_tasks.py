@@ -1,6 +1,7 @@
 import json
 
 from multi.sync_vscode_tasks import merge_tasks_json
+from multi.utils import soft_read_json_file
 
 
 def test_merge_tasks_files(setup_git_repos):
@@ -49,8 +50,7 @@ def test_merge_tasks_files(setup_git_repos):
     merged_file_path = root_repo_path / ".vscode" / "tasks.json"
     assert merged_file_path.exists()
 
-    with open(merged_file_path, "r") as f:
-        merged_data = json.load(f)
+    merged_data = soft_read_json_file(merged_file_path)
 
     assert "version" in merged_data
     assert merged_data["version"] == "2.0.0"  # Should pick up from one of the files
