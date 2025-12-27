@@ -1,5 +1,5 @@
 [project]
-name = "multi-workspace"
+name = "multi-sync"
 description = "Multi"
 authors = [{ name = "Gabe Montague", email = "gabemontague@outlook.com" }]
 dependencies = ["click>=8.3.1", "gitpython>=3.1.0"]
