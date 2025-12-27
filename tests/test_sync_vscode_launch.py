@@ -108,7 +108,7 @@ def test_merge_launch_files(setup_git_repos):
 
     # Check master compound
     # Master compound name is based on the root project directory name
-    # The fixture uses /tmp/vscode-multi-test/root -> master_compound_name = "Root"
+    # The fixture uses /tmp/multi-test/root -> master_compound_name = "Root"
     master_compound_name = os.path.basename(str(root_repo_path)).title()
 
     master_compound = next(

@@ -107,7 +107,7 @@ def commit_changes() -> None:
 
     repo = git.Repo(paths.root_dir)
     repo.git.add(all=True)
-    repo.index.commit("Multi init: Configure vscode-multi workspace")
+    repo.index.commit("Multi init: Configure multi workspace")
 
 
 def create_readme(urls: list[str]) -> None:
@@ -151,7 +151,7 @@ def create_readme(urls: list[str]) -> None:
 
 @click.command(name="init")
 def init_cmd():
-    """Initialize a new vscode-multi workspace.
+    """Initialize a new multi workspace.
 
     This command will:
     1. Collect repository URLs interactively (optionally with descriptions)
@@ -162,7 +162,7 @@ def init_cmd():
     6. Sync all repositories and configurations
     7. Commit the changes
     """
-    logger.info("Initializing vscode-multi workspace...")
+    logger.info("Initializing multi workspace...")
 
     # Collect repository URLs and descriptions
     urls, descriptions = collect_repo_urls()

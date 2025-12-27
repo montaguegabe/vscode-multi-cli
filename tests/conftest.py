@@ -9,7 +9,7 @@ import pytest
 from multi.sync import sync
 
 # Define a consistent temporary directory path structure
-_TEMP_ROOT = Path("/tmp/vscode-multi-test")
+_TEMP_ROOT = Path("/tmp/multi-test")
 _TEMP_PROJECT_ROOT = _TEMP_ROOT / "root"
 _TEMP_REMOTES_ROOT = _TEMP_ROOT / "remotes"
 _TEMP_PROJECT_ROOT_INITIAL = _TEMP_ROOT / "root_initial"

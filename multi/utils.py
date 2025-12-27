@@ -6,12 +6,22 @@ from typing import Any, Dict
 logger = logging.getLogger(__name__)
 
 
-def write_json_file(path: Path, data: Dict[str, Any]):
-    """Write a JSON file, creating the directory if it doesn't exist."""
+def write_json_file(
+    path: Path, data: Dict[str, Any], header_comment: str | None = None
+):
+    """Write a JSON file, creating the directory if it doesn't exist.
+
+    Args:
+        path: The path to write the JSON file to.
+        data: The data to write as JSON.
+        header_comment: Optional comment to add at the top of the file (for JSONC files).
+    """
 
     # We make sure the parent exists because in the tests we are destroying the root directory every time, so create=True is not enough.
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w") as f:
+        if header_comment:
+            f.write(f"// {header_comment}\n")
         json.dump(data, f, indent=4)
 
 
