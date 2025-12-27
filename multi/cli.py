@@ -11,7 +11,7 @@ from multi.sync import sync_cmd
 def print_version(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
-    click.echo(f"multi (multi-sync) {__version__}")
+    click.echo(f"multi (multi-workspace) {__version__}")
     ctx.exit()
 
 
