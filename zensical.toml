@@ -1,0 +1,42 @@
+[project]
+site_name = "Multi Documentation"
+site_description = "Work with VS Code/Cursor on multiple Git repos at once"
+site_url = "https://gabemontague.github.io/multi"
+site_author = "Gabe Montague"
+copyright = "&copy; 2025 Gabe Montague"
+extra_css = ["stylesheets/extra.css"]
+repo_url = "https://github.com/montaguegabe/multi"
+
+
+nav = [
+  { "Home" = "index.md" },
+  { "Getting Started" = "getting-started.md" },
+  { "Commands" = [
+    "commands/index.md",
+    { "init" = "commands/init.md" },
+    { "sync" = "commands/sync.md" },
+    { "sync vscode" = "commands/sync-vscode.md" },
+    { "sync claude" = "commands/sync-claude.md" },
+    { "sync ruff" = "commands/sync-ruff.md" },
+    { "set-branch" = "commands/set-branch.md" },
+    { "git" = "commands/git.md" }
+  ]},
+  { "Configuration" = "configuration.md" },
+  { "Contributing" = "contributing.md" },
+  { "VS Code Extension" = "extension.md" }
+]
+
+[project.theme]
+variant = "modern"
+logo = "assets/logo.svg"
+features = [
+  "navigation.instant",
+  "navigation.expand",
+  "navigation.path",
+  "navigation.indexes",
+  "content.code.copy"
+]
+
+[project.theme.palette]
+primary = "custom"
+accent = "custom"
