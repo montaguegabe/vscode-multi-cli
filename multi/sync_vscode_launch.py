@@ -15,7 +15,8 @@ from multi.sync_vscode_helpers import (
 logger = logging.getLogger(__name__)
 
 
-def get_required_launch_configurations(launch_json: Dict[str, Any]) -> List[str]:
+def get_required_launch_configs_from_json(launch_json: Dict[str, Any]) -> List[str]:
+    """Extract required launch configurations from launch.json structure."""
     required_configs = []
 
     # Collect required configurations from required compounds
@@ -38,6 +39,8 @@ def get_required_launch_configurations(launch_json: Dict[str, Any]) -> List[str]
 class LaunchFileMerger(VSCodeFileMerger):
     def __init__(self, paths: Paths):
         self.paths = paths
+        # Track required launch configs declared in multi.json for each repo
+        self._multi_json_required_configs: List[str] = []
 
     def _get_destination_json_path(self) -> Path:
         return self.paths.vscode_launch_path
@@ -54,10 +57,32 @@ class LaunchFileMerger(VSCodeFileMerger):
             }
         }
 
-    def _post_process_json(self, merged_json: Dict[str, Any]) -> Dict[str, Any]:
-        required_configs = get_required_launch_configurations(merged_json)
+    def _merge_repo_json(
+        self,
+        merged_json: Dict[str, Any],
+        repo_json: Dict[str, Any],
+        repo: Repository,
+    ) -> Dict[str, Any]:
+        # Collect required launch configs declared in multi.json for this repo
+        repo_required_configs = getattr(repo, "requiredLaunchConfigs", None)
+        if repo_required_configs and isinstance(repo_required_configs, list):
+            self._multi_json_required_configs.extend(repo_required_configs)
+            logger.debug(
+                f"Found requiredLaunchConfigs in multi.json for {repo.name}: {repo_required_configs}"
+            )
 
-        if required_configs:
+        return super()._merge_repo_json(merged_json, repo_json, repo)
+
+    def _post_process_json(self, merged_json: Dict[str, Any]) -> Dict[str, Any]:
+        # Collect required configs from launch.json files (marked with required: true)
+        json_required_configs = get_required_launch_configs_from_json(merged_json)
+
+        # Combine with required configs from multi.json
+        all_required_configs = list(
+            dict.fromkeys(json_required_configs + self._multi_json_required_configs)
+        )
+
+        if all_required_configs:
             master_compound_name = os.path.basename(self.paths.root_dir).title()
             if "compounds" not in merged_json:
                 merged_json["compounds"] = []
@@ -72,7 +97,7 @@ class LaunchFileMerger(VSCodeFileMerger):
 
             master_compound = {
                 "name": master_compound_name,
-                "configurations": required_configs,
+                "configurations": all_required_configs,
             }
 
             # Add preLaunchTask to run the master task if it exists

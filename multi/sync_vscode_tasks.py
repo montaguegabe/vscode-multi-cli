@@ -12,7 +12,7 @@ from multi.sync_vscode_helpers import VSCodeFileMerger
 logger = logging.getLogger(__name__)
 
 
-def get_required_tasks(tasks_json: Dict[str, Any]) -> List[str]:
+def get_required_tasks_from_json(tasks_json: Dict[str, Any]) -> List[str]:
     """Extract tasks marked as required from the tasks.json structure."""
     required_tasks = []
 
@@ -28,6 +28,8 @@ def get_required_tasks(tasks_json: Dict[str, Any]) -> List[str]:
 class TasksFileMerger(VSCodeFileMerger):
     def __init__(self, paths: Paths):
         self.paths = paths
+        # Track required tasks declared in multi.json for each repo
+        self._multi_json_required_tasks: List[str] = []
 
     def _get_destination_json_path(self) -> Path:
         return self.paths.vscode_tasks_path
@@ -40,10 +42,32 @@ class TasksFileMerger(VSCodeFileMerger):
             "tasks": {"apply_to_list_items": {"options": {"cwd": "${workspaceFolder}"}}}
         }
 
-    def _post_process_json(self, merged_json: Dict[str, Any]) -> Dict[str, Any]:
-        required_tasks = get_required_tasks(merged_json)
+    def _merge_repo_json(
+        self,
+        merged_json: Dict[str, Any],
+        repo_json: Dict[str, Any],
+        repo: Repository,
+    ) -> Dict[str, Any]:
+        # Collect required tasks declared in multi.json for this repo
+        repo_required_tasks = getattr(repo, "requiredTasks", None)
+        if repo_required_tasks and isinstance(repo_required_tasks, list):
+            self._multi_json_required_tasks.extend(repo_required_tasks)
+            logger.debug(
+                f"Found requiredTasks in multi.json for {repo.name}: {repo_required_tasks}"
+            )
 
-        if required_tasks:
+        return super()._merge_repo_json(merged_json, repo_json, repo)
+
+    def _post_process_json(self, merged_json: Dict[str, Any]) -> Dict[str, Any]:
+        # Collect required tasks from tasks.json files (marked with required: true)
+        json_required_tasks = get_required_tasks_from_json(merged_json)
+
+        # Combine with required tasks from multi.json
+        all_required_tasks = list(
+            dict.fromkeys(json_required_tasks + self._multi_json_required_tasks)
+        )
+
+        if all_required_tasks:
             master_task_name = (
                 f"All Required Tasks - {os.path.basename(self.paths.root_dir).title()}"
             )
@@ -61,7 +85,7 @@ class TasksFileMerger(VSCodeFileMerger):
             # Create a compound task that depends on all required tasks
             master_task = {
                 "label": master_task_name,
-                "dependsOn": required_tasks,
+                "dependsOn": all_required_tasks,
                 "dependsOrder": "parallel",  # Run all required tasks in parallel
                 "problemMatcher": [],
             }
