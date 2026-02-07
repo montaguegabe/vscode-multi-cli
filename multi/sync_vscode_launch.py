@@ -45,14 +45,22 @@ class LaunchFileMerger(VSCodeFileMerger):
     def _get_source_json_path(self, repo_path: Path) -> Path:
         return self.paths.get_vscode_config_dir(repo_path) / "launch.json"
 
-    def _get_repo_defaults(self, repo: Repository) -> Dict[str, Any]:
-        return {
-            "configurations": {
-                "apply_to_list_items": {
-                    "cwd": prefix_repo_name_to_path("${workspaceFolder}", repo.name)
-                }
-            }
-        }
+    def _merge_repo_json(
+        self,
+        merged_json: Dict[str, Any],
+        repo_json: Dict[str, Any],
+        repo: Repository,
+    ) -> Dict[str, Any]:
+        # Add cwd to configurations that are not "attach" requests
+        if "configurations" in repo_json:
+            for config in repo_json["configurations"]:
+                if isinstance(config, dict) and config.get("request") != "attach":
+                    if "cwd" not in config:
+                        config["cwd"] = prefix_repo_name_to_path(
+                            "${workspaceFolder}", repo.name
+                        )
+
+        return super()._merge_repo_json(merged_json, repo_json, repo)
 
     def _post_process_json(self, merged_json: Dict[str, Any]) -> Dict[str, Any]:
         required_configs = get_required_launch_configurations(merged_json)

@@ -4,6 +4,7 @@ from pathlib import Path
 import click
 
 from multi.cli_helpers import common_command_wrapper
+from multi.sync_vscode_devcontainer import sync_devcontainer, sync_devcontainer_cmd
 from multi.sync_vscode_extensions import (
     merge_extensions_cmd,
     merge_extensions_json,
@@ -30,6 +31,9 @@ def merge_vscode_configs(root_dir: Path):
     # Merge extensions.json
     merge_extensions_json(root_dir=root_dir)
 
+    # Sync .devcontainer folder
+    sync_devcontainer(root_dir=root_dir)
+
     logger.info("Done merging .vscode configuration files!")
 
 
@@ -49,3 +53,4 @@ vscode_cmd.add_command(common_command_wrapper(merge_launch_cmd))
 vscode_cmd.add_command(common_command_wrapper(merge_settings_cmd))
 vscode_cmd.add_command(common_command_wrapper(merge_tasks_cmd))
 vscode_cmd.add_command(common_command_wrapper(merge_extensions_cmd))
+vscode_cmd.add_command(common_command_wrapper(sync_devcontainer_cmd))

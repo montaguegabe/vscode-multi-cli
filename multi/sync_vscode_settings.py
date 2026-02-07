@@ -32,6 +32,7 @@ class SettingsFileMerger(VSCodeFileMerger):
         """
         Merge the repo's settings.shared.json (if present) into repo_json before merging into merged_json.
         If a merge occurs, write the updated repo_json back to the repo's settings.json file.
+        Also applies settingsOverrides from the repo's multi.json config if present.
         """
         shared_settings_path = (
             self.paths.get_vscode_config_dir(repo.path) / "settings.shared.json"
@@ -43,7 +44,9 @@ class SettingsFileMerger(VSCodeFileMerger):
         if shared_settings_path.exists():
             shared_settings = soft_read_json_file(shared_settings_path)
             if shared_settings:
-                repo_json = deep_merge(shared_settings, repo_json, repo.name)
+                # Don't pass repo.name here - path prefixing should only happen
+                # when merging up to the root level, not within the repo
+                repo_json = deep_merge(shared_settings, repo_json)
                 merged_with_shared = True
             else:
                 logger.debug(
@@ -53,6 +56,15 @@ class SettingsFileMerger(VSCodeFileMerger):
             from multi.utils import write_json_file
 
             write_json_file(repo_settings_path, repo_json)
+
+        # Apply settingsOverrides from the repo's multi.json config if present
+        vscode_config = getattr(repo, "vscode", None)
+        if isinstance(vscode_config, dict):
+            settings_overrides = vscode_config.get("settingsOverrides")
+            if settings_overrides:
+                logger.debug(f"Applying settingsOverrides for {repo.name}")
+                repo_json = deep_merge(repo_json, settings_overrides)
+
         return super()._merge_repo_json(merged_json, repo_json, repo)
 
     def _post_process_json(self, merged_json: Dict[str, Any]) -> Dict[str, Any]:

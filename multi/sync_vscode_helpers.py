@@ -23,23 +23,55 @@ def prefix_repo_name_to_path(path: str, repo_name: str) -> str:
     return path.replace("${workspaceFolder}", f"${{workspaceFolder}}/{repo_name}")
 
 
-def prefix_repo_name_to_path_recursive(value: Any, repo_name: str) -> Any:
+def resolve_relative_path(path: str, repo_name: str) -> str:
+    """
+    Resolve relative paths that start with ../ by inserting the repo name.
+
+    This is useful when a file (like devcontainer.json) is copied from a sub-repo
+    to the root, and relative paths need to be adjusted to point to the correct
+    location.
+
+    For example, '../docker-compose.yml' in a sub-repo's .devcontainer becomes
+    '../repo_name/docker-compose.yml' when the .devcontainer is copied to the
+    workspace root.
+    """
+    if path.startswith("../"):
+        # Replace ../ with ../repo_name/
+        return "../" + repo_name + "/" + path[3:]
+    return path
+
+
+def prefix_repo_name_to_path_recursive(
+    value: Any,
+    repo_name: str,
+    resolve_relative_paths: bool = False,
+) -> Any:
     """
     Recursively adjust workspace folder paths in values.
 
     Args:
         value: The value to process
         repo_name: Name of the repository to add to workspace folder paths
+        resolve_relative_paths: If True, also resolve paths starting with ../
+            by prefixing with repo_name. Default is False.
     """
-    if isinstance(value, str) and "${workspaceFolder}" in value:
-        return prefix_repo_name_to_path(value, repo_name)
+    if isinstance(value, str):
+        result = value
+        if "${workspaceFolder}" in result:
+            result = prefix_repo_name_to_path(result, repo_name)
+        if resolve_relative_paths and result.startswith("../"):
+            result = resolve_relative_path(result, repo_name)
+        return result
     elif isinstance(value, dict):
         return {
-            k: prefix_repo_name_to_path_recursive(v, repo_name)
+            k: prefix_repo_name_to_path_recursive(v, repo_name, resolve_relative_paths)
             for k, v in value.items()
         }
     elif isinstance(value, list):
-        return [prefix_repo_name_to_path_recursive(item, repo_name) for item in value]
+        return [
+            prefix_repo_name_to_path_recursive(item, repo_name, resolve_relative_paths)
+            for item in value
+        ]
     return value
 
 
