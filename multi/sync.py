@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 
 import click
@@ -12,7 +13,8 @@ from multi.ignore_files import (
     update_ignore_with_repos,
 )
 from multi.paths import Paths
-from multi.repos import load_repos
+from multi.registry import lookup_repo, register_repo
+from multi.repos import Repository, load_repos
 from multi.sync_ruff import sync_all_ruff_configs, sync_ruff_cmd
 from multi.sync_rules import sync_all_rules, sync_rules_cmd
 from multi.sync_vscode import merge_vscode_configs, vscode_cmd
@@ -20,8 +22,95 @@ from multi.sync_vscode import merge_vscode_configs, vscode_cmd
 logger = logging.getLogger(__name__)
 
 
+def _is_path_inside(child: Path, parent: Path) -> bool:
+    """Check if child path is inside parent path."""
+    try:
+        child.resolve().relative_to(parent.resolve())
+        return True
+    except ValueError:
+        return False
+
+
+def _try_symlink_repo(
+    repo_config: Repository,
+    paths: Paths,
+    current_branch: str | None,
+) -> bool:
+    """Attempt to create a symlink for a repository.
+
+    Returns:
+        True if symlink was successfully created, False otherwise.
+    """
+    # Check if symlinks are enabled globally and for this repo
+    global_symlinks = paths.settings.get("allowSymlinks", True)
+    if not global_symlinks or not repo_config.allow_symlink:
+        return False
+
+    # Look up the repo in the registry
+    existing_path = lookup_repo(repo_config.url)
+    if not existing_path:
+        return False
+
+    # Avoid recursive symlinks - don't symlink if existing path is inside current workspace
+    if _is_path_inside(existing_path, paths.root_dir):
+        logger.debug(
+            f"Existing repo at {existing_path} is inside current workspace, will clone instead"
+        )
+        return False
+
+    # Try to create the symlink
+    try:
+        os.symlink(existing_path, repo_config.path)
+        logger.info(f"🔗 Symlinked {repo_config.name} -> {existing_path}")
+
+        # Checkout the correct branch if needed
+        if current_branch:
+            try:
+                symlinked_repo = git.Repo(repo_config.path)
+                symlinked_repo.git.checkout(current_branch)
+                logger.debug(f"Checked out branch {current_branch} in symlinked repo")
+            except GitCommandError:
+                logger.warning(
+                    f"Branch {current_branch} not found in {repo_config.name}, staying on current branch."
+                )
+
+        return True
+    except OSError as e:
+        logger.warning(f"Failed to create symlink for {repo_config.name}: {e}")
+        return False
+
+
+def _clone_repo(
+    repo_config: Repository,
+    current_branch: str | None,
+) -> None:
+    """Clone a repository and checkout the appropriate branch."""
+    logger.debug(f"Cloning {repo_config.name}...")
+
+    # First clone the default branch
+    cloned_repo = git.Repo.clone_from(repo_config.url, repo_config.path)
+
+    # Then checkout the same branch as parent repo if it exists
+    if current_branch:
+        try:
+            cloned_repo.git.checkout(current_branch)
+            logger.info(
+                f"✅ Cloned {repo_config.name} and checked out branch {current_branch}"
+            )
+        except GitCommandError:
+            logger.warning(
+                f"Branch {current_branch} not found in {repo_config.name}, staying on default branch."
+            )
+
+
 def clone_repos(paths: Paths, ensure_on_same_branch: bool = True):
-    """Clone all repositories from the repos.json file."""
+    """Clone all repositories from the repos.json file.
+
+    Supports symlinking to existing repos from the global registry when:
+    - Global allowSymlinks setting is True (default)
+    - Per-repo allowSymlink setting is True (default)
+    - An existing clone is found in the registry
+    """
     repos = load_repos(paths=paths)
 
     # Get the current branch of the parent repo
@@ -33,25 +122,22 @@ def clone_repos(paths: Paths, ensure_on_same_branch: bool = True):
 
     for repo_config in repos:
         if repo_config.path.exists():
-            logger.debug(f"{repo_config.name} already exists, skipping...")
+            # Path already exists - register it and skip
+            logger.debug(
+                f"{repo_config.name} already exists, registering and skipping..."
+            )
+            register_repo(repo_config.url, repo_config.path)
             continue
 
-        logger.debug(f"Cloning {repo_config.name}...")
+        # Try to symlink first
+        if _try_symlink_repo(repo_config, paths, current_branch):
+            continue
 
-        # First clone the default branch
-        cloned_repo = git.Repo.clone_from(repo_config.url, repo_config.path)
+        # Fall back to cloning
+        _clone_repo(repo_config, current_branch)
 
-        # Then checkout the same branch as parent repo if it exists
-        if current_branch:
-            try:
-                cloned_repo.git.checkout(current_branch)
-                logger.info(
-                    f"✅ Cloned {repo_config.name} and checked out branch {current_branch}"
-                )
-            except GitCommandError:
-                logger.warning(
-                    f"Branch {current_branch} not found in {repo_config.name}, staying on default branch."
-                )
+        # Register the newly cloned repo
+        register_repo(repo_config.url, repo_config.path)
 
     update_gitignore_with_repos(paths=paths)
     update_ignore_with_repos(paths=paths)

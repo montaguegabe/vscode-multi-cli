@@ -35,6 +35,30 @@ my-workspace/
 
 ## Options
 
+### allowSymlinks
+
+| Type | Default | Description |
+|------|---------|-------------|
+| boolean | `true` | Enable symlinking to existing repository clones instead of re-cloning |
+
+When enabled, Multi maintains a global registry at `~/.multi/repos.json` that tracks where repositories have been cloned. If a repository already exists in another workspace, Multi will create a symlink to it instead of cloning fresh.
+
+This is useful when you work with the same repositories across multiple workspaces, as it:
+- Saves disk space by avoiding duplicate clones
+- Keeps repository state synchronized across workspaces
+- Speeds up `multi sync` by avoiding network operations
+
+#### Example: Disable symlinks globally
+
+```json
+{
+  "allowSymlinks": false,
+  "repos": [...]
+}
+```
+
+---
+
 ### repos
 
 An array of repository configurations. Each repository object supports:
@@ -44,6 +68,7 @@ An array of repository configurations. Each repository object supports:
 | `url` | string | Yes | - | Git repository URL (HTTPS or SSH) |
 | `name` | string | No | Last segment of URL | Custom directory name for the cloned repo |
 | `skipVSCode` | boolean | No | `false` | Skip this repo when merging VS Code configurations |
+| `allowSymlink` | boolean | No | `true` | Allow symlinking to an existing clone of this repo |
 
 #### Example: Basic repository list
 
@@ -88,6 +113,22 @@ An array of repository configurations. Each repository object supports:
 }
 ```
 
+#### Example: Disable symlink for a specific repo
+
+Use this when a repository needs its own isolated clone (e.g., for testing different branches independently):
+
+```json
+{
+  "repos": [
+    { "url": "https://github.com/org/shared-lib" },
+    {
+      "url": "https://github.com/org/needs-own-copy",
+      "allowSymlink": false
+    }
+  ]
+}
+```
+
 ---
 
 ### vscode
@@ -119,6 +160,7 @@ This is useful when sub-repos have user-specific settings that shouldn't be merg
 
 ```json
 {
+  "allowSymlinks": true,
   "repos": [
     {
       "url": "https://github.com/myorg/api-server",
@@ -135,7 +177,8 @@ This is useful when sub-repos have user-specific settings that shouldn't be merg
     },
     {
       "url": "git@github.com:myorg/shared-utils.git",
-      "name": "shared"
+      "name": "shared",
+      "allowSymlink": false
     }
   ],
   "vscode": {
@@ -153,3 +196,4 @@ This is useful when sub-repos have user-specific settings that shouldn't be merg
 - You can manually edit this file to add or remove repositories
 - After editing, run `multi sync` to apply changes
 - Repository URLs can be HTTPS or SSH format
+- The global registry is stored at `~/.multi/repos.json` and tracks all known repository locations

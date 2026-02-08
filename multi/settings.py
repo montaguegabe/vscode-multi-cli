@@ -8,6 +8,7 @@ from multi.utils import apply_defaults_to_structure
 logger = logging.getLogger(__name__)
 
 default_settings = {
+    "allowSymlinks": True,
     "vscode": {"skipSettings": ["workbench.colorCustomizations"]},
     "repos": [],
 }

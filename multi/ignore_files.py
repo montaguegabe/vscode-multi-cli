@@ -71,18 +71,34 @@ class IgnoreFile:
 
 
 def update_gitignore_with_repos(paths: Paths):
-    """Ensure all repos are in gitignore entries."""
+    """Ensure all repos are in gitignore entries.
+
+    Adds both slash (directory) and non-slash (file/symlink) patterns
+    for each repo to handle both cloned directories and symlinks.
+    """
     repos = load_repos(paths=paths)
-    repo_entries = [f"{repo.name}/" for repo in repos]
+    # Include both patterns: 'repo/' for directories and 'repo' for symlinks
+    repo_entries = []
+    for repo in repos:
+        repo_entries.append(f"{repo.name}/")
+        repo_entries.append(repo.name)
     gitignore = IgnoreFile(paths.gitignore_path)
     gitignore.add_lines_if_missing(repo_entries, "# Ignore repository directories")
     logger.debug("Updated .gitignore with new repositories")
 
 
 def update_ignore_with_repos(paths: Paths):
-    """Update .ignore to allow searching in gitignored directories."""
+    """Update .ignore to allow searching in gitignored directories.
+
+    Adds both slash (directory) and non-slash (file/symlink) patterns
+    for each repo to handle both cloned directories and symlinks.
+    """
     repos = load_repos(paths=paths)
-    repo_entries = [f"!{repo.name}/" for repo in repos]
+    # Include both patterns: '!repo/' for directories and '!repo' for symlinks
+    repo_entries = []
+    for repo in repos:
+        repo_entries.append(f"!{repo.name}/")
+        repo_entries.append(f"!{repo.name}")
     vscode_ignore = IgnoreFile(paths.vscode_ignore_path)
     vscode_ignore.add_lines_if_missing(
         repo_entries,
