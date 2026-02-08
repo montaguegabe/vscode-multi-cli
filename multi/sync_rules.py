@@ -10,6 +10,44 @@ from multi.rules import Rule
 logger = logging.getLogger(__name__)
 
 
+def generate_repo_descriptions_rule(root_dir: Path) -> None:
+    """Generate the repo-directories.mdc cursor rule from multi.json descriptions."""
+    paths = Paths(root_dir)
+    repos = load_repos(paths=paths)
+
+    # Collect repos that have descriptions
+    repos_with_descriptions = [
+        (repo.name, repo.description)
+        for repo in repos
+        if hasattr(repo, "description") and repo.description
+    ]
+
+    if not repos_with_descriptions:
+        logger.debug("No repository descriptions found in multi.json")
+        return
+
+    # Create the rule body with repo descriptions
+    body = "This workspace contains multiple repositories:\n\n"
+    for repo_name, description in repos_with_descriptions:
+        body += f"- `{repo_name}`: {description}\n"
+
+    rule = Rule(
+        description="Repository structure documentation",
+        globs=None,
+        alwaysApply=False,
+        body=body,
+    )
+
+    # Ensure .cursor/rules directory exists
+    rules_dir = root_dir / ".cursor" / "rules"
+    rules_dir.mkdir(parents=True, exist_ok=True)
+
+    # Write the rule file
+    rule_path = rules_dir / "repo-directories.mdc"
+    rule_path.write_text(rule.render())
+    logger.info("✅ Generated repo-directories.mdc from multi.json descriptions")
+
+
 def convert_cursor_rules_to_claude_md(cursor_dir: Path) -> None:
     """Convert cursor rules in a directory to a CLAUDE.md file."""
     rules_dir = cursor_dir / "rules"
@@ -75,14 +113,21 @@ def convert_all_cursor_rules(root_dir: Path) -> None:
     logger.info("✅ Cursor rules conversion complete")
 
 
-@click.command(name="claude")
-def convert_claude_cmd():
-    """Convert cursor rules to CLAUDE.md files across all repositories.
+def sync_all_rules(root_dir: Path) -> None:
+    """Generate repo descriptions rule and convert all cursor rules to CLAUDE.md."""
+    generate_repo_descriptions_rule(root_dir)
+    convert_all_cursor_rules(root_dir)
+
+
+@click.command(name="rules")
+def sync_rules_cmd():
+    """Sync cursor rules and generate CLAUDE.md files.
 
     This command will:
-    1. Scan root and all repositories for .cursor/rules/*.mdc files
-    2. Parse each cursor rule using the rules parser
-    3. Generate CLAUDE.md files alongside each .cursor directory
+    1. Generate repo-directories.mdc from multi.json descriptions
+    2. Scan root and all repositories for .cursor/rules/*.mdc files
+    3. Parse each cursor rule using the rules parser
+    4. Generate CLAUDE.md files alongside each .cursor directory
     """
-    logger.info("Converting cursor rules to CLAUDE.md files...")
-    convert_all_cursor_rules(Path.cwd())
+    logger.info("Syncing rules...")
+    sync_all_rules(Path.cwd())

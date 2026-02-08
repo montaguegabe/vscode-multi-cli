@@ -47,6 +47,26 @@ Merges `launch.json` from all repositories into the root `.vscode/launch.json`.
 - Launch configurations are prefixed with the repository name to avoid conflicts
 - A configuration named "Debug Server" in `api-repo` becomes "api-repo: Debug Server"
 - All configurations from all repos are available in the unified launch menu
+- Creates a master compound that includes all required configurations/compounds
+
+**Marking launch configurations as required:**
+
+You can mark launch configurations or compounds as required in two ways:
+
+1. **Per-repo configuration in multi.json** (recommended):
+   ```json
+   {
+     "repos": [
+       {
+         "url": "https://github.com/org/backend",
+         "requiredCompounds": ["Django"],
+         "requiredLaunchConfigurations": ["Debug Server"]
+       }
+     ]
+   }
+   ```
+
+2. **In the launch definition**: Add `"required": true` to the configuration or compound in the sub-repo's `launch.json` (note: this may cause VS Code schema validation warnings)
 
 ---
 
@@ -61,8 +81,26 @@ Merges `tasks.json` from all repositories into the root `.vscode/tasks.json`.
 **Behavior:**
 
 - Tasks are prefixed with the repository name
-- Creates a master compound task that runs all tasks marked as "required" in parallel
+- Creates a master compound task that runs all tasks marked as required in parallel
 - Useful for running build tasks across all repos simultaneously
+
+**Marking tasks as required:**
+
+You can mark tasks as required in two ways:
+
+1. **Per-repo configuration in multi.json** (recommended): Add a `requiredTasks` array to the repo config listing task labels that should be required:
+   ```json
+   {
+     "repos": [
+       {
+         "url": "https://github.com/org/frontend",
+         "requiredTasks": ["React: Dev"]
+       }
+     ]
+   }
+   ```
+
+2. **In the task definition**: Add `"required": true` to the task in the sub-repo's `tasks.json` (note: this may cause VS Code schema validation warnings)
 
 ---
 
@@ -111,7 +149,9 @@ You can configure VS Code syncing behavior in `multi.json`:
   "repos": [
     {
       "url": "https://github.com/org/repo",
-      "skipVSCode": true
+      "skipVSCode": true,
+      "requiredTasks": ["Dev Server", "Watch"],
+      "requiredCompounds": ["Django"]
     }
   ]
 }
@@ -119,3 +159,6 @@ You can configure VS Code syncing behavior in `multi.json`:
 
 - `skipSettings` - Array of settings keys to exclude from merging
 - `skipVSCode` - Per-repo option to exclude a repo from VS Code config merging
+- `requiredTasks` - Per-repo array of task labels to include in the master compound task
+- `requiredCompounds` - Per-repo array of compound names to include in the master launch compound
+- `requiredLaunchConfigurations` - Per-repo array of launch configuration names to include in the master launch compound

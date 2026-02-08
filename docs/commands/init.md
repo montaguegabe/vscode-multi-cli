@@ -17,7 +17,7 @@ The `init` command sets up a new multi workspace in the current directory. It gu
 When you run `multi init`, you'll be prompted to:
 
 1. **Enter repository URLs** - Paste the Git URLs of repositories you want to include
-2. **Add descriptions (optional)** - Provide descriptions for each repository to generate Cursor rules
+2. **Add descriptions (optional)** - Provide descriptions for each repository (saved to `multi.json`)
 
 ### Example Session
 
@@ -49,14 +49,23 @@ The init command creates several files in your workspace:
 
 ### multi.json
 
-The main configuration file containing repository URLs and settings:
+The main configuration file containing repository URLs, descriptions, and settings:
 
 ```json
 {
   "repos": [
-    { "url": "https://github.com/org/api-server" },
-    { "url": "https://github.com/org/web-client" },
-    { "url": "https://github.com/org/common" }
+    {
+      "url": "https://github.com/org/api-server",
+      "description": "REST API backend built with FastAPI"
+    },
+    {
+      "url": "https://github.com/org/web-client",
+      "description": "React frontend application"
+    },
+    {
+      "url": "https://github.com/org/common",
+      "description": "Shared types and utilities"
+    }
   ]
 }
 ```
@@ -67,7 +76,7 @@ A basic README for your workspace (only created if one doesn't exist).
 
 ### .cursor/rules/repo-directories.mdc
 
-If you provided repository descriptions, a Cursor rule file is created to help AI assistants understand your project structure.
+If you provided repository descriptions, a Cursor rule file is generated during sync (from the descriptions in `multi.json`) to help AI assistants understand your project structure.
 
 ### .vscode/
 

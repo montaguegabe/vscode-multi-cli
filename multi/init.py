@@ -7,7 +7,6 @@ import click
 
 from multi.git_helpers import is_git_repo_root
 from multi.ignore_files import update_gitignore_with_vscode_files
-from multi.rules import Rule
 from multi.sync import sync
 
 init_readme_template = (files("multi") / "resources" / "init_readme.md").read_text()
@@ -52,44 +51,21 @@ def collect_repo_urls() -> tuple[list[str], list[str]]:
     return urls, descriptions
 
 
-def create_multi_json(urls: list[str]) -> None:
-    """Create the multi.json file with the provided repository URLs."""
-    config = {"repos": [{"url": url} for url in urls]}
+def create_multi_json(urls: list[str], descriptions: list[str]) -> None:
+    """Create the multi.json file with the provided repository URLs and descriptions."""
+    repos = []
+    for i, url in enumerate(urls):
+        repo_config = {"url": url}
+        if i < len(descriptions) and descriptions[i]:
+            repo_config["description"] = descriptions[i]
+        repos.append(repo_config)
+
+    config = {"repos": repos}
 
     multi_json_path = Path.cwd() / "multi.json"
     with multi_json_path.open("w") as f:
         json.dump(config, f, indent=2)
         f.write("\n")  # Add newline at end of file
-
-
-def create_repo_directories_rule(urls: list[str], descriptions: list[str]) -> None:
-    """Create a Cursor rule file describing the repositories."""
-    if not descriptions:
-        return
-
-    # Extract repo names from URLs for use in the rule body
-    repo_names = [url.split("/")[-1].replace(".git", "") for url in urls]
-
-    # Create the rule body with repo descriptions
-    body = "This workspace contains multiple repositories:\n\n"
-    for repo_name, description in zip(repo_names, descriptions, strict=False):
-        body += f"- `{repo_name}`: {description}\n"
-
-    # Create the rule
-    rule = Rule(
-        description="Repository structure documentation",
-        globs=None,  # No globs needed as this is documentation
-        alwaysApply=False,
-        body=body,
-    )
-
-    # Ensure .cursor directory exists
-    cursor_dir = Path.cwd() / ".cursor"
-    cursor_dir.mkdir(exist_ok=True)
-
-    # Write the rule file
-    rule_path = cursor_dir / "rules" / "repo-directories.mdc"
-    rule_path.write_text(rule.render())
 
 
 def init_git_repo() -> None:
@@ -155,26 +131,20 @@ def init_cmd():
 
     This command will:
     1. Collect repository URLs interactively (optionally with descriptions)
-    2. Create multi.json configuration file
+    2. Create multi.json configuration file (with descriptions if provided)
     3. Initialize git repository if needed
-    4. Create repository documentation as a Cursor rule (if descriptions provided)
-    5. Create README.md if it doesn't exist
-    6. Sync all repositories and configurations
-    7. Commit the changes
+    4. Create README.md if it doesn't exist
+    5. Sync all repositories and configurations (generates cursor rules from descriptions)
+    6. Commit the changes
     """
     logger.info("Initializing multi workspace...")
 
     # Collect repository URLs and descriptions
     urls, descriptions = collect_repo_urls()
 
-    # Create multi.json
-    create_multi_json(urls)
+    # Create multi.json (includes descriptions if provided)
+    create_multi_json(urls, descriptions)
     logger.info("Created multi.json configuration")
-
-    # Create repo directories rule if descriptions were provided
-    if descriptions:
-        create_repo_directories_rule(urls, descriptions)
-        logger.info("Created repository documentation rule")
 
     # Initialize git repo if needed
     init_git_repo()
@@ -185,7 +155,7 @@ def init_cmd():
     # Update gitignore to include vscode files
     update_gitignore_with_vscode_files()
 
-    # Run sync
+    # Run sync (this will generate repo-directories.mdc from descriptions in multi.json)
     sync(ensure_on_same_branch=False)
 
     # Commit changes

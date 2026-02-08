@@ -32,7 +32,7 @@ The extension monitors these files in your sub-repositories:
 | `.vscode/settings.json` | `multi sync vscode settings` |
 | `.vscode/tasks.json` | `multi sync vscode tasks` |
 | `.vscode/extensions.json` | `multi sync vscode extensions` |
-| `.cursor/rules/*` | `multi sync claude` |
+| `.cursor/rules/*` | `multi sync rules` |
 
 ## Usage
 

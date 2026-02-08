@@ -40,6 +40,21 @@ class TasksFileMerger(VSCodeFileMerger):
             "tasks": {"apply_to_list_items": {"options": {"cwd": "${workspaceFolder}"}}}
         }
 
+    def _merge_repo_json(
+        self,
+        merged_json: Dict[str, Any],
+        repo_json: Dict[str, Any],
+        repo: Repository,
+    ) -> Dict[str, Any]:
+        # Check if repo has requiredTasks config and mark matching tasks
+        required_task_labels = getattr(repo, "requiredTasks", None)
+        if required_task_labels and isinstance(required_task_labels, list):
+            for task in repo_json.get("tasks", []):
+                if isinstance(task, dict) and task.get("label") in required_task_labels:
+                    task["required"] = True
+
+        return super()._merge_repo_json(merged_json, repo_json, repo)
+
     def _post_process_json(self, merged_json: Dict[str, Any]) -> Dict[str, Any]:
         required_tasks = get_required_tasks(merged_json)
 

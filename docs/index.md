@@ -29,12 +29,12 @@ Merge `launch.json`, `tasks.json`, `settings.json`, and `extensions.json` from a
 multi sync vscode
 ```
 
-### CLAUDE.md Generation
+### Cursor Rules Sync
 
-Convert Cursor rule files (`.cursor/rules/*.mdc`) to `CLAUDE.md` files:
+Generate repo descriptions from `multi.json` and convert Cursor rules to `CLAUDE.md` files:
 
 ```bash
-multi sync claude
+multi sync rules
 ```
 
 ### Cross-Repo Git Commands

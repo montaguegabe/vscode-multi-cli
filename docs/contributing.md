@@ -78,30 +78,10 @@ ruff format .
 
 The project uses Python type hints. Ensure your code includes appropriate type annotations.
 
-## Project Structure
-
-```
-multi-cli/
-├── multi/              # Main package
-│   ├── cli.py          # CLI entry point and command registration
-│   ├── cli_helpers.py  # Command wrapper and utilities
-│   ├── init.py         # init command implementation
-│   ├── sync.py         # sync command implementation
-│   ├── sync_vscode*.py # VS Code config merging
-│   ├── sync_claude.py  # CLAUDE.md generation
-│   ├── git_*.py        # Git operations
-│   ├── repos.py        # Repository management
-│   ├── settings.py     # Configuration handling
-│   └── ...
-├── tests/              # Test files
-├── docs/               # Documentation
-├── pyproject.toml      # Project configuration
-└── zensical.toml       # Documentation config
-```
-
 ## Making Changes
 
 1. **Create a branch** for your changes:
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
@@ -111,6 +91,7 @@ multi-cli/
 3. **Add tests** for new functionality
 
 4. **Run the test suite** to ensure everything passes:
+
    ```bash
    pytest
    ruff check .

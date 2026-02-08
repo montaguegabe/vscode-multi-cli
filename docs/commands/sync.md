@@ -22,7 +22,7 @@ A full sync performs all of the following:
 
 1. Clones any missing repositories
 2. Merges VS Code configurations (settings, launch, tasks, extensions)
-3. Converts Cursor rules to `CLAUDE.md` files
+3. Syncs cursor rules (generates repo-directories.mdc from multi.json, converts to CLAUDE.md)
 4. Syncs ruff configurations
 
 ## Subcommands
@@ -30,7 +30,7 @@ A full sync performs all of the following:
 | Subcommand | Description |
 |------------|-------------|
 | [sync vscode](sync-vscode.md) | Merge VS Code configuration files |
-| [sync claude](sync-claude.md) | Convert Cursor rules to CLAUDE.md |
+| [sync rules](sync-rules.md) | Generate repo descriptions and convert Cursor rules to CLAUDE.md |
 | [sync ruff](sync-ruff.md) | Copy ruff configuration to root |
 
 ## Examples
@@ -45,8 +45,8 @@ multi sync vscode
 # Only sync VS Code settings
 multi sync vscode settings
 
-# Only update CLAUDE.md files
-multi sync claude
+# Only sync cursor rules and CLAUDE.md files
+multi sync rules
 ```
 
 ## Notes

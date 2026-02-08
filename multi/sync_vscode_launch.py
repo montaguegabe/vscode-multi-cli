@@ -60,6 +60,23 @@ class LaunchFileMerger(VSCodeFileMerger):
                             "${workspaceFolder}", repo.name
                         )
 
+        # Check if repo has requiredCompounds config and mark matching compounds
+        required_compounds = getattr(repo, "requiredCompounds", None)
+        if required_compounds and isinstance(required_compounds, list):
+            for compound in repo_json.get("compounds", []):
+                if (
+                    isinstance(compound, dict)
+                    and compound.get("name") in required_compounds
+                ):
+                    compound["required"] = True
+
+        # Check if repo has requiredLaunchConfigurations config and mark matching configs
+        required_configs = getattr(repo, "requiredLaunchConfigurations", None)
+        if required_configs and isinstance(required_configs, list):
+            for config in repo_json.get("configurations", []):
+                if isinstance(config, dict) and config.get("name") in required_configs:
+                    config["required"] = True
+
         return super()._merge_repo_json(merged_json, repo_json, repo)
 
     def _post_process_json(self, merged_json: Dict[str, Any]) -> Dict[str, Any]:

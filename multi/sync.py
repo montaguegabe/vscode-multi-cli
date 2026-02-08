@@ -13,8 +13,8 @@ from multi.ignore_files import (
 )
 from multi.paths import Paths
 from multi.repos import load_repos
-from multi.sync_claude import convert_all_cursor_rules, convert_claude_cmd
 from multi.sync_ruff import sync_all_ruff_configs, sync_ruff_cmd
+from multi.sync_rules import sync_all_rules, sync_rules_cmd
 from multi.sync_vscode import merge_vscode_configs, vscode_cmd
 
 logger = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ def sync(root_dir: Path, ensure_on_same_branch: bool = True):
     paths = Paths(root_dir)
     clone_repos(paths=paths, ensure_on_same_branch=ensure_on_same_branch)
     merge_vscode_configs(root_dir=root_dir)
-    convert_all_cursor_rules(root_dir=root_dir)
+    sync_all_rules(root_dir=root_dir)
     sync_all_ruff_configs(root_dir=root_dir)
 
     logger.info("✅ Sync complete")
@@ -85,5 +85,5 @@ def sync_cmd(ctx: click.Context):
 
 # Add subcommands
 sync_cmd.add_command(common_command_wrapper(vscode_cmd))
-sync_cmd.add_command(common_command_wrapper(convert_claude_cmd))
+sync_cmd.add_command(common_command_wrapper(sync_rules_cmd))
 sync_cmd.add_command(common_command_wrapper(sync_ruff_cmd))
