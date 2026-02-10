@@ -45,6 +45,10 @@ class Paths:
         return self.root_vscode_dir / "settings.shared.json"
 
     @property
+    def vscode_launch_shared_path(self) -> Path:
+        return self.root_vscode_dir / "launch.shared.json"
+
+    @property
     def vscode_extensions_path(self) -> Path:
         return self.root_vscode_dir / "extensions.json"
 

@@ -9,8 +9,10 @@ from multi.paths import Paths
 from multi.repos import Repository
 from multi.sync_vscode_helpers import (
     VSCodeFileMerger,
+    deep_merge,
     prefix_repo_name_to_path,
 )
+from multi.utils import soft_read_json_file
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +83,24 @@ class LaunchFileMerger(VSCodeFileMerger):
         return super()._merge_repo_json(merged_json, repo_json, repo, source_json_path)
 
     def _post_process_json(self, merged_json: Dict[str, Any]) -> Dict[str, Any]:
+        # Merge in launch.shared.json (for workspace-level compounds that span repos)
+        shared_launch_path = self.paths.vscode_launch_shared_path
+        if shared_launch_path.exists():
+            shared_launch = soft_read_json_file(shared_launch_path)
+            if shared_launch:
+                merged_json = deep_merge(merged_json, shared_launch)
+                logger.info(
+                    f"Merged shared launch config from {shared_launch_path.name}"
+                )
+            else:
+                logger.debug(
+                    f"Shared launch file at {shared_launch_path.name} is empty or invalid, skipping."
+                )
+        else:
+            logger.debug(
+                f"Shared launch file not found at {shared_launch_path.name}, skipping."
+            )
+
         required_configs = get_required_launch_configurations(merged_json)
 
         if required_configs:

@@ -156,6 +156,34 @@ VS Code-specific configuration options.
 
 This is useful when sub-repos have user-specific settings that shouldn't be merged into the root configuration.
 
+## Shared VS Code Files
+
+Multi supports "shared" VS Code configuration files that are merged into the final output. These files are useful for workspace-level settings that apply across all repos.
+
+### .vscode/settings.shared.json
+
+Settings that should be applied to all repos. Contents are merged into the final `settings.json`.
+
+### .vscode/launch.shared.json
+
+Launch configurations and compounds that span multiple repos. This is the recommended way to create debug compounds that launch services from different sub-repos together:
+
+```json
+{
+  "compounds": [
+    {
+      "name": "Full Stack",
+      "configurations": [
+        "api: Django Server",
+        "web: Next.js Dev"
+      ]
+    }
+  ]
+}
+```
+
+The shared launch file is merged after all sub-repo configurations are collected, so you can reference any configuration by its prefixed name (e.g., `"repo-name: Config Name"`).
+
 ## Full Example
 
 ```json

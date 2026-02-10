@@ -47,6 +47,7 @@ Merges `launch.json` from all repositories into the root `.vscode/launch.json`.
 - Launch configurations are prefixed with the repository name to avoid conflicts
 - A configuration named "Debug Server" in `api-repo` becomes "api-repo: Debug Server"
 - All configurations from all repos are available in the unified launch menu
+- Merges `.vscode/launch.shared.json` from the workspace root for workspace-level compounds that span repos
 - Creates a master compound that includes all required configurations/compounds
 
 **Marking launch configurations as required:**
@@ -67,6 +68,26 @@ You can mark launch configurations or compounds as required in two ways:
    ```
 
 2. **In the launch definition**: Add `"required": true` to the configuration or compound in the sub-repo's `launch.json` (note: this may cause VS Code schema validation warnings)
+
+**Using launch.shared.json for workspace-level compounds:**
+
+Create a `.vscode/launch.shared.json` file in your workspace root to define compounds that span multiple sub-repos. This is the recommended way to create debug configurations that launch services from different repos together:
+
+```json
+{
+  "compounds": [
+    {
+      "name": "Full Stack",
+      "configurations": [
+        "api: Django Server",
+        "web: Next.js Dev"
+      ]
+    }
+  ]
+}
+```
+
+The contents of `launch.shared.json` are merged into the final `launch.json` after all sub-repo configurations are collected, so you can reference any configuration from any repo by its prefixed name.
 
 ---
 
