@@ -102,6 +102,7 @@ Merges `tasks.json` from all repositories into the root `.vscode/tasks.json`.
 **Behavior:**
 
 - Tasks are prefixed with the repository name
+- Merges `.vscode/tasks.shared.json` from the workspace root for workspace-level tasks that span repos
 - Creates a master compound task that runs all tasks marked as required in parallel
 - Useful for running build tasks across all repos simultaneously
 
@@ -122,6 +123,25 @@ You can mark tasks as required in two ways:
    ```
 
 2. **In the task definition**: Add `"required": true` to the task in the sub-repo's `tasks.json` (note: this may cause VS Code schema validation warnings)
+
+**Using tasks.shared.json for workspace-level tasks:**
+
+Create a `.vscode/tasks.shared.json` file in your workspace root to define tasks that span multiple sub-repos or reference tasks from different repos:
+
+```json
+{
+  "tasks": [
+    {
+      "label": "Build All",
+      "dependsOn": ["api: Build", "web: Build"],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    }
+  ]
+}
+```
+
+The contents of `tasks.shared.json` are merged into the final `tasks.json` after all sub-repo tasks are collected, so you can reference any task from any repo by its prefixed label.
 
 ---
 

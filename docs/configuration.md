@@ -184,6 +184,25 @@ Launch configurations and compounds that span multiple repos. This is the recomm
 
 The shared launch file is merged after all sub-repo configurations are collected, so you can reference any configuration by its prefixed name (e.g., `"repo-name: Config Name"`).
 
+### .vscode/tasks.shared.json
+
+Tasks that span multiple repos or reference tasks from different sub-repos:
+
+```json
+{
+  "tasks": [
+    {
+      "label": "Build All",
+      "dependsOn": ["api: Build", "web: Build"],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    }
+  ]
+}
+```
+
+The shared tasks file is merged after all sub-repo tasks are collected, so you can reference any task by its prefixed label.
+
 ## Full Example
 
 ```json

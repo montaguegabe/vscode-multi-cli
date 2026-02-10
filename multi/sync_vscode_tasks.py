@@ -7,7 +7,8 @@ import click
 
 from multi.paths import Paths
 from multi.repos import Repository
-from multi.sync_vscode_helpers import VSCodeFileMerger
+from multi.sync_vscode_helpers import VSCodeFileMerger, deep_merge
+from multi.utils import soft_read_json_file
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,22 @@ class TasksFileMerger(VSCodeFileMerger):
         return super()._merge_repo_json(merged_json, repo_json, repo, source_json_path)
 
     def _post_process_json(self, merged_json: Dict[str, Any]) -> Dict[str, Any]:
+        # Merge in tasks.shared.json (for workspace-level tasks that span repos)
+        shared_tasks_path = self.paths.vscode_tasks_shared_path
+        if shared_tasks_path.exists():
+            shared_tasks = soft_read_json_file(shared_tasks_path)
+            if shared_tasks:
+                merged_json = deep_merge(merged_json, shared_tasks)
+                logger.info(f"Merged shared tasks config from {shared_tasks_path.name}")
+            else:
+                logger.debug(
+                    f"Shared tasks file at {shared_tasks_path.name} is empty or invalid, skipping."
+                )
+        else:
+            logger.debug(
+                f"Shared tasks file not found at {shared_tasks_path.name}, skipping."
+            )
+
         required_tasks = get_required_tasks(merged_json)
 
         if required_tasks:
