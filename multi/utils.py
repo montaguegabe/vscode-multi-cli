@@ -1,9 +1,11 @@
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
+
+SOURCE_KEY = "_multi_source"
 
 
 def write_json_file(
@@ -23,6 +25,71 @@ def write_json_file(
         if header_comment:
             f.write(f"// {header_comment}\n")
         json.dump(data, f, indent=4)
+
+
+def _serialize_value(value: Any, indent_level: int, indent_str: str = "    ") -> str:
+    """Serialize a JSON value to a string with proper indentation."""
+    current_indent = indent_str * indent_level
+    next_indent = indent_str * (indent_level + 1)
+
+    if value is None:
+        return "null"
+    elif isinstance(value, bool):
+        return "true" if value else "false"
+    elif isinstance(value, (int, float)):
+        return json.dumps(value)
+    elif isinstance(value, str):
+        return json.dumps(value)
+    elif isinstance(value, list):
+        if not value:
+            return "[]"
+        items = []
+        for item in value:
+            # Check for source comment
+            source_comment = ""
+            if isinstance(item, dict) and SOURCE_KEY in item:
+                source = item[SOURCE_KEY]
+                source_comment = f"{next_indent}// Imported from: {source}\n"
+                # Create a copy without the source key
+                item = {k: v for k, v in item.items() if k != SOURCE_KEY}
+            serialized = _serialize_value(item, indent_level + 1, indent_str)
+            items.append(f"{source_comment}{next_indent}{serialized}")
+        return "[\n" + ",\n".join(items) + f"\n{current_indent}]"
+    elif isinstance(value, dict):
+        if not value:
+            return "{}"
+        items = []
+        for k, v in value.items():
+            serialized_value = _serialize_value(v, indent_level + 1, indent_str)
+            items.append(f"{next_indent}{json.dumps(k)}: {serialized_value}")
+        return "{\n" + ",\n".join(items) + f"\n{current_indent}}}"
+    else:
+        return json.dumps(value)
+
+
+def write_jsonc_file(
+    path: Path,
+    data: Dict[str, Any],
+    header_comment: str | None = None,
+) -> None:
+    """Write a JSONC file with source comments above list items.
+
+    This function looks for items in lists that have a SOURCE_KEY (_multi_source)
+    key and outputs a comment above them indicating the source.
+
+    Args:
+        path: The path to write the JSONC file to.
+        data: The data to write as JSONC.
+        header_comment: Optional comment to add at the top of the file.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    content = _serialize_value(data, 0)
+
+    with path.open("w") as f:
+        if header_comment:
+            f.write(f"// {header_comment}\n")
+        f.write(content)
+        f.write("\n")
 
 
 def soft_read_json_file(path: Path) -> Dict[str, Any]:

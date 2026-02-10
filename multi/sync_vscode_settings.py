@@ -28,6 +28,7 @@ class SettingsFileMerger(VSCodeFileMerger):
         merged_json: Dict[str, Any],
         repo_json: Dict[str, Any],
         repo: Repository,
+        source_json_path: Path,
     ) -> Dict[str, Any]:
         """
         Merge the repo's settings.shared.json (if present) into repo_json before merging into merged_json.
@@ -65,7 +66,7 @@ class SettingsFileMerger(VSCodeFileMerger):
                 logger.debug(f"Applying settingsOverrides for {repo.name}")
                 repo_json = deep_merge(repo_json, settings_overrides)
 
-        return super()._merge_repo_json(merged_json, repo_json, repo)
+        return super()._merge_repo_json(merged_json, repo_json, repo, source_json_path)
 
     def _post_process_json(self, merged_json: Dict[str, Any]) -> Dict[str, Any]:
         # Merge in settings.shared.json

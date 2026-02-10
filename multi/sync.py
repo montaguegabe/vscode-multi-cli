@@ -58,6 +58,16 @@ def _try_symlink_repo(
         )
         return False
 
+    # Check for virtual environments - these contain absolute paths that break with symlinks
+    venv_path = existing_path / "venv"
+    dot_venv_path = existing_path / ".venv"
+    if venv_path.exists() or dot_venv_path.exists():
+        venv_name = "venv" if venv_path.exists() else ".venv"
+        logger.warning(
+            f"⚠️  Cannot symlink {repo_config.name}: source repo contains {venv_name}/, will clone instead"
+        )
+        return False
+
     # Try to create the symlink
     try:
         os.symlink(existing_path, repo_config.path)

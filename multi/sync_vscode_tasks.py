@@ -45,6 +45,7 @@ class TasksFileMerger(VSCodeFileMerger):
         merged_json: Dict[str, Any],
         repo_json: Dict[str, Any],
         repo: Repository,
+        source_json_path: Path,
     ) -> Dict[str, Any]:
         # Check if repo has requiredTasks config and mark matching tasks
         required_task_labels = getattr(repo, "requiredTasks", None)
@@ -53,7 +54,7 @@ class TasksFileMerger(VSCodeFileMerger):
                 if isinstance(task, dict) and task.get("label") in required_task_labels:
                     task["required"] = True
 
-        return super()._merge_repo_json(merged_json, repo_json, repo)
+        return super()._merge_repo_json(merged_json, repo_json, repo, source_json_path)
 
     def _post_process_json(self, merged_json: Dict[str, Any]) -> Dict[str, Any]:
         required_tasks = get_required_tasks(merged_json)

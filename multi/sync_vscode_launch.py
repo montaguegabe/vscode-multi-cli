@@ -50,6 +50,7 @@ class LaunchFileMerger(VSCodeFileMerger):
         merged_json: Dict[str, Any],
         repo_json: Dict[str, Any],
         repo: Repository,
+        source_json_path: Path,
     ) -> Dict[str, Any]:
         # Add cwd to configurations that are not "attach" requests
         if "configurations" in repo_json:
@@ -77,7 +78,7 @@ class LaunchFileMerger(VSCodeFileMerger):
                 if isinstance(config, dict) and config.get("name") in required_configs:
                     config["required"] = True
 
-        return super()._merge_repo_json(merged_json, repo_json, repo)
+        return super()._merge_repo_json(merged_json, repo_json, repo, source_json_path)
 
     def _post_process_json(self, merged_json: Dict[str, Any]) -> Dict[str, Any]:
         required_configs = get_required_launch_configurations(merged_json)
