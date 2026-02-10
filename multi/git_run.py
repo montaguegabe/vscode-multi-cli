@@ -56,4 +56,4 @@ def git_cmd(git_args: tuple[str, ...]) -> None:
     Example: multi git pull
              multi git checkout -b feature/new-branch
     """
-    run_git_in_all_repos(list(git_args))
+    run_git_in_all_repos(Paths(Path.cwd()), list(git_args))
