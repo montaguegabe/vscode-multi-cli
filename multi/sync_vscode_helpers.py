@@ -195,9 +195,8 @@ class VSCodeFileMerger(ABC):
             effective_repo_json = apply_defaults_to_structure(repo_json, defaults)
 
         # Add source tracking to list items
-        # Display path is relative to repo, e.g. "repo_name/.vscode/tasks.json"
-        relative_in_repo = source_json_path.relative_to(repo.path)
-        source_file_display = f"{repo.name}/{relative_in_repo}"
+        # Display path as full absolute path
+        source_file_display = str(source_json_path.resolve())
         effective_repo_json = self._add_source_tracking(
             effective_repo_json, repo, source_file_display
         )
