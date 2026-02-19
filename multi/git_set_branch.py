@@ -63,4 +63,10 @@ def set_branch_cmd(branch_name: str) -> None:
 
     BRANCH_NAME: Name of the branch to create and switch to
     """
+    paths = Paths(Path.cwd())
+    if paths.settings.is_monorepo():
+        raise click.UsageError(
+            "The 'multi set-branch' command is not available in monorepo mode. "
+            "Use git directly in the root workspace."
+        )
     set_branch_in_all_repos(root_dir=Path.cwd(), branch_name=branch_name)

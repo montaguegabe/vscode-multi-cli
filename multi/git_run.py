@@ -56,4 +56,10 @@ def git_cmd(git_args: tuple[str, ...]) -> None:
     Example: multi git pull
              multi git checkout -b feature/new-branch
     """
-    run_git_in_all_repos(Paths(Path.cwd()), list(git_args))
+    paths = Paths(Path.cwd())
+    if paths.settings.is_monorepo():
+        raise click.UsageError(
+            "The 'multi git' command is not available in monorepo mode. "
+            "Use git directly in the root workspace."
+        )
+    run_git_in_all_repos(paths, list(git_args))

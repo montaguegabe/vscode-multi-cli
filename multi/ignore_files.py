@@ -75,7 +75,13 @@ def update_gitignore_with_repos(paths: Paths):
 
     Adds both slash (directory) and non-slash (file/symlink) patterns
     for each repo to handle both cloned directories and symlinks.
+
+    Skipped in monorepo mode since directories are part of the repo.
     """
+    if paths.settings.is_monorepo():
+        logger.debug("Skipping .gitignore update in monorepo mode")
+        return
+
     repos = load_repos(paths=paths)
     # Include both patterns: 'repo/' for directories and 'repo' for symlinks
     repo_entries = []
@@ -92,7 +98,13 @@ def update_ignore_with_repos(paths: Paths):
 
     Adds both slash (directory) and non-slash (file/symlink) patterns
     for each repo to handle both cloned directories and symlinks.
+
+    Skipped in monorepo mode since directories are part of the repo.
     """
+    if paths.settings.is_monorepo():
+        logger.debug("Skipping .ignore update in monorepo mode")
+        return
+
     repos = load_repos(paths=paths)
     # Include both patterns: '!repo/' for directories and '!repo' for symlinks
     repo_entries = []
@@ -107,14 +119,15 @@ def update_ignore_with_repos(paths: Paths):
     logger.debug("Updated .ignore with new repositories")
 
 
-def update_gitignore_with_vscode_files(paths: Paths):
-    """Add VS Code generated configuration files to gitignore entries."""
-    vscode_entries = [
-        ".vscode/launch.json",
+def update_gitignore_with_generated_files(paths: Paths):
+    """Add generated files to gitignore entries."""
+    generated_entries = [
         ".vscode/settings.json",
         ".vscode/tasks.json",
+        ".vscode/launch.json",
         ".vscode/extensions.json",
+        "CLAUDE.md",
     ]
     gitignore = IgnoreFile(paths.gitignore_path)
-    gitignore.add_lines_if_missing(vscode_entries, "# Generated files")
-    logger.debug("Updated .gitignore with VS Code configuration files")
+    gitignore.add_lines_if_missing(generated_entries, "# Generated")
+    logger.debug("Updated .gitignore with generated files")

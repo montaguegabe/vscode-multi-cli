@@ -8,6 +8,7 @@ from multi.utils import apply_defaults_to_structure
 logger = logging.getLogger(__name__)
 
 default_settings = {
+    "monoRepo": False,
     "allowSymlinks": True,
     "vscode": {"skipSettings": ["workbench.colorCustomizations"]},
     "repos": [],
@@ -34,3 +35,7 @@ class Settings:
     def get(self, key: str, default: Any = None) -> Any:
         """Get a setting with a default value if it doesn't exist."""
         return self.dict.get(key, default)
+
+    def is_monorepo(self) -> bool:
+        """Check if this workspace is in monorepo mode."""
+        return self.get("monoRepo", False)

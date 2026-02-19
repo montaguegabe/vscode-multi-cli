@@ -59,14 +59,47 @@ This is useful when you work with the same repositories across multiple workspac
 
 ---
 
+### monoRepo
+
+| Type | Default | Description |
+|------|---------|-------------|
+| boolean | `false` | Enable monorepo mode for workspaces where sub-directories are not separate git repos |
+
+When enabled, Multi treats the workspace as a monorepo where:
+- The root workspace is the only git repository
+- Sub-directories listed in `repos` are regular directories (not separate git repos)
+- Git operations (cloning, branch switching) are skipped
+- VS Code config syncing and CLAUDE.md generation still work normally
+
+This is useful for:
+- Traditional monorepos with packages in subdirectories
+- Workspaces where you want Multi's VS Code merging without git management
+
+#### Example: Monorepo configuration
+
+```json
+{
+  "monoRepo": true,
+  "repos": [
+    { "name": "packages/api", "description": "Backend API" },
+    { "name": "packages/web", "description": "Frontend app" },
+    { "name": "packages/shared", "description": "Shared utilities" }
+  ]
+}
+```
+
+**Note:** In monorepo mode, `url` is not required - only `name` is needed. The `multi git` and `multi set-branch` commands are disabled; use git directly in the root workspace.
+
+---
+
 ### repos
 
 An array of repository configurations. Each repository object supports:
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `url` | string | Yes | - | Git repository URL (HTTPS or SSH) |
-| `name` | string | No | Last segment of URL | Custom directory name for the cloned repo |
+| `url` | string | Yes* | - | Git repository URL (HTTPS or SSH). *Not required in monorepo mode. |
+| `name` | string | No** | Last segment of URL | Custom directory name for the cloned repo. **Required in monorepo mode if no URL. |
 | `skipVSCode` | boolean | No | `false` | Skip this repo when merging VS Code configurations |
 | `allowSymlink` | boolean | No | `true` | Allow symlinking to an existing clone of this repo |
 

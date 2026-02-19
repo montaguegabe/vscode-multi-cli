@@ -6,7 +6,6 @@ from pathlib import Path
 import click
 
 from multi.git_helpers import is_git_repo_root
-from multi.ignore_files import update_gitignore_with_vscode_files
 from multi.sync import sync
 
 init_readme_template = (files("multi") / "resources" / "init_readme.md").read_text()
@@ -151,9 +150,6 @@ def init_cmd():
 
     # Create README.md if it doesn't exist
     create_readme(urls)
-
-    # Update gitignore to include vscode files
-    update_gitignore_with_vscode_files()
 
     # Run sync (this will generate repo-directories.mdc from descriptions in multi.json)
     sync(ensure_on_same_branch=False)

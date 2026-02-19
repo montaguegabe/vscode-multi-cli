@@ -8,21 +8,23 @@ class Repository:
     """Represents a repository in the workspace.
 
     Attributes:
-        url: The repository URL.
-        name: Repository name derived from the URL.
+        url: The repository URL (optional in monorepo mode).
+        name: Repository name derived from the URL, or provided directly.
         path: Local filesystem path where the repository is/will be cloned.
         skip: Whether to skip this repository for certain operations (default: False).
               Other attributes may be dynamically added from the config.
     """
 
-    def __init__(self, url: str, paths: Paths, **kwargs: Any):
+    def __init__(self, paths: Paths, url: str | None = None, **kwargs: Any):
         """Initialize Repository, deriving name and path, and setting other attributes from kwargs."""
         self.url = url
-        # Derive name and path from URL
+        # Derive name from URL or use provided name
         if "name" in kwargs:
             self.name = kwargs.pop("name")
-        else:
+        elif self.url:
             self.name = self.url.split("/")[-1]
+        else:
+            raise ValueError("Repository must have either 'url' or 'name'")
         self.paths = paths
         self.path = self.paths.root_dir / self.name
 
@@ -37,14 +39,16 @@ class Repository:
             setattr(self, key, value)
 
     def __hash__(self) -> int:
-        """Make Repository hashable based on its URL."""
-        return hash(self.url)
+        """Make Repository hashable based on its URL or name."""
+        return hash(self.url or self.name)
 
     def __eq__(self, other: object) -> bool:
-        """Make Repository equatable based on its URL."""
+        """Make Repository equatable based on its URL or name."""
         if not isinstance(other, Repository):
             return NotImplemented
-        return self.url == other.url
+        if self.url and other.url:
+            return self.url == other.url
+        return self.name == other.name
 
     @property
     def is_python(self) -> bool:
@@ -75,15 +79,22 @@ def load_repos(paths: Paths) -> List[Repository]:
     }
     """
     repo_configs_list = paths.settings.get("repos", [])
+    is_monorepo = paths.settings.is_monorepo()
 
     result = []
     for config_dict in repo_configs_list:
         if not isinstance(config_dict, dict):
             raise ValueError("Each repository config in multi.json must be an object.")
 
-        if "url" not in config_dict:
+        # In monorepo mode, url is optional; name is required
+        if "url" not in config_dict and "name" not in config_dict:
             raise ValueError(
-                "Repository config in multi.json must contain a 'url' field."
+                "Repository config in multi.json must contain 'url' or 'name' field."
+            )
+
+        if not is_monorepo and "url" not in config_dict:
+            raise ValueError(
+                "Repository config must contain 'url' field (or enable monoRepo mode)."
             )
 
         # Directly pass the config_dict; __init__ will handle parsing.
