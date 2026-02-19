@@ -42,7 +42,7 @@ def run_git_in_all_repos(paths: Paths, git_args: List[str]) -> None:
     run_git_command(paths.root_dir, git_args)
 
     # Then run in all sub-repos
-    for repo in load_repos(paths.settings):
+    for repo in load_repos(paths):
         run_git_command(repo.path, git_args)
 
 
