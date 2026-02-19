@@ -23,7 +23,7 @@ def run_git_command(repo_path: Path, git_args: List[str]) -> None:
         outputs = subprocess.run(
             cmd,
             cwd=repo_path,
-            check=check,
+            check=True,
             capture_output=True,
             text=True,
         ).stdout.strip()
@@ -36,7 +36,7 @@ def run_git_command(repo_path: Path, git_args: List[str]) -> None:
 def run_git_in_all_repos(paths: Paths, git_args: List[str]) -> None:
     """Run git command across all repositories."""
     # First check if all repos are on the same branch
-    check_all_on_same_branch(raise_error=True)
+    check_all_on_same_branch(paths=paths, raise_error=True)
 
     # Run in root repo first
     run_git_command(paths.root_dir, git_args)
