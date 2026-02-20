@@ -127,6 +127,7 @@ def update_gitignore_with_generated_files(paths: Paths):
         ".vscode/launch.json",
         ".vscode/extensions.json",
         "CLAUDE.md",
+        "AGENTS.md",
     ]
     gitignore = IgnoreFile(paths.gitignore_path)
     gitignore.add_lines_if_missing(generated_entries, "# Generated")

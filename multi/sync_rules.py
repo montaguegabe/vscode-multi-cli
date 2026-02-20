@@ -70,10 +70,14 @@ def convert_cursor_rules_to_claude_md(cursor_dir: Path) -> None:
 
     if not rules:
         logger.debug(f"No valid cursor rules found in {rules_dir}")
-        # Remove CLAUDE.md if it exists but no rules found
+        # Remove CLAUDE.md and AGENTS.md if they exist but no rules found
         if claude_md_path.exists():
             claude_md_path.unlink()
             logger.debug(f"Removed empty CLAUDE.md from {claude_md_path.parent}")
+        agents_md_path = cursor_dir.parent / "AGENTS.md"
+        if agents_md_path.exists():
+            agents_md_path.unlink()
+            logger.debug(f"Removed empty AGENTS.md from {agents_md_path.parent}")
         return
 
     # Generate content by concatenating rule bodies with line breaks
@@ -85,8 +89,12 @@ def convert_cursor_rules_to_claude_md(cursor_dir: Path) -> None:
 
     combined_content = "".join(content_parts)
     claude_md_path.write_text(combined_content, encoding="utf-8")
-
     logger.info(f"✅ Generated CLAUDE.md with {len(rules)} rules at {claude_md_path}")
+
+    # Also generate AGENTS.md with the same content
+    agents_md_path = cursor_dir.parent / "AGENTS.md"
+    agents_md_path.write_text(combined_content, encoding="utf-8")
+    logger.info(f"✅ Generated AGENTS.md with {len(rules)} rules at {agents_md_path}")
 
 
 def convert_all_cursor_rules(root_dir: Path) -> None:
@@ -121,13 +129,13 @@ def sync_all_rules(root_dir: Path) -> None:
 
 @click.command(name="rules")
 def sync_rules_cmd():
-    """Sync cursor rules and generate CLAUDE.md files.
+    """Sync cursor rules and generate CLAUDE.md/AGENTS.md files.
 
     This command will:
     1. Generate repo-directories.mdc from multi.json descriptions
     2. Scan root and all repositories for .cursor/rules/*.mdc files
     3. Parse each cursor rule using the rules parser
-    4. Generate CLAUDE.md files alongside each .cursor directory
+    4. Generate CLAUDE.md and AGENTS.md files alongside each .cursor directory
     """
     logger.info("Syncing rules...")
     sync_all_rules(Path.cwd())
