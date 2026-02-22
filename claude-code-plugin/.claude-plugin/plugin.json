@@ -1,0 +1,8 @@
+{
+  "name": "multi-workspace",
+  "version": "0.1.0",
+  "description": "Teaches Claude how to work with Multi-managed workspaces containing multiple Git repos",
+  "author": {
+    "name": "Gabriel Montague"
+  }
+}

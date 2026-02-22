@@ -1,34 +1,21 @@
-# Claude Code Skill
+# Claude Code Plugin
 
-Multi provides a [Claude Code skill](https://docs.anthropic.com/en/docs/claude-code/skills) that helps Claude understand multi-managed workspaces. When Claude detects a `multi.json` file or you ask about multi-repo workflows, it automatically loads context about Multi's commands, configuration, and conventions.
+Multi provides a [Claude Code plugin](https://docs.anthropic.com/en/docs/claude-code/plugins) that helps Claude understand multi-managed workspaces. When Claude detects a `multi.json` file or you ask about multi-repo workflows, it automatically loads context about Multi's commands, configuration, and conventions.
 
 ## Installation
 
-Copy the skill files to your Claude Code skills directory:
-
-```bash
-mkdir -p ~/.claude/skills/multi/references
-```
-
-Then copy the following files from the Multi repository's `claude-code-skill/` directory:
+In Claude Code, add the Multi CLI repo as a plugin marketplace and install:
 
 ```
-~/.claude/skills/multi/
-├── SKILL.md                      # Main skill file
-└── references/
-    ├── configuration.md          # multi.json schema reference
-    └── vscode-sync.md            # VS Code merging details
+/plugin marketplace add gabemontague/multi-cli
+/plugin install multi-workspace@multi-cli
 ```
 
-Or install with a single command:
-
-```bash
-cp -r "$(pip show multi-workspace | grep Location | cut -d' ' -f2)/multi/claude-code-skill/"* ~/.claude/skills/multi/
-```
+To install for a specific project only, use `--scope local` when installing.
 
 ## What It Provides
 
-The skill gives Claude knowledge of:
+The plugin gives Claude knowledge of:
 
 - **Workspace detection** - Recognizes `multi.json` and understands workspace structure
 - **Command usage** - Knows when and how to use `multi sync`, `multi set-branch`, `multi git`, etc.
