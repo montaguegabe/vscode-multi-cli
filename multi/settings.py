@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 default_settings = {
     "monoRepo": False,
-    "allowSymlinks": True,
+    "allowSymlinks": False,
     "vscode": {"skipSettings": ["workbench.colorCustomizations"]},
     "repos": [],
 }

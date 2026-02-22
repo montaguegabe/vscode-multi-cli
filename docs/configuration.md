@@ -39,7 +39,7 @@ my-workspace/
 
 | Type | Default | Description |
 |------|---------|-------------|
-| boolean | `true` | Enable symlinking to existing repository clones instead of re-cloning |
+| boolean | `false` | Enable symlinking to existing repository clones instead of re-cloning |
 
 When enabled, Multi maintains a global registry at `~/.multi/repos.json` that tracks where repositories have been cloned. If a repository already exists in another workspace, Multi will create a symlink to it instead of cloning fresh.
 
@@ -48,11 +48,11 @@ This is useful when you work with the same repositories across multiple workspac
 - Keeps repository state synchronized across workspaces
 - Speeds up `multi sync` by avoiding network operations
 
-#### Example: Disable symlinks globally
+#### Example: Enable symlinks globally
 
 ```json
 {
-  "allowSymlinks": false,
+  "allowSymlinks": true,
   "repos": [...]
 }
 ```
@@ -101,7 +101,7 @@ An array of repository configurations. Each repository object supports:
 | `url` | string | Yes* | - | Git repository URL (HTTPS or SSH). *Not required in monorepo mode. |
 | `name` | string | No** | Last segment of URL | Custom directory name for the cloned repo. **Required in monorepo mode if no URL. |
 | `skipVSCode` | boolean | No | `false` | Skip this repo when merging VS Code configurations |
-| `allowSymlink` | boolean | No | `true` | Allow symlinking to an existing clone of this repo |
+| `allowSymlink` | boolean | No | `false` | Allow symlinking to an existing clone of this repo |
 
 #### Example: Basic repository list
 
@@ -146,17 +146,17 @@ An array of repository configurations. Each repository object supports:
 }
 ```
 
-#### Example: Disable symlink for a specific repo
+#### Example: Enable symlink for a specific repo
 
-Use this when a repository needs its own isolated clone (e.g., for testing different branches independently):
+Use this when a repository should be symlinked to an existing clone (saves disk space and keeps state synchronized):
 
 ```json
 {
   "repos": [
     { "url": "https://github.com/org/shared-lib" },
     {
-      "url": "https://github.com/org/needs-own-copy",
-      "allowSymlink": false
+      "url": "https://github.com/org/reuse-existing-clone",
+      "allowSymlink": true
     }
   ]
 }
@@ -240,7 +240,7 @@ The shared tasks file is merged after all sub-repo tasks are collected, so you c
 
 ```json
 {
-  "allowSymlinks": true,
+  "allowSymlinks": false,
   "repos": [
     {
       "url": "https://github.com/myorg/api-server",
@@ -258,7 +258,7 @@ The shared tasks file is merged after all sub-repo tasks are collected, so you c
     {
       "url": "git@github.com:myorg/shared-utils.git",
       "name": "shared",
-      "allowSymlink": false
+      "allowSymlink": true
     }
   ],
   "vscode": {

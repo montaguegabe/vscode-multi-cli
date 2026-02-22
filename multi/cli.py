@@ -5,6 +5,7 @@ from multi.cli_helpers import common_command_wrapper
 from multi.git_run import git_cmd
 from multi.git_set_branch import set_branch_cmd
 from multi.init import init_cmd
+from multi.open import open_cmd
 from multi.sync import sync_cmd
 
 
@@ -40,6 +41,7 @@ main.add_command(common_command_wrapper(set_branch_cmd))
 main.add_command(common_command_wrapper(sync_cmd))
 main.add_command(common_command_wrapper(git_cmd))
 main.add_command(common_command_wrapper(init_cmd))
+main.add_command(open_cmd)
 
 if __name__ == "__main__":
     main()

@@ -43,7 +43,7 @@ def _try_symlink_repo(
         True if symlink was successfully created, False otherwise.
     """
     # Check if symlinks are enabled globally and for this repo
-    global_symlinks = paths.settings.get("allowSymlinks", True)
+    global_symlinks = paths.settings.get("allowSymlinks", False)
     if not global_symlinks or not repo_config.allow_symlink:
         return False
 
@@ -118,8 +118,8 @@ def clone_repos(paths: Paths, ensure_on_same_branch: bool = True):
     """Clone all repositories from the repos.json file.
 
     Supports symlinking to existing repos from the global registry when:
-    - Global allowSymlinks setting is True (default)
-    - Per-repo allowSymlink setting is True (default)
+    - Global allowSymlinks setting is True (default: False)
+    - Per-repo allowSymlink setting is True (default: False)
     - An existing clone is found in the registry
     """
     repos = load_repos(paths=paths)

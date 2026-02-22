@@ -23,7 +23,8 @@ nav = [
   ]},
   { "Configuration" = "configuration.md" },
   { "Contributing" = "contributing.md" },
-  { "VS Code Extension" = "extension.md" }
+  { "VS Code Extension" = "extension.md" },
+  { "Claude Code Skill" = "claude-code.md" }
 ]
 
 [project.theme]

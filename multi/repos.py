@@ -32,7 +32,7 @@ class Repository:
         self.skip_vscode = kwargs.pop("skipVSCode", False)
 
         # Allow symlinking for this repo (default True, can be overridden per-repo)
-        self.allow_symlink = kwargs.pop("allowSymlink", True)
+        self.allow_symlink = kwargs.pop("allowSymlink", False)
 
         # Set any other attributes passed in kwargs (top-level keys from repo config)
         for key, value in kwargs.items():
