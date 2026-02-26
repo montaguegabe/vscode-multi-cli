@@ -1,21 +1,34 @@
-# Claude Code Plugin
+# Multi Agent Skill
 
-Multi provides a [Claude Code plugin](https://docs.anthropic.com/en/docs/claude-code/plugins) that helps Claude understand multi-managed workspaces. When Claude detects a `multi.json` file or you ask about multi-repo workflows, it automatically loads context about Multi's commands, configuration, and conventions.
+Multi now ships as an agent skill repository compatible with [`vercel-labs/skills`](https://github.com/vercel-labs/skills).
+
+The skill teaches agents how to work with Multi-managed workspaces, including `multi.json`, branch orchestration, VS Code sync behavior, and Cursor-rules-to-`CLAUDE.md` generation.
 
 ## Installation
 
-In Claude Code, add the Multi CLI repo as a plugin marketplace and install:
+Install the Multi skill from the standalone repo:
 
-```
-/plugin marketplace add gabemontague/multi-cli
-/plugin install multi-workspace@multi-cli
+```bash
+# Optional: preview available skills
+npx skills add montaguegabe/multi-skills --list
+
+# Install for detected local agents
+npx skills add montaguegabe/multi-skills --skill multi-workspace
 ```
 
-To install for a specific project only, use `--scope local` when installing.
+Common options:
+
+```bash
+# Install globally instead of project-local
+npx skills add montaguegabe/multi-skills --skill multi-workspace -g
+
+# Target specific agents only
+npx skills add montaguegabe/multi-skills --skill multi-workspace -a claude-code -a codex
+```
 
 ## What It Provides
 
-The plugin gives Claude knowledge of:
+The `multi-workspace` skill gives your agent knowledge of:
 
 - **Workspace detection** - Recognizes `multi.json` and understands workspace structure
 - **Command usage** - Knows when and how to use `multi sync`, `multi set-branch`, `multi git`, etc.
@@ -35,11 +48,9 @@ The skill activates when you mention topics like:
 
 ## Example Usage
 
-Once installed, you can ask Claude things like:
+Once installed, you can ask your agent things like:
 
 - "How do I add a new repo to this workspace?"
 - "Switch all repos to a feature branch"
 - "Why isn't my launch config showing up?"
 - "What does `requiredCompounds` do in multi.json?"
-
-Claude will use its knowledge of Multi to give accurate, context-aware answers.
