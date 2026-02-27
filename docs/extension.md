@@ -21,6 +21,7 @@ The extension automatically syncs when changes are detected:
 
 - Generates files in your root `.vscode` folder when sub-repo configurations change
 - Generates `CLAUDE.md` files when Cursor rules change
+- Syncs root `.github/workflows` files when sub-repo workflow files change
 
 ## Watched Files
 
@@ -33,6 +34,7 @@ The extension monitors these files in your sub-repositories:
 | `.vscode/tasks.json` | `multi sync vscode tasks` |
 | `.vscode/extensions.json` | `multi sync vscode extensions` |
 | `.cursor/rules/*` | `multi sync rules` |
+| `.github/workflows/*.{yml,yaml}` | `multi sync github` |
 
 ## Usage
 

@@ -35,6 +35,17 @@ my-workspace/
 
 ## Options
 
+## Mode Selection
+
+Use this table to choose the right mode:
+
+| Scenario | `monoRepo` |
+|----------|------------|
+| Independent git repositories inside one workspace | `false` |
+| One root git repository with project folders (no nested `.git`) | `true` |
+
+If directories listed in `repos` contain their own `.git` folders, that is **not** a monorepo layout for Multi. Use standard mode (`monoRepo: false`).
+
 ### allowSymlinks
 
 | Type | Default | Description |
@@ -70,6 +81,7 @@ When enabled, Multi treats the workspace as a monorepo where:
 - Sub-directories listed in `repos` are regular directories (not separate git repos)
 - Git operations (cloning, branch switching) are skipped
 - VS Code config syncing and CLAUDE.md generation still work normally
+- GitHub Actions workflows can be synced into root `.github/workflows` for commit-and-run behavior
 
 This is useful for:
 - Traditional monorepos with packages in subdirectories
@@ -89,6 +101,7 @@ This is useful for:
 ```
 
 **Note:** In monorepo mode, `url` is not required - only `name` is needed. The `multi git` and `multi set-branch` commands are disabled; use git directly in the root workspace.
+Directories listed in `repos` should not contain nested `.git` folders.
 
 ---
 

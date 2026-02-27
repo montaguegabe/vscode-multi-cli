@@ -1,14 +1,10 @@
 import json
 import logging
-from importlib.resources import files
 from pathlib import Path
 
 import click
 
-from multi.git_helpers import is_git_repo_root
 from multi.sync import sync
-
-init_readme_template = (files("multi") / "resources" / "init_readme.md").read_text()
 
 logger = logging.getLogger(__name__)
 
@@ -67,61 +63,13 @@ def create_multi_json(urls: list[str], descriptions: list[str]) -> None:
         f.write("\n")  # Add newline at end of file
 
 
-def init_git_repo() -> None:
-    """Initialize a git repository if one doesn't exist."""
-    import git
-
-    if not is_git_repo_root(paths.root_dir):
-        logger.info("Initializing git repository...")
-        git.Repo.init(paths.root_dir)
-
-
 def commit_changes() -> None:
     """Stage and commit all changes."""
     import git
 
-    repo = git.Repo(paths.root_dir)
+    repo = git.Repo(Path.cwd())
     repo.git.add(all=True)
     repo.index.commit("Multi init: Configure multi workspace")
-
-
-def create_readme(urls: list[str]) -> None:
-    """Create a README.md file if it doesn't exist."""
-    readme_path = paths.root_dir / "README.md"
-    if readme_path.exists():
-        return
-
-    # Extract repo name and create the hyperlink
-    repo_entries = []
-    for url in urls:
-        # Extract repo name and create the hyperlink
-        repo_name = url.split("/")[-1].replace(".git", "")
-        # Handle both HTTPS and SSH URLs to create proper hyperlinks
-        if url.startswith("git@"):
-            # Convert SSH URL to HTTPS URL for hyperlink
-            # From: git@github.com:username/repo.git
-            # To: https://github.com/username/repo
-            parts = url.split(":")
-            if len(parts) == 2:
-                https_url = f"https://github.com/{parts[1].replace('.git', '')}"
-                repo_entries.append(f"- [{repo_name}]({https_url})")
-        else:
-            # Handle HTTPS URL
-            # Remove .git suffix if present
-            https_url = url.replace(".git", "")
-            repo_entries.append(f"- [{repo_name}]({https_url})")
-
-    repo_list = "\n".join(repo_entries)
-
-    # Get the workspace directory name
-    workspace_name = paths.root_dir.name
-
-    # Format and write the README
-    readme_content = init_readme_template.format(
-        __name__=workspace_name, __repo_list__=repo_list
-    )
-    readme_path.write_text(readme_content)
-    logger.info("Created README.md")
 
 
 @click.command(name="init")
@@ -131,10 +79,8 @@ def init_cmd():
     This command will:
     1. Collect repository URLs interactively (optionally with descriptions)
     2. Create multi.json configuration file (with descriptions if provided)
-    3. Initialize git repository if needed
-    4. Create README.md if it doesn't exist
-    5. Sync all repositories and configurations (generates cursor rules from descriptions)
-    6. Commit the changes
+    3. Run sync (which initializes git and README if needed)
+    4. Commit the changes
     """
     logger.info("Initializing multi workspace...")
 
@@ -144,12 +90,6 @@ def init_cmd():
     # Create multi.json (includes descriptions if provided)
     create_multi_json(urls, descriptions)
     logger.info("Created multi.json configuration")
-
-    # Initialize git repo if needed
-    init_git_repo()
-
-    # Create README.md if it doesn't exist
-    create_readme(urls)
 
     # Run sync (this will generate repo-directories.mdc from descriptions in multi.json)
     sync(ensure_on_same_branch=False)

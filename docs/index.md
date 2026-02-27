@@ -10,6 +10,7 @@ When working on projects that span multiple repositories, VS Code's multi-root w
 - **Configuration merging** - Automatically combine `.vscode` settings, launch configurations, and tasks from all repos
 - **AI assistant support** - Generate `CLAUDE.md` files from Cursor rules for better AI context
 - **Flexible structure** - Sub-repos are simply cloned into your workspace directory, no submodules required
+- **Workspace diagnostics** - Detect common misconfigurations with `multi doctor`
 
 ## Key Features
 
@@ -35,6 +36,22 @@ Generate repo descriptions from `multi.json` and convert Cursor rules to `CLAUDE
 
 ```bash
 multi sync rules
+```
+
+### Monorepo GitHub Workflow Sync
+
+In `monoRepo` mode, sync package workflows into root `.github/workflows`:
+
+```bash
+multi sync github
+```
+
+### Workspace Diagnostics
+
+Catch mode mismatches and setup issues early:
+
+```bash
+multi doctor
 ```
 
 ### Cross-Repo Git Commands

@@ -1,6 +1,6 @@
 # Commands Overview
 
-Multi provides four commands for managing your multi-repo workspace.
+Multi provides commands for managing your multi-repo workspace.
 
 ## Available Commands
 
@@ -8,8 +8,10 @@ Multi provides four commands for managing your multi-repo workspace.
 |---------|-------------|
 | [`init`](init.md) | Initialize a new multi workspace |
 | [`sync`](sync.md) | Sync configurations and repositories |
+| [`sync github`](sync-github.md) | Sync root GitHub Actions workflows (monorepo mode) |
 | [`set-branch`](set-branch.md) | Switch all repos to the same branch |
 | [`git`](git.md) | Run git commands across all repos |
+| [`doctor`](doctor.md) | Diagnose common workspace configuration issues |
 
 ## Global Options
 

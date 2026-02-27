@@ -49,14 +49,22 @@ def common_command_wrapper(command_to_wrap: click.Command) -> click.Command:
                 click.secho(traceback.format_exc(), fg="yellow", err=True)
             exit_code = 1
 
-        # After every command, check that all sub-repos are on the same branch as the root repo
-        # (skip this check in monorepo mode since there are no sub-repos to check)
+        # After commands, check that all sub-repos are on the same branch as the root repo.
+        # Some commands (like doctor) intentionally run even when no workspace is initialized.
+        if command_to_wrap.name in {"doctor"}:
+            if exit_code is not None:
+                sys.exit(exit_code)
+            return
+
         try:
             paths = Paths(Path.cwd())
             if not paths.settings.is_monorepo():
                 check_all_on_same_branch(paths=paths, raise_error=True)
         except GitError as e:
             click.secho(e.args[0], fg="red", err=True)
+        except FileNotFoundError:
+            # This can happen for commands that run outside a multi workspace.
+            pass
 
         if exit_code is not None:
             sys.exit(exit_code)

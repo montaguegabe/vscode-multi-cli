@@ -18,8 +18,10 @@ nav = [
     { "sync vscode" = "commands/sync-vscode.md" },
     { "sync rules" = "commands/sync-rules.md" },
     { "sync ruff" = "commands/sync-ruff.md" },
+    { "sync github" = "commands/sync-github.md" },
     { "set-branch" = "commands/set-branch.md" },
-    { "git" = "commands/git.md" }
+    { "git" = "commands/git.md" },
+    { "doctor" = "commands/doctor.md" }
   ]},
   { "Configuration" = "configuration.md" },
   { "Contributing" = "contributing.md" },

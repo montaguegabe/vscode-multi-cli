@@ -1,3 +1,6 @@
+import pytest
+
+from multi.errors import GitError
 from multi.git_helpers import (
     check_all_on_same_branch,
     check_all_repos_are_clean,
@@ -83,3 +86,14 @@ def test_check_branch_existence(setup_git_repos_with_remotes):
     )
     assert exists_locally is False
     assert exists_remotely is False
+
+
+def test_get_current_branch_gives_actionable_message(tmp_path):
+    """Test get_current_branch returns a useful error for non-git directories."""
+    with pytest.raises(GitError) as exc_info:
+        get_current_branch(tmp_path)
+
+    message = str(exc_info.value)
+    assert "Could not determine current branch" in message
+    assert "git init -b main" in message
+    assert "multi sync" in message

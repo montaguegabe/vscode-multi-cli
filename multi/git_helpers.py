@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Tuple
 
 import git
-from git.exc import InvalidGitRepositoryError
+from git.exc import InvalidGitRepositoryError, NoSuchPathError
 
 from multi.errors import GitError, RepoNotCleanError
 from multi.paths import Paths
@@ -21,9 +21,13 @@ def get_current_branch(repo_path: Path) -> str:
     try:
         repo = git.Repo(repo_path)
         return repo.active_branch.name
-    except InvalidGitRepositoryError as e:
-        logger.error("Failed to determine current branch")
-        raise GitError("Failed to determine current branch") from e
+    except (InvalidGitRepositoryError, NoSuchPathError) as e:
+        msg = (
+            f"Could not determine current branch for {repo_path}: not a git repository. "
+            "Initialize it with `git init -b main` or run `multi sync` from the workspace root."
+        )
+        logger.error(msg)
+        raise GitError(msg) from e
     except TypeError:
         # Detached HEAD state - active_branch raises TypeError
         return "HEAD"

@@ -50,7 +50,7 @@ cd my-workspace
 
 ### Step 2: Initialize the Workspace
 
-Run the init command:
+Run the interactive init command:
 
 ```bash
 multi init
@@ -74,10 +74,19 @@ Description (optional): Shared utilities and types
 The init command will:
 
 1. Create a `multi.json` configuration file
-2. Clone all repositories
-3. Set up the initial `.vscode` configuration
-4. Create a `README.md` for your workspace
-5. Optionally create Cursor rules with repository descriptions
+2. Run `multi sync`
+3. Clone repositories (standard mode)
+4. Set up the initial `.vscode` configuration
+5. Create a `README.md` for your workspace if missing
+6. Optionally create Cursor rules with repository descriptions
+
+## Automation Path
+
+For scripts/automation, create or edit `multi.json` directly and run:
+
+```bash
+multi sync
+```
 
 ## VS Code Extension
 

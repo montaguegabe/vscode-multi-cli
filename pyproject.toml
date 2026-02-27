@@ -2,7 +2,7 @@
 name = "multi-workspace"
 description = "Multi"
 authors = [{ name = "Gabe Montague", email = "gabemontague@outlook.com" }]
-dependencies = ["click>=8.3.1", "gitpython>=3.1.0"]
+dependencies = ["click>=8.3.1", "gitpython>=3.1.0", "pyyaml>=6.0.2"]
 readme = "README.md"
 requires-python = ">=3.12"
 dynamic = ["version"]

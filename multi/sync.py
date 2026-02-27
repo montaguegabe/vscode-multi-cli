@@ -6,7 +6,9 @@ import click
 import git
 from git.exc import GitCommandError
 
+from multi.bootstrap import ensure_root_git_repo, ensure_workspace_readme
 from multi.cli_helpers import common_command_wrapper
+from multi.doctor import find_nested_git_repos_in_monorepo
 from multi.git_helpers import get_current_branch
 from multi.ignore_files import (
     update_gitignore_with_generated_files,
@@ -16,6 +18,7 @@ from multi.ignore_files import (
 from multi.paths import Paths
 from multi.registry import lookup_repo, register_repo
 from multi.repos import Repository, load_repos
+from multi.sync_github import sync_all_github_actions, sync_github_cmd
 from multi.sync_ruff import sync_all_ruff_configs, sync_ruff_cmd
 from multi.sync_rules import sync_all_rules, sync_rules_cmd
 from multi.sync_vscode import merge_vscode_configs, vscode_cmd
@@ -159,6 +162,15 @@ def sync(root_dir: Path, ensure_on_same_branch: bool = True):
     logger.info("Syncing...")
 
     paths = Paths(root_dir)
+    ensure_root_git_repo(paths.root_dir)
+    ensure_workspace_readme(paths=paths)
+
+    nested_git_repos = find_nested_git_repos_in_monorepo(paths=paths)
+    if nested_git_repos:
+        logger.warning(
+            "monoRepo mode expects listed directories to be part of the root git repo "
+            f"(no nested .git). Found nested git repos: {', '.join(nested_git_repos)}."
+        )
 
     if not paths.settings.is_monorepo():
         clone_repos(paths=paths, ensure_on_same_branch=ensure_on_same_branch)
@@ -167,6 +179,7 @@ def sync(root_dir: Path, ensure_on_same_branch: bool = True):
     merge_vscode_configs(root_dir=root_dir)
     sync_all_rules(root_dir=root_dir)
     sync_all_ruff_configs(root_dir=root_dir)
+    sync_all_github_actions(root_dir=root_dir)
 
     logger.info("✅ Sync complete")
 
@@ -188,3 +201,4 @@ def sync_cmd(ctx: click.Context):
 sync_cmd.add_command(common_command_wrapper(vscode_cmd))
 sync_cmd.add_command(common_command_wrapper(sync_rules_cmd))
 sync_cmd.add_command(common_command_wrapper(sync_ruff_cmd))
+sync_cmd.add_command(common_command_wrapper(sync_github_cmd))

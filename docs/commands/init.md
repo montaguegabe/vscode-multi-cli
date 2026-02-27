@@ -11,6 +11,7 @@ multi init
 ## Description
 
 The `init` command sets up a new multi workspace in the current directory. It guides you through an interactive process to configure your workspace.
+It is intended as a human-driven setup flow.
 
 ## Interactive Process
 
@@ -85,6 +86,7 @@ Merged VS Code configuration from all sub-repositories.
 ## Notes
 
 - Run this command in an empty directory or an existing Git repository
-- If the directory is not a Git repository, one will be initialized
+- Root git repo and README creation are handled during sync
 - The command performs an initial sync after setup
 - All changes are committed automatically
+- For automation, create/edit `multi.json` directly and run `multi sync`
