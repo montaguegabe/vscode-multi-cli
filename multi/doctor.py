@@ -1,3 +1,4 @@
+import json
 import logging
 from dataclasses import dataclass, field
 from json import JSONDecodeError
@@ -22,6 +23,13 @@ class DoctorReport:
 
     def should_fail(self, strict: bool) -> bool:
         return bool(self.errors or (strict and self.warnings))
+
+    def to_dict(self) -> dict:
+        return {
+            "errors": self.errors,
+            "warnings": self.warnings,
+            "infos": self.infos,
+        }
 
 
 def find_nested_git_repos_in_monorepo(paths: Paths) -> list[str]:
@@ -195,9 +203,19 @@ def _print_report(report: DoctorReport) -> None:
     default=False,
     help="Fail on warnings in addition to errors.",
 )
-def doctor_cmd(strict: bool) -> None:
+@click.option(
+    "--json",
+    "output_json",
+    is_flag=True,
+    default=False,
+    help="Output results as JSON.",
+)
+def doctor_cmd(strict: bool, output_json: bool) -> None:
     """Diagnose common workspace configuration issues."""
     report = run_doctor_checks(Path.cwd())
-    _print_report(report)
+    if output_json:
+        click.echo(json.dumps(report.to_dict()))
+    else:
+        _print_report(report)
     if report.should_fail(strict=strict):
         raise click.ClickException("Doctor checks failed.")
