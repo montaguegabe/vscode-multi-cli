@@ -5,12 +5,15 @@ Diagnose common workspace configuration issues.
 ## Usage
 
 ```bash
-multi doctor [--strict]
+multi doctor [--strict] [--fix]
 ```
 
 ## Description
 
 `multi doctor` checks for common setup problems and prints actionable guidance.
+
+Use `--fix` to automatically remove tracked sub-repo directories from the root git
+index using `git rm -r --cached` (files remain on disk).
 
 ## Checks
 
@@ -26,6 +29,14 @@ By default, warnings do not fail the command. Use strict mode to fail on warning
 
 ```bash
 multi doctor --strict
+```
+
+## Fix Mode
+
+Apply safe fixes for tracked sub-repos:
+
+```bash
+multi doctor --fix
 ```
 
 ## Notes

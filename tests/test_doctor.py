@@ -2,7 +2,7 @@ import json
 
 import git
 
-from multi.doctor import run_doctor_checks
+from multi.doctor import run_doctor_checks, run_doctor_fixes
 
 
 def test_doctor_warns_on_nested_git_repos_in_monorepo(tmp_path):
@@ -155,6 +155,50 @@ def test_doctor_warns_on_subrepo_submodule(tmp_path):
     report = run_doctor_checks(workspace)
     assert any("submodules" in w for w in report.warnings)
     assert any("repo-a" in w for w in report.warnings)
+
+
+def test_doctor_fix_removes_tracked_subrepo_from_root_index(tmp_path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+
+    root_repo = git.Repo.init(workspace, initial_branch="main")
+    multi_json = {
+        "repos": [
+            {"url": "https://github.com/example/repo-a"},
+        ]
+    }
+    (workspace / "multi.json").write_text(json.dumps(multi_json, indent=2))
+
+    sub_dir = workspace / "repo-a"
+    sub_dir.mkdir()
+    (sub_dir / ".git").mkdir()
+    (sub_dir / "README.md").write_text("hello")
+    root_repo.index.add(["repo-a/README.md"])
+
+    fixed = run_doctor_fixes(workspace)
+    assert fixed == ["repo-a"]
+    assert "repo-a/README.md" not in {entry[0] for entry in root_repo.index.entries}
+
+    report = run_doctor_checks(workspace)
+    assert not any("tracked in the workspace git index" in w for w in report.warnings)
+
+
+def test_doctor_fix_is_noop_when_subrepos_are_not_tracked(tmp_path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+
+    git.Repo.init(workspace, initial_branch="main")
+    multi_json = {
+        "repos": [
+            {"url": "https://github.com/example/repo-a"},
+        ]
+    }
+    (workspace / "multi.json").write_text(json.dumps(multi_json, indent=2))
+    (workspace / ".gitignore").write_text("repo-a/\n")
+    (workspace / "repo-a" / ".git").mkdir(parents=True)
+
+    fixed = run_doctor_fixes(workspace)
+    assert fixed == []
 
 
 def test_doctor_no_tracking_warning_when_subrepos_ignored(tmp_path):

@@ -183,6 +183,22 @@ def run_doctor_checks(target_dir: Path) -> DoctorReport:
     return report
 
 
+def run_doctor_fixes(target_dir: Path) -> list[str]:
+    """Apply safe doctor fixes and return the names of repos that were fixed."""
+    paths = Paths(target_dir)
+    if not is_git_repo_root(paths.root_dir):
+        return []
+
+    repos = load_repos(paths)
+    tracked = find_tracked_subrepos(paths.root_dir, repos)
+    if not tracked:
+        return []
+
+    root_repo = gitmodule.Repo(paths.root_dir)
+    root_repo.git.rm("-r", "--cached", "--", *tracked)
+    return tracked
+
+
 def _print_report(report: DoctorReport) -> None:
     logger.info("Running diagnostics...")
     for info in report.infos:
@@ -210,9 +226,30 @@ def _print_report(report: DoctorReport) -> None:
     default=False,
     help="Output results as JSON.",
 )
-def doctor_cmd(strict: bool, output_json: bool) -> None:
+@click.option(
+    "--fix",
+    is_flag=True,
+    default=False,
+    help="Automatically apply safe fixes for tracked sub-repos in the root index.",
+)
+def doctor_cmd(strict: bool, output_json: bool, fix: bool) -> None:
     """Diagnose common workspace configuration issues."""
-    report = run_doctor_checks(Path.cwd())
+    target_dir = Path.cwd()
+    report = run_doctor_checks(target_dir)
+
+    if fix and not report.errors:
+        fixed_subrepos = run_doctor_fixes(target_dir)
+        if fixed_subrepos:
+            report = run_doctor_checks(target_dir)
+            report.infos.append(
+                "Applied --fix: removed tracked sub-repos from the root git index: "
+                f"{', '.join(fixed_subrepos)}."
+            )
+        else:
+            report.infos.append(
+                "No tracked sub-repos were found in the root git index to fix."
+            )
+
     if output_json:
         click.echo(json.dumps(report.to_dict()))
     else:
