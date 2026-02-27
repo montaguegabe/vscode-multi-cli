@@ -1,4 +1,7 @@
-from multi.ignore_files import IgnoreFile
+import json
+
+from multi.ignore_files import IgnoreFile, update_gitignore_with_generated_files
+from multi.paths import Paths
 
 
 def test_add_lines_preserves_existing_content(tmp_path):
@@ -77,3 +80,70 @@ def test_add_lines_to_existing_section(tmp_path):
     section_content = updated_content[target_section_start:bottom_section_start]
     assert "new_item1/" in section_content
     assert "new_item2/" in section_content
+
+
+def test_update_gitignore_with_generated_files_updates_root_and_subrepos(tmp_path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    (workspace / "multi.json").write_text(
+        json.dumps(
+            {
+                "repos": [
+                    {"url": "https://github.com/test/repo-a"},
+                    {"url": "https://github.com/test/repo-b"},
+                ]
+            },
+            indent=2,
+        )
+    )
+
+    repo_a = workspace / "repo-a"
+    repo_b = workspace / "repo-b"
+    (repo_a / ".git").mkdir(parents=True)
+    (repo_b / ".git").mkdir(parents=True)
+
+    update_gitignore_with_generated_files(Paths(workspace))
+
+    root_gitignore = (workspace / ".gitignore").read_text()
+    assert ".vscode/settings.json" in root_gitignore
+    assert ".vscode/tasks.json" in root_gitignore
+    assert ".vscode/launch.json" in root_gitignore
+    assert ".vscode/extensions.json" in root_gitignore
+    assert "CLAUDE.md" in root_gitignore
+    assert "AGENTS.md" in root_gitignore
+
+    repo_a_gitignore = (repo_a / ".gitignore").read_text()
+    assert "CLAUDE.md" in repo_a_gitignore
+    assert "AGENTS.md" in repo_a_gitignore
+    assert ".vscode/settings.json" not in repo_a_gitignore
+
+    repo_b_gitignore = (repo_b / ".gitignore").read_text()
+    assert "CLAUDE.md" in repo_b_gitignore
+    assert "AGENTS.md" in repo_b_gitignore
+    assert ".vscode/settings.json" not in repo_b_gitignore
+
+
+def test_update_gitignore_with_generated_files_skips_non_git_subrepo(tmp_path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    (workspace / "multi.json").write_text(
+        json.dumps(
+            {
+                "repos": [
+                    {"url": "https://github.com/test/repo-a"},
+                    {"url": "https://github.com/test/repo-b"},
+                ]
+            },
+            indent=2,
+        )
+    )
+
+    repo_a = workspace / "repo-a"
+    repo_b = workspace / "repo-b"
+    (repo_a / ".git").mkdir(parents=True)
+    repo_b.mkdir(parents=True)
+
+    update_gitignore_with_generated_files(Paths(workspace))
+
+    assert (repo_a / ".gitignore").exists()
+    assert not (repo_b / ".gitignore").exists()

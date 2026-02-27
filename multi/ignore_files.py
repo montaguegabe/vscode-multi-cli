@@ -121,7 +121,7 @@ def update_ignore_with_repos(paths: Paths):
 
 def update_gitignore_with_generated_files(paths: Paths):
     """Add generated files to gitignore entries."""
-    generated_entries = [
+    root_generated_entries = [
         ".vscode/settings.json",
         ".vscode/tasks.json",
         ".vscode/launch.json",
@@ -130,5 +130,31 @@ def update_gitignore_with_generated_files(paths: Paths):
         "AGENTS.md",
     ]
     gitignore = IgnoreFile(paths.gitignore_path)
-    gitignore.add_lines_if_missing(generated_entries, "# Generated")
-    logger.debug("Updated .gitignore with generated files")
+    gitignore.add_lines_if_missing(root_generated_entries, "# Generated")
+    logger.debug("Updated root .gitignore with generated files")
+
+    if paths.settings.is_monorepo():
+        logger.debug("Skipping sub-repo .gitignore generated file updates in monorepo mode")
+        return
+
+    if not paths.settings.get("repos"):
+        logger.debug("No repositories configured; skipping sub-repo .gitignore updates")
+        return
+
+    subrepo_generated_entries = [
+        "CLAUDE.md",
+        "AGENTS.md",
+    ]
+    repos = load_repos(paths=paths)
+    for repo in repos:
+        repo_git_dir = repo.path / ".git"
+        if not repo_git_dir.exists():
+            logger.debug(
+                f"Skipping generated file gitignore update for {repo.name}: no .git found"
+            )
+            continue
+
+        repo_gitignore = IgnoreFile(repo.path / ".gitignore")
+        repo_gitignore.add_lines_if_missing(subrepo_generated_entries, "# Generated")
+
+    logger.debug("Updated sub-repo .gitignore files with generated files")
