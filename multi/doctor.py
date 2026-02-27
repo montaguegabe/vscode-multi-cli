@@ -202,11 +202,11 @@ def run_doctor_fixes(target_dir: Path) -> list[str]:
 def _print_report(report: DoctorReport) -> None:
     logger.info("Running diagnostics...")
     for info in report.infos:
-        logger.info(f"ℹ️  {info}")
+        logger.info(info)
     for warning in report.warnings:
-        logger.warning(f"⚠️  {warning}")
+        logger.warning(warning)
     for error in report.errors:
-        logger.error(f"❌ {error}")
+        logger.error(error)
 
     if not (report.errors or report.warnings):
         logger.info("✅ No issues found.")
