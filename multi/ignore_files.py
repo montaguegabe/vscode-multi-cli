@@ -69,6 +69,23 @@ class IgnoreFile:
         # Update cached lines
         self._existing_lines = existing_lines
 
+    def remove_lines(self, lines: List[str]) -> None:
+        """Remove exact matching lines from the ignore file, if present."""
+        if not lines or not self.path.exists():
+            return
+
+        lines_to_remove = set(lines)
+        existing_lines = self.existing_lines.copy()
+        updated_lines = [line for line in existing_lines if line not in lines_to_remove]
+
+        if updated_lines == existing_lines:
+            return
+
+        with self.path.open("w") as f:
+            f.write("\n".join(updated_lines) + "\n")
+
+        self._existing_lines = updated_lines
+
 
 def update_gitignore_with_repos(paths: Paths):
     """Ensure all repos are in gitignore entries.
@@ -117,6 +134,30 @@ def update_ignore_with_repos(paths: Paths):
         "# Allow us to search inside these gitignored directories",
     )
     logger.debug("Updated .ignore with new repositories")
+
+
+def remove_gitignore_entries_for_repos(paths: Paths, repo_names: List[str]) -> None:
+    if not repo_names:
+        return
+
+    entries = []
+    for repo_name in repo_names:
+        entries.append(f"{repo_name}/")
+        entries.append(repo_name)
+
+    IgnoreFile(paths.gitignore_path).remove_lines(entries)
+
+
+def remove_ignore_entries_for_repos(paths: Paths, repo_names: List[str]) -> None:
+    if not repo_names:
+        return
+
+    entries = []
+    for repo_name in repo_names:
+        entries.append(f"!{repo_name}/")
+        entries.append(f"!{repo_name}")
+
+    IgnoreFile(paths.vscode_ignore_path).remove_lines(entries)
 
 
 def update_gitignore_with_generated_files(paths: Paths):

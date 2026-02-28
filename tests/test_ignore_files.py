@@ -1,6 +1,11 @@
 import json
 
-from multi.ignore_files import IgnoreFile, update_gitignore_with_generated_files
+from multi.ignore_files import (
+    IgnoreFile,
+    remove_gitignore_entries_for_repos,
+    remove_ignore_entries_for_repos,
+    update_gitignore_with_generated_files,
+)
 from multi.paths import Paths
 
 
@@ -147,3 +152,37 @@ def test_update_gitignore_with_generated_files_skips_non_git_subrepo(tmp_path):
 
     assert (repo_a / ".gitignore").exists()
     assert not (repo_b / ".gitignore").exists()
+
+
+def test_remove_lines_removes_exact_matches(tmp_path):
+    ignore_path = tmp_path / ".gitignore"
+    ignore_path.write_text("repo-a/\nrepo-a\nkeep-me\n", encoding="utf-8")
+
+    ignore_file = IgnoreFile(ignore_path)
+    ignore_file.remove_lines(["repo-a/", "repo-a"])
+
+    assert ignore_path.read_text(encoding="utf-8") == "keep-me\n"
+
+
+def test_remove_repo_entries_from_ignore_files(tmp_path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    (workspace / "multi.json").write_text(
+        json.dumps({"repos": [{"url": "https://github.com/test/repo-a"}]}, indent=2),
+        encoding="utf-8",
+    )
+    (workspace / ".gitignore").write_text(
+        "repo-a/\nrepo-a\nother/\n",
+        encoding="utf-8",
+    )
+    (workspace / ".ignore").write_text(
+        "!repo-a/\n!repo-a\n!other/\n",
+        encoding="utf-8",
+    )
+
+    paths = Paths(workspace)
+    remove_gitignore_entries_for_repos(paths, ["repo-a"])
+    remove_ignore_entries_for_repos(paths, ["repo-a"])
+
+    assert (workspace / ".gitignore").read_text(encoding="utf-8") == "other/\n"
+    assert (workspace / ".ignore").read_text(encoding="utf-8") == "!other/\n"

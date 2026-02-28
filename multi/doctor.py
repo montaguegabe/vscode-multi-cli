@@ -141,8 +141,8 @@ def run_doctor_checks(target_dir: Path) -> DoctorReport:
                 f"{', '.join(missing_url_names)}."
             )
 
-    # Check if sub-repos are accidentally tracked in the workspace git index
-    if is_git_repo_root(paths.root_dir):
+    # In standard mode, sub-repos should be untracked in the root index.
+    if is_git_repo_root(paths.root_dir) and not settings.is_monorepo():
         tracked = find_tracked_subrepos(paths.root_dir, repos)
         if tracked:
             report.warnings.append(
@@ -152,6 +152,7 @@ def run_doctor_checks(target_dir: Path) -> DoctorReport:
                 "Add them to .gitignore and remove from the index with "
                 "`git rm -r --cached <repo>`."
             )
+    if is_git_repo_root(paths.root_dir):
         as_submodules = find_subrepo_submodules(paths.root_dir, repos)
         if as_submodules:
             report.warnings.append(
@@ -164,21 +165,41 @@ def run_doctor_checks(target_dir: Path) -> DoctorReport:
 
     # Check for mismatches between repos on disk and multi.json
     declared_names = {repo.name for repo in repos}
-    on_disk = find_git_repos_on_disk(paths.root_dir)
+    if settings.is_monorepo():
+        # In monorepo mode, declared repos are expected to be plain directories
+        # inside the root repo (without nested .git directories).
+        on_disk_git_repos = find_git_repos_on_disk(paths.root_dir)
+        undeclared = sorted(on_disk_git_repos - declared_names)
+        if undeclared:
+            report.warnings.append(
+                "Git repos found on disk but not declared in multi.json: "
+                f"{', '.join(undeclared)}. Add them to multi.json or remove them."
+            )
 
-    undeclared = sorted(on_disk - declared_names)
-    if undeclared:
-        report.warnings.append(
-            "Git repos found on disk but not declared in multi.json: "
-            f"{', '.join(undeclared)}. Add them to multi.json or remove them."
+        missing_on_disk = sorted(
+            repo.name for repo in repos if not repo.path.is_dir()
         )
+        if missing_on_disk:
+            report.warnings.append(
+                "Repos declared in multi.json but not found on disk: "
+                f"{', '.join(missing_on_disk)}. In monoRepo mode, create these "
+                "directories in the workspace."
+            )
+    else:
+        on_disk = find_git_repos_on_disk(paths.root_dir)
+        undeclared = sorted(on_disk - declared_names)
+        if undeclared:
+            report.warnings.append(
+                "Git repos found on disk but not declared in multi.json: "
+                f"{', '.join(undeclared)}. Add them to multi.json or remove them."
+            )
 
-    missing_on_disk = sorted(declared_names - on_disk)
-    if missing_on_disk:
-        report.warnings.append(
-            "Repos declared in multi.json but not found on disk: "
-            f"{', '.join(missing_on_disk)}. Run `multi sync` to clone them."
-        )
+        missing_on_disk = sorted(declared_names - on_disk)
+        if missing_on_disk:
+            report.warnings.append(
+                "Repos declared in multi.json but not found on disk: "
+                f"{', '.join(missing_on_disk)}. Run `multi sync` to clone them."
+            )
 
     return report
 
@@ -187,6 +208,9 @@ def run_doctor_fixes(target_dir: Path) -> list[str]:
     """Apply safe doctor fixes and return the names of repos that were fixed."""
     paths = Paths(target_dir)
     if not is_git_repo_root(paths.root_dir):
+        return []
+
+    if paths.settings.is_monorepo():
         return []
 
     repos = load_repos(paths)

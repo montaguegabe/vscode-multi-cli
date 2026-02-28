@@ -13,13 +13,17 @@ multi doctor [--strict] [--fix]
 `multi doctor` checks for common setup problems and prints actionable guidance.
 
 Use `--fix` to automatically remove tracked sub-repo directories from the root git
-index using `git rm -r --cached` (files remain on disk).
+index in standard mode (`monoRepo: false`) using `git rm -r --cached` (files remain
+on disk).
 
 ## Checks
 
 - `multi.json` can be discovered from the current directory.
 - `multi.json` is valid JSON and can be parsed.
 - Root workspace git repo exists.
+- Standard mode (`monoRepo: false`) consistency:
+  - warns if sub-repos are tracked in the root git index.
+  - warns if sub-repos are configured as git submodules.
 - `monoRepo` mode consistency:
   - warns if configured repo directories contain nested `.git` folders.
 

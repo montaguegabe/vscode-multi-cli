@@ -103,6 +103,53 @@ def test_doctor_no_mismatch_warnings_when_in_sync(tmp_path):
     assert not any("not found on disk" in w for w in report.warnings)
 
 
+def test_doctor_monorepo_treats_declared_urls_as_directories_on_disk(tmp_path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+
+    git.Repo.init(workspace, initial_branch="main")
+    multi_json = {
+        "monoRepo": True,
+        "repos": [
+            {"url": "https://github.com/openbase-community/web"},
+            {"url": "https://github.com/example/repo-a"},
+            {"url": "https://github.com/example/repo-b"},
+        ],
+    }
+    (workspace / "multi.json").write_text(json.dumps(multi_json, indent=2))
+
+    # In monorepo mode these are plain directories, not nested git repos.
+    (workspace / "web").mkdir()
+    (workspace / "repo-a").mkdir()
+    (workspace / "repo-b").mkdir()
+
+    report = run_doctor_checks(workspace)
+    assert not any("not declared in multi.json" in w for w in report.warnings)
+    assert not any("not found on disk" in w for w in report.warnings)
+
+
+def test_doctor_monorepo_warns_when_declared_directory_is_missing(tmp_path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+
+    git.Repo.init(workspace, initial_branch="main")
+    multi_json = {
+        "monoRepo": True,
+        "repos": [
+            {"url": "https://github.com/example/repo-a"},
+            {"url": "https://github.com/example/repo-b"},
+        ],
+    }
+    (workspace / "multi.json").write_text(json.dumps(multi_json, indent=2))
+
+    # Only create repo-a directory; repo-b should be reported as missing.
+    (workspace / "repo-a").mkdir()
+
+    report = run_doctor_checks(workspace)
+    assert any("not found on disk" in w for w in report.warnings)
+    assert any("repo-b" in w for w in report.warnings)
+
+
 def test_doctor_warns_on_tracked_subrepo(tmp_path):
     workspace = tmp_path / "workspace"
     workspace.mkdir()
@@ -127,6 +174,28 @@ def test_doctor_warns_on_tracked_subrepo(tmp_path):
     report = run_doctor_checks(workspace)
     assert any("tracked in the workspace git index" in w for w in report.warnings)
     assert any("repo-a" in w for w in report.warnings)
+
+
+def test_doctor_monorepo_skips_tracked_subrepo_warning(tmp_path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+
+    root_repo = git.Repo.init(workspace, initial_branch="main")
+    multi_json = {
+        "monoRepo": True,
+        "repos": [
+            {"name": "repo-a"},
+        ],
+    }
+    (workspace / "multi.json").write_text(json.dumps(multi_json, indent=2))
+
+    repo_dir = workspace / "repo-a"
+    repo_dir.mkdir()
+    (repo_dir / "README.md").write_text("hello")
+    root_repo.index.add(["repo-a/README.md"])
+
+    report = run_doctor_checks(workspace)
+    assert not any("tracked in the workspace git index" in w for w in report.warnings)
 
 
 def test_doctor_warns_on_subrepo_submodule(tmp_path):
@@ -199,6 +268,29 @@ def test_doctor_fix_is_noop_when_subrepos_are_not_tracked(tmp_path):
 
     fixed = run_doctor_fixes(workspace)
     assert fixed == []
+
+
+def test_doctor_fix_is_noop_in_monorepo_mode(tmp_path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+
+    root_repo = git.Repo.init(workspace, initial_branch="main")
+    multi_json = {
+        "monoRepo": True,
+        "repos": [
+            {"name": "repo-a"},
+        ],
+    }
+    (workspace / "multi.json").write_text(json.dumps(multi_json, indent=2))
+
+    repo_dir = workspace / "repo-a"
+    repo_dir.mkdir()
+    (repo_dir / "README.md").write_text("hello")
+    root_repo.index.add(["repo-a/README.md"])
+
+    fixed = run_doctor_fixes(workspace)
+    assert fixed == []
+    assert "repo-a/README.md" in {entry[0] for entry in root_repo.index.entries}
 
 
 def test_doctor_no_tracking_warning_when_subrepos_ignored(tmp_path):
