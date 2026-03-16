@@ -28,7 +28,7 @@ def test_multi_init_passes_root_dir_to_sync_and_writes_descriptions(monkeypatch)
             main,
             ["init"],
             input=(
-                "https://github.com/openbase-community/openbase.git\n"
+                "https://github.com/openbase-community/openbase\n"
                 "Old reference implementation.\n"
                 "\n"
             ),
@@ -43,7 +43,7 @@ def test_multi_init_passes_root_dir_to_sync_and_writes_descriptions(monkeypatch)
         assert config == {
             "repos": [
                 {
-                    "url": "https://github.com/openbase-community/openbase.git",
+                    "url": "https://github.com/openbase-community/openbase",
                     "description": "Old reference implementation.",
                 }
             ]
@@ -71,9 +71,9 @@ def test_multi_init_skips_descriptions_after_first_blank(monkeypatch):
             main,
             ["init"],
             input=(
-                "https://github.com/example/repo-a.git\n"
+                "https://github.com/example/repo-a\n"
                 "\n"
-                "https://github.com/example/repo-b.git\n"
+                "https://github.com/example/repo-b\n"
                 "\n"
             ),
         )
@@ -86,7 +86,7 @@ def test_multi_init_skips_descriptions_after_first_blank(monkeypatch):
         config = json.loads(Path("multi.json").read_text(encoding="utf-8"))
         assert config == {
             "repos": [
-                {"url": "https://github.com/example/repo-a.git"},
-                {"url": "https://github.com/example/repo-b.git"},
+                {"url": "https://github.com/example/repo-a"},
+                {"url": "https://github.com/example/repo-b"},
             ]
         }

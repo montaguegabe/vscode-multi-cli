@@ -18,6 +18,11 @@ class Repository:
     def __init__(self, paths: Paths, url: str | None = None, **kwargs: Any):
         """Initialize Repository, deriving name and path, and setting other attributes from kwargs."""
         self.url = url
+        if self.url and self.url.endswith(".git"):
+            raise ValueError(
+                f"Repository URL must not end with '.git': {self.url}. "
+                "Update multi.json and rerun `multi sync`."
+            )
         # Derive name from URL or use provided name
         if "name" in kwargs:
             self.name = kwargs.pop("name")

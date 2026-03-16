@@ -1,6 +1,9 @@
 import json
 import logging
 
+from click.testing import CliRunner
+
+from multi.cli import main
 from multi.sync import sync
 
 
@@ -73,3 +76,23 @@ jobs:
     sync(root_dir=workspace)
 
     assert (workspace / ".github" / "workflows" / "ci.yml").exists()
+
+
+def test_multi_sync_fails_when_repo_url_ends_with_dot_git():
+    runner = CliRunner()
+
+    with runner.isolated_filesystem():
+        multi_json = {
+            "repos": [
+                {"url": "https://github.com/example/repo-a.git"},
+            ]
+        }
+        with open("multi.json", "w", encoding="utf-8") as f:
+            json.dump(multi_json, f, indent=2)
+            f.write("\n")
+
+        result = runner.invoke(main, ["sync"])
+
+    assert result.exit_code == 1
+    assert "must not end with '.git'" in result.output
+    assert "rerun `multi sync`" in result.output
