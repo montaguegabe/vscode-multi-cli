@@ -49,11 +49,12 @@ def common_command_wrapper(command_to_wrap: click.Command) -> click.Command:
                 click.secho(traceback.format_exc(), fg="yellow", err=True)
             exit_code = 1
 
+        if exit_code is not None:
+            sys.exit(exit_code)
+
         # After commands, check that all sub-repos are on the same branch as the root repo.
         # Some commands (like doctor) intentionally run even when no workspace is initialized.
         if command_to_wrap.name in {"doctor"}:
-            if exit_code is not None:
-                sys.exit(exit_code)
             return
 
         try:
@@ -66,8 +67,6 @@ def common_command_wrapper(command_to_wrap: click.Command) -> click.Command:
             # This can happen for commands that run outside a multi workspace.
             pass
 
-        if exit_code is not None:
-            sys.exit(exit_code)
 
     # Replace the command's callback with our new wrapped version
     command_to_wrap.callback = new_wrapped_callback

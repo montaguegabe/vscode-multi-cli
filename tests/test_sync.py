@@ -20,6 +20,9 @@ def test_sync_initializes_root_git_and_creates_readme(tmp_path):
 
     assert (workspace / ".git").exists()
     assert (workspace / "README.md").exists()
+    readme = (workspace / "README.md").read_text(encoding="utf-8")
+    assert "uv tool install multi-workspace" in readme
+    assert "pipx install multi-workspace" not in readme
 
 
 def test_sync_warns_and_continues_for_nested_git_in_monorepo(tmp_path, caplog):

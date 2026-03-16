@@ -48,7 +48,7 @@ def ensure_root_git_repo(root_dir: Path) -> None:
     if is_git_repo_root(root_dir):
         return
     logger.info("Initializing git repository at workspace root...")
-    git.Repo.init(root_dir)
+    git.Repo.init(root_dir, initial_branch="main")
 
 
 def ensure_workspace_readme(paths: Paths) -> None:

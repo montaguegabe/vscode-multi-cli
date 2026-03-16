@@ -92,7 +92,7 @@ def init_cmd():
     logger.info("Created multi.json configuration")
 
     # Run sync (this will generate repo-directories.mdc from descriptions in multi.json)
-    sync(ensure_on_same_branch=False)
+    sync(root_dir=Path.cwd(), ensure_on_same_branch=False)
 
     # Commit changes
     commit_changes()
