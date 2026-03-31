@@ -6,16 +6,30 @@ Initialize a new multi workspace.
 
 ```bash
 multi init
+multi init --repo https://github.com/org/api-server --repo-description "REST API backend"
+multi init --github-repo org/api-server --github-description "REST API backend"
 ```
 
 ## Description
 
-The `init` command sets up a new multi workspace in the current directory. It guides you through an interactive process to configure your workspace.
-It is intended as a human-driven setup flow.
+The `init` command sets up a new multi workspace in the current directory. By default it guides you through an interactive process, but it can also run non-interactively from flags.
+
+When `--github-repo` is used, `multi init` creates the GitHub repositories first via `gh repo create`, then writes their resulting clone URLs into `multi.json`.
+
+When a repository slug starts with the workspace directory name plus `-`, `multi init` automatically writes a short local `name` into `multi.json`. For example, in a workspace named `t-ide`, `https://github.com/org/t-ide-cli` becomes local folder `cli`.
+
+## Options
+
+- `--repo URL` — add an existing repository URL to the workspace. Repeat for multiple repos.
+- `--repo-description TEXT` — description for the corresponding `--repo`. Repeat in the same order.
+- `--github-repo OWNER/REPO` — create a GitHub repository with `gh repo create` and add it to the workspace.
+- `--github-description TEXT` — description for the corresponding `--github-repo`. Also passed to GitHub when creating the repo.
+- `--github-visibility private|public|internal` — visibility used for every `--github-repo`. Defaults to `private`.
+- `--github-clone-protocol https|ssh` — URL format written to `multi.json` for created GitHub repos. Defaults to `https`.
 
 ## Interactive Process
 
-When you run `multi init`, you'll be prompted to:
+When you run `multi init` with no repo flags, you'll be prompted to:
 
 1. **Enter repository URLs** - Paste the Git URLs of repositories you want to include
 2. **Add descriptions (optional)** - Provide descriptions for each repository (saved to `multi.json`)
@@ -42,6 +56,36 @@ Initializing workspace...
 ✓ Created README.md
 ✓ Created repo-directories.mdc Cursor rule
 Done!
+```
+
+## Non-Interactive Examples
+
+Create a workspace from existing repositories:
+
+```bash
+multi init \
+  --repo https://github.com/org/api-server \
+  --repo-description "REST API backend built with FastAPI" \
+  --repo https://github.com/org/web-client \
+  --repo-description "React frontend application"
+```
+
+Create private GitHub repositories first, then initialize the workspace:
+
+```bash
+multi init \
+  --github-repo org/api-server \
+  --github-description "REST API backend built with FastAPI" \
+  --github-repo org/web-client \
+  --github-description "React frontend application"
+```
+
+Write SSH clone URLs to `multi.json` for the created repos:
+
+```bash
+multi init \
+  --github-repo org/api-server \
+  --github-clone-protocol ssh
 ```
 
 ## Generated Files
@@ -89,4 +133,8 @@ Merged VS Code configuration from all sub-repositories.
 - Root git repo and README creation are handled during sync
 - The command performs an initial sync after setup
 - All changes are committed automatically
-- For automation, create/edit `multi.json` directly and run `multi sync`
+- `--repo-description` must be repeated once per `--repo`
+- `--github-description` must be repeated once per `--github-repo`
+- `--github-repo` requires the GitHub CLI (`gh`) to be installed and authenticated
+- `--github-repo` must use `OWNER/REPO` format so `multi` can write the created remote URL to `multi.json`
+- Product-prefixed repo slugs are automatically shortened to local folder names when they match the workspace name prefix, e.g. `t-ide-cli` -> `cli` inside a `t-ide/` workspace

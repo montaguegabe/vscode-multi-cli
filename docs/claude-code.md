@@ -31,10 +31,10 @@ npx skills add montaguegabe/multi-skills --skill multi-workspace -a claude-code 
 The `multi-workspace` skill gives your agent knowledge of:
 
 - **Workspace detection** - Recognizes `multi.json` and understands workspace structure
-- **Command usage** - Knows when and how to use `multi sync`, `multi set-branch`, `multi git`, etc.
+- **Command usage** - Knows when and how to use `multi sync`, `multi add`, `multi collaborator`, `multi set-branch`, `multi git`, etc.
 - **Configuration schema** - Understands all `multi.json` fields and options
 - **VS Code merging** - Knows how launch configs, tasks, and settings are prefixed and merged
-- **Key constraints** - Knows that `multi init` is interactive, `CLAUDE.md` is auto-generated, and repos must be clean for branch switching
+- **Key constraints** - Knows that `multi init` supports both interactive and non-interactive setup, can optionally create GitHub repos via `gh`, `multi add` follows the same workspace-prefix shortening rule for local folder names, `multi collaborator` uses `gh api` to manage GitHub access across all subrepos, `CLAUDE.md` is auto-generated, and repos must be clean for branch switching
 
 ## Trigger Phrases
 

@@ -7,22 +7,14 @@ import click
 import git
 
 from multi.paths import Paths
+from multi.repo_urls import (
+    derive_explicit_local_name,
+    derive_repo_slug_from_url,
+    normalize_repo_url,
+)
 from multi.sync import sync
 
 logger = logging.getLogger(__name__)
-
-
-def _normalize_url(url: str) -> str:
-    """Normalize a repo URL by stripping trailing / and .git for comparison."""
-    url = url.rstrip("/")
-    if url.endswith(".git"):
-        url = url[:-4]
-    return url
-
-
-def _derive_name_from_url(url: str) -> str:
-    """Derive a directory name from a repo URL (last path component)."""
-    return url.split("/")[-1]
 
 
 @click.command(name="add")
@@ -46,24 +38,43 @@ def add_cmd(repo_url: str, name: str | None):
     repos_list = config.get("repos", [])
 
     # Check for duplicate URL
-    normalized_new = _normalize_url(repo_url)
+    normalized_new = normalize_repo_url(repo_url)
     for entry in repos_list:
         existing_url = entry.get("url", "")
-        if _normalize_url(existing_url) == normalized_new:
+        if normalize_repo_url(existing_url) == normalized_new:
             raise click.ClickException(
                 f"A repo with URL '{existing_url}' already exists in multi.json."
             )
 
     # Derive or validate name
-    repo_name = name if name else _derive_name_from_url(repo_url)
+    auto_name = derive_explicit_local_name(
+        repo_url,
+        paths.root_dir.name,
+    )
+    slug_name = derive_repo_slug_from_url(repo_url)
+
+    existing_names = {
+        entry.get("name") or derive_repo_slug_from_url(entry.get("url", ""))
+        for entry in repos_list
+    }
+
+    if (
+        not name
+        and auto_name
+        and (
+            auto_name in existing_names
+            or (paths.root_dir / auto_name).exists()
+        )
+    ):
+        auto_name = None
+
+    repo_name = name if name else (auto_name or slug_name)
 
     # Check for duplicate name
-    for entry in repos_list:
-        existing_name = entry.get("name") or _derive_name_from_url(entry.get("url", ""))
-        if existing_name == repo_name:
-            raise click.ClickException(
-                f"A repo with name '{repo_name}' already exists in multi.json."
-            )
+    if repo_name in existing_names:
+        raise click.ClickException(
+            f"A repo with name '{repo_name}' already exists in multi.json."
+        )
 
     # Check target directory doesn't already exist
     target_dir = paths.root_dir / repo_name
@@ -86,6 +97,8 @@ def add_cmd(repo_url: str, name: str | None):
     new_entry: dict = {"url": repo_url}
     if name:
         new_entry["name"] = name
+    elif auto_name:
+        new_entry["name"] = auto_name
 
     repos_list.append(new_entry)
     config["repos"] = repos_list

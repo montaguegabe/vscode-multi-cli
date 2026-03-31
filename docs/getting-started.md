@@ -82,11 +82,37 @@ The init command will:
 
 ## Automation Path
 
-For scripts/automation, create or edit `multi.json` directly and run:
+For scripts/automation, you can initialize directly from the command line:
+
+```bash
+multi init \
+  --repo https://github.com/org/backend \
+  --repo-description "Backend API service" \
+  --repo https://github.com/org/frontend \
+  --repo-description "React frontend application"
+```
+
+If you want `multi init` to create the GitHub repositories first, use `--github-repo`. This shells out to `gh repo create`, requires `gh` to be installed and authenticated, and defaults to private repositories:
+
+```bash
+multi init \
+  --github-repo org/backend \
+  --github-description "Backend API service" \
+  --github-repo org/frontend \
+  --github-description "React frontend application"
+```
+
+You can override the defaults with `--github-visibility public|private|internal` and choose the URL format written to `multi.json` with `--github-clone-protocol https|ssh`.
+
+You can still hand-author `multi.json` and run:
 
 ```bash
 multi sync
 ```
+
+`multi init` automatically uses short local repo names when the remote slug starts with the workspace directory name. Example: in a `t-ide/` workspace, `https://github.com/org/t-ide-cli` becomes local folder `cli`. If you hand-author `multi.json`, keep using that same convention.
+
+The same convention applies when you later run `multi add`.
 
 ## VS Code Extension
 

@@ -76,7 +76,7 @@ def setup_git_repos() -> Generator[tuple[Path, List[Path]], None, None]:
         multi_json_path = _TEMP_PROJECT_ROOT / "multi.json"
         multi_json_path.write_text(json.dumps(multi_json_content, indent=2))
 
-        root_repo = git.Repo.init(_TEMP_PROJECT_ROOT)
+        root_repo = git.Repo.init(_TEMP_PROJECT_ROOT, initial_branch="main")
         readme_path = _TEMP_PROJECT_ROOT / "README.md"
         readme_path.write_text("# Root Repository")
         root_repo.git.add(["README.md", "multi.json"])
@@ -86,7 +86,7 @@ def setup_git_repos() -> Generator[tuple[Path, List[Path]], None, None]:
         for name in sub_repo_names:
             sub_repo_dir = _TEMP_PROJECT_ROOT / name
             sub_repo_dir.mkdir()
-            sub_repo = git.Repo.init(sub_repo_dir)
+            sub_repo = git.Repo.init(sub_repo_dir, initial_branch="main")
             readme_sub_path = sub_repo_dir / "README.md"
             readme_sub_path.write_text(f"# Sub Repository {name}")
             sub_repo.git.add(["README.md"])
@@ -96,6 +96,12 @@ def setup_git_repos() -> Generator[tuple[Path, List[Path]], None, None]:
         sync(root_dir=_TEMP_PROJECT_ROOT)
         root_repo.git.add(all=True)
         root_repo.index.commit("Post-sync commit")
+
+        for sub_repo_dir in created_sub_repo_dirs:
+            sub_repo = git.Repo(sub_repo_dir)
+            sub_repo.git.add(all=True)
+            if sub_repo.is_dirty(untracked_files=True):
+                sub_repo.index.commit("Post-sync commit")
 
         # --- Full setup of remote repositories and linking ---
         root_remote_git_path = _TEMP_REMOTES_ROOT / "root.git"

@@ -54,10 +54,10 @@ class LaunchFileMerger(VSCodeFileMerger):
         repo: Repository,
         source_json_path: Path,
     ) -> Dict[str, Any]:
-        # Add cwd to configurations that are not "attach" requests
+        # Add cwd to configurations unless explicitly provided.
         if "configurations" in repo_json:
             for config in repo_json["configurations"]:
-                if isinstance(config, dict) and config.get("request") != "attach":
+                if isinstance(config, dict):
                     if "cwd" not in config:
                         config["cwd"] = prefix_repo_name_to_path(
                             "${workspaceFolder}", repo.name

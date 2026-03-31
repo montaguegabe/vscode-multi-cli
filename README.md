@@ -32,6 +32,37 @@ multi init
 
 When prompted, paste in the URLs of all the repositories you want to have in your workspace. You can optionally specify descriptions of what they do, which will be used to create a new repo-directories.mdc Cursor/Claude rule.
 
-For automation, create or edit `multi.json` directly and run `multi sync`.
+For scripts, you can also initialize non-interactively:
+
+```bash
+multi init \
+  --repo https://github.com/org/backend \
+  --repo-description "Backend API" \
+  --repo https://github.com/org/frontend \
+  --repo-description "Frontend app"
+```
+
+To create GitHub repositories first, add `--github-repo` entries. This uses `gh repo create` and defaults to private visibility:
+
+```bash
+multi init \
+  --github-repo org/backend \
+  --github-description "Backend API" \
+  --github-repo org/frontend \
+  --github-description "Frontend app"
+```
+
+For `--github-repo`, the GitHub CLI (`gh`) must already be installed and authenticated.
+
+When repository slugs are product-prefixed, `multi init` automatically writes short local directory names into `multi.json` when the slug matches the workspace name prefix. For example, in a `t-ide/` workspace, `t-ide-cli` becomes local folder `cli`.
+
+The same naming rule applies to `multi add`, so adding `https://github.com/org/t-ide-cli` inside a `t-ide/` workspace will also default to local folder `cli`.
+
+To grant or remove GitHub collaborator access across every sub-repo in a workspace, use:
+
+```bash
+multi collaborator add octocat --permission maintain --yes
+multi collaborator remove octocat --yes
+```
 
 It is recommended you also install the [VS Code Extension](https://marketplace.visualstudio.com/items?itemName=montaguegabe.multi-workspace) that automatically keeps your project synced when edits are made to synced files. To manually sync, you can run `multi sync`.

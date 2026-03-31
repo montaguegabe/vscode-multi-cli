@@ -8,7 +8,7 @@ When working on projects that span multiple repositories, VS Code's multi-root w
 
 - **Unified branch management** - Keep all your repos on the same branch with a single command
 - **Configuration merging** - Automatically combine `.vscode` settings, launch configurations, and tasks from all repos
-- **AI assistant support** - Generate `CLAUDE.md` files from Cursor rules for better AI context
+- **AI assistant support** - Generate `repo-directories.mdc`, `CLAUDE.md`, and `AGENTS.md` from `multi.json` descriptions and Cursor rules
 - **Flexible structure** - Sub-repos are simply cloned into your workspace directory, no submodules required
 - **Workspace diagnostics** - Detect common misconfigurations with `multi doctor`
 
@@ -69,7 +69,7 @@ Get started in minutes:
 
 1. Install Multi: `pipx install multi-workspace`
 2. Create a workspace directory and run: `multi init`
-3. Add your repository URLs when prompted
+3. Add your repository URLs and optional descriptions when prompted, or pass `--repo` / `--repo-description` for non-interactive setup
 4. Install the [VS Code Extension](https://marketplace.visualstudio.com/items?itemName=montaguegabe.multi-workspace) for automatic syncing
 
 See the [Getting Started](getting-started.md) guide for detailed instructions.

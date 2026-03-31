@@ -21,6 +21,7 @@ my-workspace/
     {
       "url": "https://github.com/org/repo-a",
       "name": "custom-name",
+      "description": "Backend API service",
       "skipVSCode": false
     },
     {
@@ -113,6 +114,7 @@ An array of repository configurations. Each repository object supports:
 |-------|------|----------|---------|-------------|
 | `url` | string | Yes* | - | Git repository URL (HTTPS or SSH). *Not required in monorepo mode. |
 | `name` | string | No** | Last segment of URL | Custom directory name for the cloned repo. **Required in monorepo mode if no URL. |
+| `description` | string | No | - | Repository description used to generate `.cursor/rules/repo-directories.mdc` during `multi sync rules` |
 | `skipVSCode` | boolean | No | `false` | Skip this repo when merging VS Code configurations |
 | `allowSymlink` | boolean | No | `false` | Allow symlinking to an existing clone of this repo |
 
@@ -134,12 +136,33 @@ An array of repository configurations. Each repository object supports:
 {
   "repos": [
     {
-      "url": "https://github.com/org/my-long-repository-name",
-      "name": "api"
+      "url": "https://github.com/org/t-ide-cli",
+      "name": "cli"
     },
     {
-      "url": "https://github.com/org/another-long-name",
-      "name": "web"
+      "url": "https://github.com/org/t-ide-extension",
+      "name": "extension"
+    }
+  ]
+}
+```
+
+Recommended pattern: if the GitHub repository is product-prefixed, use a short local `name` that reflects the role of the repo rather than repeating the full slug.
+
+#### Example: Repository descriptions for AI context
+
+Use `description` when you want Multi to generate `.cursor/rules/repo-directories.mdc` so AI assistants can understand the role of each repo in the workspace.
+
+```json
+{
+  "repos": [
+    {
+      "url": "https://github.com/org/backend",
+      "description": "REST API and background jobs"
+    },
+    {
+      "url": "https://github.com/org/frontend",
+      "description": "Customer-facing web app"
     }
   ]
 }
