@@ -25,8 +25,7 @@ A full sync performs all of the following:
 3. Clones any missing repositories (standard mode only)
 4. Merges VS Code configurations (settings, launch, tasks, extensions)
 5. Syncs cursor rules (generates repo-directories.mdc from multi.json, converts to CLAUDE.md)
-6. Syncs ruff configurations
-7. Syncs GitHub Actions workflows to root `.github/workflows` (monorepo mode only)
+6. Syncs GitHub Actions workflows to root `.github/workflows` (monorepo mode only)
 
 ## Subcommands
 
@@ -34,7 +33,6 @@ A full sync performs all of the following:
 |------------|-------------|
 | [sync vscode](sync-vscode.md) | Merge VS Code configuration files |
 | [sync rules](sync-rules.md) | Generate repo descriptions and convert Cursor rules to CLAUDE.md |
-| [sync ruff](sync-ruff.md) | Copy ruff configuration to root |
 | [sync github](sync-github.md) | Sync root GitHub Actions workflows for monorepo workspaces |
 
 ## Examples

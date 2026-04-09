@@ -131,7 +131,6 @@ This command:
 - Ensures all repositories are cloned and up to date
 - Merges `.vscode` configurations from all sub-repos
 - Generates `CLAUDE.md` files from Cursor rules
-- Syncs ruff configurations
 
 ## Next Steps
 

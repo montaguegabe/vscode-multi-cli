@@ -58,11 +58,15 @@ When repository slugs are product-prefixed, `multi init` automatically writes sh
 
 The same naming rule applies to `multi add`, so adding `https://github.com/org/t-ide-cli` inside a `t-ide/` workspace will also default to local folder `cli`.
 
-To grant or remove GitHub collaborator access across every sub-repo in a workspace, use:
+To grant or remove GitHub collaborator access across every GitHub repo in a workspace, use:
 
 ```bash
 multi collaborator add octocat --permission maintain --yes
 multi collaborator remove octocat --yes
 ```
+
+When the workspace root repository has a GitHub `origin`, `multi collaborator` applies the change there too.
+
+If one repo fails, `multi collaborator` continues through the rest of the workspace and reports the failures at the end.
 
 It is recommended you also install the [VS Code Extension](https://marketplace.visualstudio.com/items?itemName=montaguegabe.multi-workspace) that automatically keeps your project synced when edits are made to synced files. To manually sync, you can run `multi sync`.

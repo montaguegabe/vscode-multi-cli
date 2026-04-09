@@ -7,6 +7,7 @@ import click
 
 from multi.git_helpers import check_repo_is_clean
 from multi.ignore_files import (
+    clear_subrepo_generated_file_block,
     remove_gitignore_entries_for_repos,
     remove_ignore_entries_for_repos,
 )
@@ -82,6 +83,8 @@ def remove_cmd(repo_name: str, delete: bool, force: bool):
     if not is_monorepo:
         remove_gitignore_entries_for_repos(paths, [repo_name])
         remove_ignore_entries_for_repos(paths, [repo_name])
+        if repo_path.exists():
+            clear_subrepo_generated_file_block(repo_path)
 
     # Re-merge VS Code configs
     merge_vscode_configs(root_dir=paths.root_dir)

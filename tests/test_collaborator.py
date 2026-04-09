@@ -2,6 +2,7 @@ import json
 import subprocess
 from pathlib import Path
 
+import git
 from click.testing import CliRunner
 
 from multi.cli import main
@@ -29,7 +30,12 @@ def _write_workspace_config() -> None:
     )
 
 
-def test_collaborator_add_uses_gh_api_for_all_subrepos(monkeypatch):
+def _init_workspace_root_repo() -> None:
+    repo = git.Repo.init(Path.cwd(), initial_branch="main")
+    repo.create_remote("origin", "https://github.com/example/t-ide-workspace")
+
+
+def test_collaborator_add_uses_gh_api_for_workspace_and_all_subrepos(monkeypatch):
     runner = CliRunner()
     calls: list[list[str]] = []
 
@@ -45,6 +51,7 @@ def test_collaborator_add_uses_gh_api_for_all_subrepos(monkeypatch):
 
     with runner.isolated_filesystem():
         _write_workspace_config()
+        _init_workspace_root_repo()
 
         result = runner.invoke(
             main,
@@ -66,6 +73,15 @@ def test_collaborator_add_uses_gh_api_for_all_subrepos(monkeypatch):
                 "api",
                 "--method",
                 "PUT",
+                "repos/example/t-ide-workspace/collaborators/octocat",
+                "-f",
+                "permission=maintain",
+            ],
+            [
+                "gh",
+                "api",
+                "--method",
+                "PUT",
                 "repos/example/t-ide-cli/collaborators/octocat",
                 "-f",
                 "permission=maintain",
@@ -82,7 +98,7 @@ def test_collaborator_add_uses_gh_api_for_all_subrepos(monkeypatch):
         ]
 
 
-def test_collaborator_remove_uses_gh_api_for_all_subrepos(monkeypatch):
+def test_collaborator_remove_uses_gh_api_for_workspace_and_all_subrepos(monkeypatch):
     runner = CliRunner()
     calls: list[list[str]] = []
 
@@ -98,6 +114,7 @@ def test_collaborator_remove_uses_gh_api_for_all_subrepos(monkeypatch):
 
     with runner.isolated_filesystem():
         _write_workspace_config()
+        _init_workspace_root_repo()
 
         result = runner.invoke(
             main,
@@ -117,6 +134,13 @@ def test_collaborator_remove_uses_gh_api_for_all_subrepos(monkeypatch):
                 "api",
                 "--method",
                 "DELETE",
+                "repos/example/t-ide-workspace/collaborators/octocat",
+            ],
+            [
+                "gh",
+                "api",
+                "--method",
+                "DELETE",
                 "repos/example/t-ide-cli/collaborators/octocat",
             ],
             [
@@ -125,5 +149,127 @@ def test_collaborator_remove_uses_gh_api_for_all_subrepos(monkeypatch):
                 "--method",
                 "DELETE",
                 "repos/example/t-ide-extension/collaborators/octocat",
+            ],
+        ]
+
+
+def test_collaborator_skips_workspace_root_without_github_origin(monkeypatch):
+    runner = CliRunner()
+    calls: list[list[str]] = []
+
+    def fake_subprocess_run(cmd, check, capture_output, text):
+        calls.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr("multi.collaborator.shutil.which", lambda name: "gh")
+    monkeypatch.setattr("multi.collaborator.subprocess.run", fake_subprocess_run)
+    monkeypatch.setattr(
+        "multi.cli_helpers.check_all_on_same_branch", lambda **kwargs: True
+    )
+
+    with runner.isolated_filesystem():
+        _write_workspace_config()
+        git.Repo.init(Path.cwd(), initial_branch="main")
+
+        result = runner.invoke(
+            main,
+            [
+                "collaborator",
+                "add",
+                "octocat",
+                "--yes",
+            ],
+        )
+
+        assert result.exit_code == 0
+        assert calls == [
+            ["gh", "api", "--method", "GET", "users/octocat"],
+            [
+                "gh",
+                "api",
+                "--method",
+                "PUT",
+                "repos/example/t-ide-cli/collaborators/octocat",
+                "-f",
+                "permission=push",
+            ],
+            [
+                "gh",
+                "api",
+                "--method",
+                "PUT",
+                "repos/example/t-ide-extension/collaborators/octocat",
+                "-f",
+                "permission=push",
+            ],
+        ]
+
+
+def test_collaborator_continues_after_repo_failure(monkeypatch):
+    runner = CliRunner()
+    calls: list[list[str]] = []
+
+    def fake_subprocess_run(cmd, check, capture_output, text):
+        calls.append(cmd)
+        if "repos/example/t-ide-cli/collaborators/octocat" in cmd:
+            raise subprocess.CalledProcessError(
+                1,
+                cmd,
+                output="",
+                stderr="gh: Not Found (HTTP 404)",
+            )
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr("multi.collaborator.shutil.which", lambda name: "gh")
+    monkeypatch.setattr("multi.collaborator.subprocess.run", fake_subprocess_run)
+    monkeypatch.setattr(
+        "multi.cli_helpers.check_all_on_same_branch", lambda **kwargs: True
+    )
+
+    with runner.isolated_filesystem():
+        _write_workspace_config()
+        _init_workspace_root_repo()
+
+        result = runner.invoke(
+            main,
+            [
+                "collaborator",
+                "add",
+                "octocat",
+                "--yes",
+            ],
+        )
+
+        assert result.exit_code == 1
+        assert "Finished add collaborator octocat with failures:" in result.output
+        assert "- example/t-ide-cli: gh: Not Found (HTTP 404)" in result.output
+        assert calls == [
+            ["gh", "api", "--method", "GET", "users/octocat"],
+            [
+                "gh",
+                "api",
+                "--method",
+                "PUT",
+                "repos/example/t-ide-workspace/collaborators/octocat",
+                "-f",
+                "permission=push",
+            ],
+            [
+                "gh",
+                "api",
+                "--method",
+                "PUT",
+                "repos/example/t-ide-cli/collaborators/octocat",
+                "-f",
+                "permission=push",
+            ],
+            [
+                "gh",
+                "api",
+                "--method",
+                "PUT",
+                "repos/example/t-ide-extension/collaborators/octocat",
+                "-f",
+                "permission=push",
             ],
         ]

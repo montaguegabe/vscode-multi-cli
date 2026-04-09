@@ -4,6 +4,7 @@ import subprocess
 from pathlib import Path
 
 import click
+import git
 
 from multi.cli_helpers import common_command_wrapper
 from multi.paths import Paths
@@ -48,9 +49,41 @@ def _run_gh_api(
         raise click.ClickException(message) from exc
 
 
-def _load_github_repo_slugs(paths: Paths) -> list[str]:
-    repo_slugs: list[str] = []
+def _load_workspace_github_repo_slug(paths: Paths) -> str | None:
+    try:
+        repo = git.Repo(paths.root_dir)
+    except (git.InvalidGitRepositoryError, git.NoSuchPathError):
+        return None
+
+    origin = next((remote for remote in repo.remotes if remote.name == "origin"), None)
+    if origin is None:
+        return None
+
+    return parse_github_repo_slug(origin.url)
+
+
+def _dedupe_repo_targets(
+    repo_targets: list[tuple[str, str]],
+) -> list[tuple[str, str]]:
+    seen_slugs: set[str] = set()
+    unique_targets: list[tuple[str, str]] = []
+
+    for label, slug in repo_targets:
+        if slug in seen_slugs:
+            continue
+        seen_slugs.add(slug)
+        unique_targets.append((label, slug))
+
+    return unique_targets
+
+
+def _load_github_repo_targets(paths: Paths) -> list[tuple[str, str]]:
+    repo_targets: list[tuple[str, str]] = []
     invalid_repos: list[str] = []
+
+    workspace_slug = _load_workspace_github_repo_slug(paths)
+    if workspace_slug:
+        repo_targets.append(("workspace", workspace_slug))
 
     for repo in load_repos(paths):
         if not repo.url:
@@ -62,7 +95,7 @@ def _load_github_repo_slugs(paths: Paths) -> list[str]:
             invalid_repos.append(repo.name)
             continue
 
-        repo_slugs.append(slug)
+        repo_targets.append((repo.name, slug))
 
     if invalid_repos:
         repo_list = ", ".join(sorted(invalid_repos))
@@ -71,7 +104,13 @@ def _load_github_repo_slugs(paths: Paths) -> list[str]:
             f"Unsupported repos: {repo_list}"
         )
 
-    return repo_slugs
+    unique_targets = _dedupe_repo_targets(repo_targets)
+    if not unique_targets:
+        raise click.ClickException(
+            "No GitHub-hosted repositories were found in this workspace."
+        )
+
+    return unique_targets
 
 
 def _verify_user_exists(gh_path: str, username: str) -> None:
@@ -86,13 +125,13 @@ def _confirm_across_repos(
     *,
     action: str,
     username: str,
-    repo_slugs: list[str],
+    repo_targets: list[tuple[str, str]],
     yes: bool,
 ) -> None:
     if yes:
         return
 
-    repo_list = "\n".join(f"- {slug}" for slug in repo_slugs)
+    repo_list = "\n".join(f"- {label}: {slug}" for label, slug in repo_targets)
     confirmed = click.confirm(
         f"{action.title()} collaborator '{username}' in these repos?\n{repo_list}",
         default=False,
@@ -110,40 +149,54 @@ def _manage_collaborator(
 ) -> None:
     paths = Paths(Path.cwd())
     gh_path = _ensure_gh_available()
-    repo_slugs = _load_github_repo_slugs(paths)
+    repo_targets = _load_github_repo_targets(paths)
+    failures: list[tuple[str, str]] = []
 
     _verify_user_exists(gh_path, username)
     _confirm_across_repos(
         action=action,
         username=username,
-        repo_slugs=repo_slugs,
+        repo_targets=repo_targets,
         yes=yes,
     )
 
-    for slug in repo_slugs:
+    for _, slug in repo_targets:
         endpoint = f"repos/{slug}/collaborators/{username}"
-        if action == "add":
-            logger.info(f"Adding collaborator {username} to {slug}")
-            _run_gh_api(
-                gh_path,
-                method="PUT",
-                endpoint=endpoint,
-                fields={"permission": permission or "push"},
-            )
-        else:
-            logger.info(f"Removing collaborator {username} from {slug}")
-            _run_gh_api(
-                gh_path,
-                method="DELETE",
-                endpoint=endpoint,
-            )
+        try:
+            if action == "add":
+                logger.info(f"Adding collaborator {username} to {slug}")
+                _run_gh_api(
+                    gh_path,
+                    method="PUT",
+                    endpoint=endpoint,
+                    fields={"permission": permission or "push"},
+                )
+            else:
+                logger.info(f"Removing collaborator {username} from {slug}")
+                _run_gh_api(
+                    gh_path,
+                    method="DELETE",
+                    endpoint=endpoint,
+                )
+        except click.ClickException as exc:
+            message = exc.message or str(exc)
+            logger.error(f"Failed {action} collaborator {username} on {slug}: {message}")
+            failures.append((slug, message))
 
-    logger.info(f"✅ Finished {action} collaborator {username} across all subrepos")
+    if failures:
+        failure_lines = "\n".join(f"- {slug}: {message}" for slug, message in failures)
+        raise click.ClickException(
+            f"Finished {action} collaborator {username} with failures:\n{failure_lines}"
+        )
+
+    logger.info(
+        f"✅ Finished {action} collaborator {username} across all workspace repos"
+    )
 
 
 @click.group(name="collaborator")
 def collaborator_cmd() -> None:
-    """Manage GitHub collaborators across all sub-repositories."""
+    """Manage GitHub collaborators across all workspace repositories."""
 
 
 @click.command(name="add")
@@ -161,7 +214,7 @@ def collaborator_cmd() -> None:
     help="Skip the confirmation prompt.",
 )
 def collaborator_add_cmd(username: str, permission: str, yes: bool) -> None:
-    """Add a GitHub collaborator to every sub-repo in this workspace."""
+    """Add a GitHub collaborator to every repo in this workspace."""
     _manage_collaborator(
         action="add",
         username=username,
@@ -178,7 +231,7 @@ def collaborator_add_cmd(username: str, permission: str, yes: bool) -> None:
     help="Skip the confirmation prompt.",
 )
 def collaborator_remove_cmd(username: str, yes: bool) -> None:
-    """Remove a GitHub collaborator from every sub-repo in this workspace."""
+    """Remove a GitHub collaborator from every repo in this workspace."""
     _manage_collaborator(
         action="remove",
         username=username,

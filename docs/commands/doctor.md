@@ -21,6 +21,11 @@ on disk).
 - `multi.json` can be discovered from the current directory.
 - `multi.json` is valid JSON and can be parsed.
 - Root workspace git repo exists.
+- Declared repos have non-empty `description` fields.
+- Declared repo remotes can be reached with `git ls-remote`.
+- Declared repos and on-disk repos match:
+  - warns if a repo is declared in `multi.json` but missing from disk.
+  - warns if a git repo exists on disk but is not declared in `multi.json`.
 - Standard mode (`monoRepo: false`) consistency:
   - warns if sub-repos are tracked in the root git index.
   - warns if sub-repos are configured as git submodules.
@@ -46,4 +51,8 @@ multi doctor --fix
 ## Notes
 
 - In `monoRepo` mode, listed directories should be part of the root git repo.
+- Missing descriptions are warnings because the workspace can still function, but they
+  degrade generated context such as repo-directory guidance.
+- Remote validation checks reachability, not just syntax. Failed checks can mean a bad URL,
+  missing repo, missing credentials, or no network access.
 - If you have independent nested git repositories, use standard multi-repo mode (`monoRepo: false`).

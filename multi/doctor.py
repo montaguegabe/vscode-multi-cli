@@ -1,5 +1,6 @@
 import json
 import logging
+import subprocess
 from dataclasses import dataclass, field
 from json import JSONDecodeError
 from pathlib import Path
@@ -13,6 +14,8 @@ from multi.paths import Paths
 from multi.repos import Repository, load_repos
 
 logger = logging.getLogger(__name__)
+
+REMOTE_CHECK_TIMEOUT_SECONDS = 10
 
 
 @dataclass
@@ -93,39 +96,42 @@ def find_subrepo_submodules(root_dir: Path, repos: list[Repository]) -> list[str
     return sorted(repo.name for repo in repos if repo.name in submodule_paths)
 
 
-def run_doctor_checks(target_dir: Path) -> DoctorReport:
-    report = DoctorReport()
-
+def validate_repo_remote(url: str) -> str | None:
+    """Return None when a remote is reachable, otherwise a short failure detail."""
     try:
-        paths = Paths(target_dir)
-    except FileNotFoundError:
-        report.errors.append(
-            "Could not find multi.json in this directory or parent directories."
+        result = subprocess.run(
+            ["git", "ls-remote", url],
+            capture_output=True,
+            text=True,
+            timeout=REMOTE_CHECK_TIMEOUT_SECONDS,
+            check=False,
         )
-        return report
+    except OSError as exc:
+        return f"could not run git ls-remote: {exc}"
+    except subprocess.TimeoutExpired:
+        return f"timed out after {REMOTE_CHECK_TIMEOUT_SECONDS}s"
 
-    report.infos.append(f"Found multi.json at {paths.multi_json_path}")
+    if result.returncode == 0:
+        return None
 
-    try:
-        # Access once to validate parseability.
-        settings = paths.settings
-    except (AssertionError, JSONDecodeError, OSError) as exc:
-        report.errors.append(f"Could not parse multi.json: {exc}")
-        return report
+    output = result.stderr.strip() or result.stdout.strip()
+    if output:
+        return output.splitlines()[0]
+    return f"git ls-remote exited with status {result.returncode}"
 
+
+def warn_if_root_git_missing(report: DoctorReport, paths: Paths) -> None:
     if not is_git_repo_root(paths.root_dir):
         report.warnings.append(
             f"Workspace root is not a git repository at {paths.root_dir}. "
             "Run `multi sync` (or `git init -b main`) to initialize it."
         )
 
-    try:
-        repos = load_repos(paths)
-    except (NoRepositoriesError, ValueError) as exc:
-        report.errors.append(str(exc))
-        return report
 
-    if settings.is_monorepo():
+def check_mode_specific_repo_requirements(
+    report: DoctorReport, paths: Paths, repos: list[Repository]
+) -> None:
+    if paths.settings.is_monorepo():
         nested_git_repos = find_nested_git_repos_in_monorepo(paths)
         if nested_git_repos:
             report.warnings.append(
@@ -133,41 +139,90 @@ def run_doctor_checks(target_dir: Path) -> DoctorReport:
                 f"(no nested .git). Found nested git repos: {', '.join(nested_git_repos)}. "
                 "Use standard multi-repo mode (monoRepo: false) for independent repos."
             )
-    else:
-        missing_url_names = [repo.name for repo in repos if not repo.url]
-        if missing_url_names:
-            report.errors.append(
-                "These repos are missing `url` and cannot be managed in standard mode: "
-                f"{', '.join(missing_url_names)}."
-            )
+        return
 
-    # In standard mode, sub-repos should be untracked in the root index.
-    if is_git_repo_root(paths.root_dir) and not settings.is_monorepo():
-        tracked = find_tracked_subrepos(paths.root_dir, repos)
-        if tracked:
-            report.warnings.append(
-                "Sub-repos are tracked in the workspace git index "
-                "(they should be .gitignored): "
-                f"{', '.join(tracked)}. "
-                "Add them to .gitignore and remove from the index with "
-                "`git rm -r --cached <repo>`."
-            )
-    if is_git_repo_root(paths.root_dir):
-        as_submodules = find_subrepo_submodules(paths.root_dir, repos)
-        if as_submodules:
-            report.warnings.append(
-                "Sub-repos are registered as git submodules "
-                "(multi does not use submodules): "
-                f"{', '.join(as_submodules)}. "
-                "Remove them with `git rm --cached <repo>` and delete "
-                "the entry from .gitmodules."
-            )
+    missing_url_names = [repo.name for repo in repos if not repo.url]
+    if missing_url_names:
+        report.errors.append(
+            "These repos are missing `url` and cannot be managed in standard mode: "
+            f"{', '.join(missing_url_names)}."
+        )
 
-    # Check for mismatches between repos on disk and multi.json
+
+def warn_on_missing_descriptions(
+    report: DoctorReport, repos: list[Repository]
+) -> None:
+    missing_descriptions = sorted(
+        repo.name
+        for repo in repos
+        if not (
+            isinstance(description := getattr(repo, "description", None), str)
+            and description.strip()
+        )
+    )
+    if missing_descriptions:
+        report.warnings.append(
+            "Repos declared in multi.json are missing a non-empty `description`: "
+            f"{', '.join(missing_descriptions)}. "
+            "Add descriptions so generated workspace context and diagnostics stay useful."
+        )
+
+
+def warn_on_unreachable_remotes(report: DoctorReport, repos: list[Repository]) -> None:
+    unreachable_remotes = []
+    for repo in repos:
+        if not repo.url:
+            continue
+        remote_error = validate_repo_remote(repo.url)
+        if remote_error:
+            unreachable_remotes.append(f"{repo.name} ({remote_error})")
+    if unreachable_remotes:
+        report.warnings.append(
+            "Repos declared in multi.json have unreachable remotes: "
+            f"{', '.join(unreachable_remotes)}. "
+            "Verify the URL, network access, and credentials."
+        )
+
+
+def warn_on_tracked_subrepos(
+    report: DoctorReport, paths: Paths, repos: list[Repository]
+) -> None:
+    if not is_git_repo_root(paths.root_dir) or paths.settings.is_monorepo():
+        return
+
+    tracked = find_tracked_subrepos(paths.root_dir, repos)
+    if tracked:
+        report.warnings.append(
+            "Sub-repos are tracked in the workspace git index "
+            "(they should be .gitignored): "
+            f"{', '.join(tracked)}. "
+            "Add them to .gitignore and remove from the index with "
+            "`git rm -r --cached <repo>`."
+        )
+
+
+def warn_on_subrepo_submodules(
+    report: DoctorReport, paths: Paths, repos: list[Repository]
+) -> None:
+    if not is_git_repo_root(paths.root_dir):
+        return
+
+    as_submodules = find_subrepo_submodules(paths.root_dir, repos)
+    if as_submodules:
+        report.warnings.append(
+            "Sub-repos are registered as git submodules "
+            "(multi does not use submodules): "
+            f"{', '.join(as_submodules)}. "
+            "Remove them with `git rm --cached <repo>` and delete "
+            "the entry from .gitmodules."
+        )
+
+
+def warn_on_repo_disk_mismatches(
+    report: DoctorReport, paths: Paths, repos: list[Repository]
+) -> None:
     declared_names = {repo.name for repo in repos}
-    if settings.is_monorepo():
-        # In monorepo mode, declared repos are expected to be plain directories
-        # inside the root repo (without nested .git directories).
+    if paths.settings.is_monorepo():
         on_disk_git_repos = find_git_repos_on_disk(paths.root_dir)
         undeclared = sorted(on_disk_git_repos - declared_names)
         if undeclared:
@@ -185,21 +240,58 @@ def run_doctor_checks(target_dir: Path) -> DoctorReport:
                 f"{', '.join(missing_on_disk)}. In monoRepo mode, create these "
                 "directories in the workspace."
             )
-    else:
-        on_disk = find_git_repos_on_disk(paths.root_dir)
-        undeclared = sorted(on_disk - declared_names)
-        if undeclared:
-            report.warnings.append(
-                "Git repos found on disk but not declared in multi.json: "
-                f"{', '.join(undeclared)}. Add them to multi.json or remove them."
-            )
+        return
 
-        missing_on_disk = sorted(declared_names - on_disk)
-        if missing_on_disk:
-            report.warnings.append(
-                "Repos declared in multi.json but not found on disk: "
-                f"{', '.join(missing_on_disk)}. Run `multi sync` to clone them."
-            )
+    on_disk = find_git_repos_on_disk(paths.root_dir)
+    undeclared = sorted(on_disk - declared_names)
+    if undeclared:
+        report.warnings.append(
+            "Git repos found on disk but not declared in multi.json: "
+            f"{', '.join(undeclared)}. Add them to multi.json or remove them."
+        )
+
+    missing_on_disk = sorted(declared_names - on_disk)
+    if missing_on_disk:
+        report.warnings.append(
+            "Repos declared in multi.json but not found on disk: "
+            f"{', '.join(missing_on_disk)}. Run `multi sync` to clone them."
+        )
+
+
+def run_doctor_checks(target_dir: Path) -> DoctorReport:
+    report = DoctorReport()
+
+    try:
+        paths = Paths(target_dir)
+    except FileNotFoundError:
+        report.errors.append(
+            "Could not find multi.json in this directory or parent directories."
+        )
+        return report
+
+    report.infos.append(f"Found multi.json at {paths.multi_json_path}")
+
+    try:
+        # Access once to validate parseability.
+        _ = paths.settings
+    except (AssertionError, JSONDecodeError, OSError) as exc:
+        report.errors.append(f"Could not parse multi.json: {exc}")
+        return report
+
+    warn_if_root_git_missing(report, paths)
+
+    try:
+        repos = load_repos(paths)
+    except (NoRepositoriesError, ValueError) as exc:
+        report.errors.append(str(exc))
+        return report
+
+    check_mode_specific_repo_requirements(report, paths, repos)
+    warn_on_missing_descriptions(report, repos)
+    warn_on_unreachable_remotes(report, repos)
+    warn_on_tracked_subrepos(report, paths, repos)
+    warn_on_subrepo_submodules(report, paths, repos)
+    warn_on_repo_disk_mismatches(report, paths, repos)
 
     return report
 

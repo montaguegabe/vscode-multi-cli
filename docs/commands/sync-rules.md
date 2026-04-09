@@ -1,6 +1,6 @@
 # sync rules
 
-Sync cursor rules: generate repo descriptions and convert to `CLAUDE.md` files.
+Sync cursor rules: generate repo descriptions and convert to `CLAUDE.md` and `AGENTS.md` files.
 
 ## Usage
 
@@ -13,16 +13,16 @@ multi sync rules
 The `sync rules` command:
 
 1. **Generates `repo-directories.mdc`** from repository descriptions in `multi.json`
-2. **Converts Cursor rules to `CLAUDE.md`** files for all repositories
+2. **Converts Cursor rules to `CLAUDE.md` and `AGENTS.md`** files for all repositories
 
-This allows AI assistants that read `CLAUDE.md` files (like Claude Code) to benefit from the context you've defined in your Cursor rules.
+This allows AI assistants that read `CLAUDE.md` or `AGENTS.md` files to benefit from the context you've defined in your Cursor rules.
 
 ## How It Works
 
 1. Reads repository descriptions from `multi.json` and generates `.cursor/rules/repo-directories.mdc`
 2. Scans the root directory and all sub-repos for `.cursor/rules/*.mdc` files
 3. Parses the Cursor rule format (MDC)
-4. Generates a `CLAUDE.md` file alongside each `.cursor` directory
+4. Generates `CLAUDE.md` and `AGENTS.md` alongside each `.cursor` directory
 
 ## Repository Descriptions
 
@@ -85,16 +85,19 @@ my-workspace/
 │       ├── project-context.mdc
 │       └── repo-directories.mdc  # Generated from multi.json descriptions
 ├── CLAUDE.md                     # Generated from all root cursor rules
+├── AGENTS.md                     # Generated from all root cursor rules
 ├── api-repo/
 │   ├── .cursor/
 │   │   └── rules/
 │   │       └── api-guidelines.mdc
-│   └── CLAUDE.md                 # Generated from api-guidelines.mdc
+│   ├── CLAUDE.md                 # Generated from api-guidelines.mdc
+│   └── AGENTS.md                 # Generated from api-guidelines.mdc
 └── web-repo/
     ├── .cursor/
     │   └── rules/
     │       └── frontend-rules.mdc
-    └── CLAUDE.md                 # Generated from frontend-rules.mdc
+    ├── CLAUDE.md                 # Generated from frontend-rules.mdc
+    └── AGENTS.md                 # Generated from frontend-rules.mdc
 ```
 
 ## Why Use This?
@@ -106,7 +109,7 @@ my-workspace/
 
 ## Notes
 
-- The VS Code extension automatically runs this when `.cursor/rules/*` files change
-- Existing `CLAUDE.md` files are overwritten - don't manually edit generated files
+- The VS Code extension automatically runs this when `.cursor/rules/*.mdc` files change
+- Existing `CLAUDE.md` and `AGENTS.md` files are overwritten - don't manually edit generated files
 - The `repo-directories.mdc` file is regenerated from `multi.json` on each sync
-- If you want manual control over `CLAUDE.md`, don't create `.cursor/rules/` files
+- If you want manual control over `CLAUDE.md` or `AGENTS.md`, don't create `.cursor/rules/` files

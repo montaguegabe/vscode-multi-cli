@@ -4,6 +4,7 @@ from pathlib import Path
 from click.testing import CliRunner
 
 from multi.convert_monorepo import convert_monorepo_cmd
+from multi.ignore_files import REPO_DIRECTORIES_BLOCK, SEARCHABLE_REPOS_BLOCK
 
 
 def _write_multi_json(*, mono_repo: bool) -> None:
@@ -52,8 +53,14 @@ def test_convert_monorepo_converts_workspace_and_cleans_ignore_entries():
         assert config["monoRepo"] is True
         assert not (Path("repo-a") / ".git").exists()
         assert not (Path("repo-b") / ".git").exists()
-        assert Path(".gitignore").read_text(encoding="utf-8") == "keep/\n"
-        assert Path(".ignore").read_text(encoding="utf-8") == "!keep/\n"
+        gitignore = Path(".gitignore").read_text(encoding="utf-8")
+        ignore = Path(".ignore").read_text(encoding="utf-8")
+        assert "keep/" in gitignore
+        assert "repo-a/" not in gitignore
+        assert REPO_DIRECTORIES_BLOCK.begin_marker not in gitignore
+        assert "!keep/" in ignore
+        assert "!repo-a/" not in ignore
+        assert SEARCHABLE_REPOS_BLOCK.begin_marker not in ignore
 
 
 def test_convert_monorepo_fails_if_already_monorepo():

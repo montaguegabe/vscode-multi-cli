@@ -1,139 +1,108 @@
-import logging
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
+from multi.managed_blocks import (
+    ManagedBlock,
+    get_managed_block_lines,
+    has_managed_block,
+    replace_managed_block,
+)
 from multi.paths import Paths
 from multi.repos import load_repos
 
-logger = logging.getLogger(__name__)
+REPO_DIRECTORIES_BLOCK = ManagedBlock("repo-directories")
+SEARCHABLE_REPOS_BLOCK = ManagedBlock("search-inside-gitignored-repos")
+GENERATED_FILES_BLOCK = ManagedBlock("generated-files")
 
 
 class IgnoreFile:
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, block: ManagedBlock):
         self.path = path
-        self._existing_lines: Optional[List[str]] = None
+        self.block = block
 
     @property
     def existing_lines(self) -> List[str]:
-        """Lazily load and cache existing lines from the file."""
-        if self._existing_lines is None:
-            self._existing_lines = self._read_lines()
-        return self._existing_lines
-
-    def _read_lines(self) -> List[str]:
-        """Read and return lines from the ignore file."""
         if not self.path.exists():
             return []
-        with self.path.open("r") as f:
-            return [line.strip() for line in f.readlines()]
+        return self.path.read_text(encoding="utf-8").splitlines()
 
-    def add_lines_if_missing(self, lines: List[str], header: str) -> None:
-        """Add lines under the specified header section, creating it if needed.
+    def set_managed_lines(self, lines: List[str]) -> None:
+        replace_managed_block(self.path, self.block, lines)
 
-        If the header exists, new lines are added under the existing section.
-        If the header doesn't exist, it's added to the bottom of the file.
-        Only lines that don't already exist in the file are added.
-        """
-        if not lines:
+    def remove_managed_lines(self, lines: List[str]) -> None:
+        if not self.path.exists():
             return
 
-        # Find lines that don't already exist
-        lines_to_add = [line for line in lines if line not in self.existing_lines]
-        if not lines_to_add:
+        existing_text = self.path.read_text(encoding="utf-8")
+        if has_managed_block(existing_text, self.block):
+            existing_lines = get_managed_block_lines(existing_text, self.block)
+            next_lines = [line for line in existing_lines if line not in set(lines)]
+            replace_managed_block(self.path, self.block, next_lines)
             return
 
-        existing_lines = self.existing_lines.copy()
+        updated_lines = [
+            line
+            for line in existing_text.splitlines()
+            if line not in set(lines)
+        ]
+        next_text = ""
+        if updated_lines:
+            next_text = "\n".join(updated_lines).rstrip("\n") + "\n"
+        if next_text:
+            self.path.write_text(next_text, encoding="utf-8")
+        else:
+            self.path.unlink()
 
-        # Try to find the header in existing content
-        try:
-            header_index = existing_lines.index(header)
-            # Find the end of this section (next header or end of file)
-            section_end = header_index + 1
-            while section_end < len(existing_lines):
-                if existing_lines[section_end].startswith("#"):
-                    break
-                section_end += 1
-            # Insert new lines after the last line in this section
-            existing_lines[section_end:section_end] = lines_to_add
-        except ValueError:
-            # Header not found, add to end of file
-            if existing_lines and existing_lines[-1] != "":
-                existing_lines.append("")  # Add blank line before new section
-            existing_lines.append(header)
-            existing_lines.extend(lines_to_add)
 
-        # Write back the updated content
-        with self.path.open("w") as f:
-            f.write("\n".join(existing_lines) + "\n")
+def _repo_entries(paths: Paths) -> List[str]:
+    entries: List[str] = [
+        "# multi avoids git submodules; each entry has both forms: trailing slash matches directories, bare name matches symlinks/aliases.",
+    ]
+    for repo in load_repos(paths=paths):
+        entries.append(f"{repo.name}/")
+        entries.append(repo.name)
+    return entries
 
-        # Update cached lines
-        self._existing_lines = existing_lines
 
-    def remove_lines(self, lines: List[str]) -> None:
-        """Remove exact matching lines from the ignore file, if present."""
-        if not lines or not self.path.exists():
-            return
+def _search_entries(paths: Paths) -> List[str]:
+    entries: List[str] = [
+        "# Allow us to search inside these gitignored directories",
+    ]
+    for repo in load_repos(paths=paths):
+        entries.append(f"!{repo.name}/")
+        entries.append(f"!{repo.name}")
+    return entries
 
-        lines_to_remove = set(lines)
-        existing_lines = self.existing_lines.copy()
-        updated_lines = [line for line in existing_lines if line not in lines_to_remove]
 
-        if updated_lines == existing_lines:
-            return
+def _subrepo_generated_entries(repo_path: Path) -> List[str]:
+    entries = ["# These files are generated by multi.", "CLAUDE.md", "AGENTS.md"]
+    repo_vscode_dir = repo_path / ".vscode"
+    if (
+        (repo_vscode_dir / "settings.shared.json").exists()
+        or (repo_vscode_dir / "settings.local.json").exists()
+    ):
+        entries.append(".vscode/settings.json")
+    return entries
 
-        with self.path.open("w") as f:
-            f.write("\n".join(updated_lines) + "\n")
 
-        self._existing_lines = updated_lines
+def clear_subrepo_generated_file_block(repo_path: Path) -> None:
+    IgnoreFile(repo_path / ".gitignore", GENERATED_FILES_BLOCK).set_managed_lines([])
 
 
 def update_gitignore_with_repos(paths: Paths):
-    """Ensure all repos are in gitignore entries.
-
-    Adds both slash (directory) and non-slash (file/symlink) patterns
-    for each repo to handle both cloned directories and symlinks.
-
-    Skipped in monorepo mode since directories are part of the repo.
-    """
+    gitignore = IgnoreFile(paths.gitignore_path, REPO_DIRECTORIES_BLOCK)
     if paths.settings.is_monorepo():
-        logger.debug("Skipping .gitignore update in monorepo mode")
+        gitignore.set_managed_lines([])
         return
-
-    repos = load_repos(paths=paths)
-    # Include both patterns: 'repo/' for directories and 'repo' for symlinks
-    repo_entries = []
-    for repo in repos:
-        repo_entries.append(f"{repo.name}/")
-        repo_entries.append(repo.name)
-    gitignore = IgnoreFile(paths.gitignore_path)
-    gitignore.add_lines_if_missing(repo_entries, "# Ignore repository directories")
-    logger.debug("Updated .gitignore with new repositories")
+    gitignore.set_managed_lines(_repo_entries(paths))
 
 
 def update_ignore_with_repos(paths: Paths):
-    """Update .ignore to allow searching in gitignored directories.
-
-    Adds both slash (directory) and non-slash (file/symlink) patterns
-    for each repo to handle both cloned directories and symlinks.
-
-    Skipped in monorepo mode since directories are part of the repo.
-    """
+    vscode_ignore = IgnoreFile(paths.vscode_ignore_path, SEARCHABLE_REPOS_BLOCK)
     if paths.settings.is_monorepo():
-        logger.debug("Skipping .ignore update in monorepo mode")
+        vscode_ignore.set_managed_lines([])
         return
-
-    repos = load_repos(paths=paths)
-    # Include both patterns: '!repo/' for directories and '!repo' for symlinks
-    repo_entries = []
-    for repo in repos:
-        repo_entries.append(f"!{repo.name}/")
-        repo_entries.append(f"!{repo.name}")
-    vscode_ignore = IgnoreFile(paths.vscode_ignore_path)
-    vscode_ignore.add_lines_if_missing(
-        repo_entries,
-        "# Allow us to search inside these gitignored directories",
-    )
-    logger.debug("Updated .ignore with new repositories")
+    vscode_ignore.set_managed_lines(_search_entries(paths))
 
 
 def remove_gitignore_entries_for_repos(paths: Paths, repo_names: List[str]) -> None:
@@ -145,7 +114,9 @@ def remove_gitignore_entries_for_repos(paths: Paths, repo_names: List[str]) -> N
         entries.append(f"{repo_name}/")
         entries.append(repo_name)
 
-    IgnoreFile(paths.gitignore_path).remove_lines(entries)
+    IgnoreFile(paths.gitignore_path, REPO_DIRECTORIES_BLOCK).remove_managed_lines(
+        entries
+    )
 
 
 def remove_ignore_entries_for_repos(paths: Paths, repo_names: List[str]) -> None:
@@ -157,12 +128,14 @@ def remove_ignore_entries_for_repos(paths: Paths, repo_names: List[str]) -> None
         entries.append(f"!{repo_name}/")
         entries.append(f"!{repo_name}")
 
-    IgnoreFile(paths.vscode_ignore_path).remove_lines(entries)
+    IgnoreFile(paths.vscode_ignore_path, SEARCHABLE_REPOS_BLOCK).remove_managed_lines(
+        entries
+    )
 
 
 def update_gitignore_with_generated_files(paths: Paths):
-    """Add generated files to gitignore entries."""
     root_generated_entries = [
+        "# These files are generated by multi.",
         ".vscode/settings.json",
         ".vscode/tasks.json",
         ".vscode/launch.json",
@@ -170,32 +143,19 @@ def update_gitignore_with_generated_files(paths: Paths):
         "CLAUDE.md",
         "AGENTS.md",
     ]
-    gitignore = IgnoreFile(paths.gitignore_path)
-    gitignore.add_lines_if_missing(root_generated_entries, "# Generated")
-    logger.debug("Updated root .gitignore with generated files")
+    IgnoreFile(paths.gitignore_path, GENERATED_FILES_BLOCK).set_managed_lines(
+        root_generated_entries
+    )
 
-    if paths.settings.is_monorepo():
-        logger.debug("Skipping sub-repo .gitignore generated file updates in monorepo mode")
+    if paths.settings.is_monorepo() or not paths.settings.get("repos"):
         return
 
-    if not paths.settings.get("repos"):
-        logger.debug("No repositories configured; skipping sub-repo .gitignore updates")
-        return
-
-    subrepo_generated_entries = [
-        "CLAUDE.md",
-        "AGENTS.md",
-    ]
     repos = load_repos(paths=paths)
     for repo in repos:
         repo_git_dir = repo.path / ".git"
         if not repo_git_dir.exists():
-            logger.debug(
-                f"Skipping generated file gitignore update for {repo.name}: no .git found"
-            )
             continue
 
-        repo_gitignore = IgnoreFile(repo.path / ".gitignore")
-        repo_gitignore.add_lines_if_missing(subrepo_generated_entries, "# Generated")
-
-    logger.debug("Updated sub-repo .gitignore files with generated files")
+        IgnoreFile(repo.path / ".gitignore", GENERATED_FILES_BLOCK).set_managed_lines(
+            _subrepo_generated_entries(repo.path)
+        )

@@ -19,7 +19,6 @@ from multi.paths import Paths
 from multi.registry import lookup_repo, register_repo
 from multi.repos import Repository, load_repos
 from multi.sync_github import sync_all_github_actions, sync_github_cmd
-from multi.sync_ruff import sync_all_ruff_configs, sync_ruff_cmd
 from multi.sync_rules import sync_all_rules, sync_rules_cmd
 from multi.sync_vscode import merge_vscode_configs, vscode_cmd
 
@@ -178,7 +177,6 @@ def sync(root_dir: Path, ensure_on_same_branch: bool = True):
     update_gitignore_with_generated_files(paths=paths)
     merge_vscode_configs(root_dir=root_dir)
     sync_all_rules(root_dir=root_dir)
-    sync_all_ruff_configs(root_dir=root_dir)
     sync_all_github_actions(root_dir=root_dir)
 
     logger.info("✅ Sync complete")
@@ -200,5 +198,4 @@ def sync_cmd(ctx: click.Context):
 # Add subcommands
 sync_cmd.add_command(common_command_wrapper(vscode_cmd))
 sync_cmd.add_command(common_command_wrapper(sync_rules_cmd))
-sync_cmd.add_command(common_command_wrapper(sync_ruff_cmd))
 sync_cmd.add_command(common_command_wrapper(sync_github_cmd))

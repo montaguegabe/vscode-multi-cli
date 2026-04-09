@@ -1,8 +1,14 @@
 import json
 
 import git
+import pytest
 
 from multi.doctor import run_doctor_checks, run_doctor_fixes
+
+
+@pytest.fixture(autouse=True)
+def stub_remote_validation(monkeypatch):
+    monkeypatch.setattr("multi.doctor.validate_repo_remote", lambda url: None)
 
 
 def test_doctor_warns_on_nested_git_repos_in_monorepo(tmp_path):
@@ -84,6 +90,72 @@ def test_doctor_warns_on_declared_repo_missing_from_disk(tmp_path):
     assert any("repo-b" in w for w in report.warnings)
 
 
+def test_doctor_accepts_reachable_declared_remote(tmp_path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+
+    multi_json = {
+        "repos": [
+            {"url": "https://github.com/example/repo-a"},
+        ]
+    }
+    (workspace / "multi.json").write_text(json.dumps(multi_json, indent=2))
+
+    report = run_doctor_checks(workspace)
+    assert not any("unreachable remotes" in w for w in report.warnings)
+
+
+def test_doctor_warns_on_unreachable_declared_remote(tmp_path, monkeypatch):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+
+    monkeypatch.setattr(
+        "multi.doctor.validate_repo_remote",
+        lambda url: "fatal: repository not found",
+    )
+
+    multi_json = {
+        "repos": [
+            {"url": "https://github.com/example/repo-a"},
+        ]
+    }
+    (workspace / "multi.json").write_text(json.dumps(multi_json, indent=2))
+
+    report = run_doctor_checks(workspace)
+    assert any("unreachable remotes" in w for w in report.warnings)
+    assert any("repo-a" in w for w in report.warnings)
+
+
+def test_doctor_warns_on_repo_missing_description(tmp_path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+
+    multi_json = {
+        "repos": [
+            {
+                "url": "https://github.com/example/repo-a",
+                "description": "Primary API repo",
+            },
+            {
+                "url": "https://github.com/example/repo-b",
+                "description": "   ",
+            },
+            {
+                "url": "https://github.com/example/repo-c",
+            },
+        ]
+    }
+    (workspace / "multi.json").write_text(json.dumps(multi_json, indent=2))
+    (workspace / "repo-a" / ".git").mkdir(parents=True)
+    (workspace / "repo-b" / ".git").mkdir(parents=True)
+    (workspace / "repo-c" / ".git").mkdir(parents=True)
+
+    report = run_doctor_checks(workspace)
+    assert any("missing a non-empty `description`" in w for w in report.warnings)
+    assert any("repo-b" in w for w in report.warnings)
+    assert any("repo-c" in w for w in report.warnings)
+
+
 def test_doctor_no_mismatch_warnings_when_in_sync(tmp_path):
     workspace = tmp_path / "workspace"
     workspace.mkdir()
@@ -148,6 +220,24 @@ def test_doctor_monorepo_warns_when_declared_directory_is_missing(tmp_path):
     report = run_doctor_checks(workspace)
     assert any("not found on disk" in w for w in report.warnings)
     assert any("repo-b" in w for w in report.warnings)
+
+
+def test_doctor_monorepo_skips_remote_check_for_name_only_repo(tmp_path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+
+    git.Repo.init(workspace, initial_branch="main")
+    multi_json = {
+        "monoRepo": True,
+        "repos": [
+            {"name": "repo-a"},
+        ],
+    }
+    (workspace / "multi.json").write_text(json.dumps(multi_json, indent=2))
+    (workspace / "repo-a").mkdir()
+
+    report = run_doctor_checks(workspace)
+    assert not any("unreachable remotes" in w for w in report.warnings)
 
 
 def test_doctor_warns_on_tracked_subrepo(tmp_path):

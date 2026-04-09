@@ -1,90 +1,71 @@
 import json
 
 from multi.ignore_files import (
+    GENERATED_FILES_BLOCK,
+    REPO_DIRECTORIES_BLOCK,
+    SEARCHABLE_REPOS_BLOCK,
     IgnoreFile,
+    clear_subrepo_generated_file_block,
     remove_gitignore_entries_for_repos,
     remove_ignore_entries_for_repos,
     update_gitignore_with_generated_files,
+    update_gitignore_with_repos,
+    update_ignore_with_repos,
 )
 from multi.paths import Paths
 
 
-def test_add_lines_preserves_existing_content(tmp_path):
-    """Test that add_lines_if_missing preserves all existing content."""
-    # Create a temporary gitignore with existing content
+def test_set_managed_lines_preserves_existing_content(tmp_path):
     ignore_path = tmp_path / ".gitignore"
-    existing_content = [
-        "# Existing section",
-        "*.log",
-        "*.tmp",
-        "",
-        "# Node stuff",
-        "node_modules/",
-        "package-lock.json",
-        "",
-        "# Python stuff",
-        "__pycache__/",
-        "*.pyc",
-    ]
-    ignore_path.write_text("\n".join(existing_content) + "\n")
+    ignore_path.write_text("# Existing\nkeep-me\n", encoding="utf-8")
 
-    # Initialize IgnoreFile and add new lines
-    ignore_file = IgnoreFile(ignore_path)
-    new_lines = ["dist/", "build/"]
-    ignore_file.add_lines_if_missing(new_lines, "# Build outputs")
+    ignore_file = IgnoreFile(ignore_path, REPO_DIRECTORIES_BLOCK)
+    ignore_file.set_managed_lines(["repo-a/", "repo-a"])
 
-    # Read the file and verify all original content is preserved
-    updated_content = ignore_file.existing_lines
-    for line in existing_content:
-        assert line in updated_content
-
-    # Verify new lines were added
-    assert "# Build outputs" in updated_content
-    assert "dist/" in updated_content
-    assert "build/" in updated_content
+    content = ignore_path.read_text(encoding="utf-8")
+    assert "# Existing\nkeep-me\n" in content
+    assert REPO_DIRECTORIES_BLOCK.begin_marker in content
+    assert "repo-a/" in content
+    assert "repo-a" in content
+    assert REPO_DIRECTORIES_BLOCK.end_marker in content
 
 
-def test_add_lines_to_existing_section(tmp_path):
-    """Test that add_lines_if_missing adds lines under the correct header even with surrounding content."""
-    ignore_path = tmp_path / ".gitignore"
-    initial_content = [
-        "# Top section",
-        "*.log",
-        "",
-        "# Target section",
-        "existing_item/",
-        "",
-        "# Bottom section",
-        "*.tmp",
-        "temp/",
-    ]
-    ignore_path.write_text("\n".join(initial_content) + "\n")
+def test_update_repo_and_search_blocks_use_managed_markers(tmp_path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    (workspace / "multi.json").write_text(
+        json.dumps(
+            {
+                "repos": [
+                    {"url": "https://github.com/test/repo-a"},
+                    {"url": "https://github.com/test/repo-b"},
+                ]
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
 
-    # Add new lines to the middle section
-    ignore_file = IgnoreFile(ignore_path)
-    new_lines = ["new_item1/", "new_item2/"]
-    ignore_file.add_lines_if_missing(new_lines, "# Target section")
+    paths = Paths(workspace)
+    update_gitignore_with_repos(paths)
+    update_ignore_with_repos(paths)
 
-    # Verify the structure
-    updated_content = ignore_file.existing_lines
+    gitignore = (workspace / ".gitignore").read_text(encoding="utf-8")
+    assert REPO_DIRECTORIES_BLOCK.begin_marker in gitignore
+    assert (
+        "# multi avoids git submodules; each entry has both forms: trailing slash matches directories, bare name matches symlinks/aliases."
+        in gitignore
+    )
+    assert "repo-a/" in gitignore
+    assert "repo-b" in gitignore
+    assert REPO_DIRECTORIES_BLOCK.end_marker in gitignore
 
-    # Check that all sections are preserved
-    assert "# Top section" in updated_content
-    assert "*.log" in updated_content
-    assert "# Target section" in updated_content
-    assert "existing_item/" in updated_content
-    assert "# Bottom section" in updated_content
-    assert "*.tmp" in updated_content
-    assert "temp/" in updated_content
-
-    # Check that new items were added in the correct section
-    target_section_start = updated_content.index("# Target section")
-    bottom_section_start = updated_content.index("# Bottom section")
-
-    # Verify new items are between the target and bottom sections
-    section_content = updated_content[target_section_start:bottom_section_start]
-    assert "new_item1/" in section_content
-    assert "new_item2/" in section_content
+    ignore = (workspace / ".ignore").read_text(encoding="utf-8")
+    assert SEARCHABLE_REPOS_BLOCK.begin_marker in ignore
+    assert "# Allow us to search inside these gitignored directories" in ignore
+    assert "!repo-a/" in ignore
+    assert "!repo-b" in ignore
+    assert SEARCHABLE_REPOS_BLOCK.end_marker in ignore
 
 
 def test_update_gitignore_with_generated_files_updates_root_and_subrepos(tmp_path):
@@ -99,30 +80,37 @@ def test_update_gitignore_with_generated_files_updates_root_and_subrepos(tmp_pat
                 ]
             },
             indent=2,
-        )
+        ),
+        encoding="utf-8",
     )
 
     repo_a = workspace / "repo-a"
     repo_b = workspace / "repo-b"
     (repo_a / ".git").mkdir(parents=True)
     (repo_b / ".git").mkdir(parents=True)
+    (repo_a / ".vscode").mkdir()
+    (repo_a / ".vscode" / "settings.shared.json").write_text("{}", encoding="utf-8")
 
     update_gitignore_with_generated_files(Paths(workspace))
 
-    root_gitignore = (workspace / ".gitignore").read_text()
+    root_gitignore = (workspace / ".gitignore").read_text(encoding="utf-8")
+    assert GENERATED_FILES_BLOCK.begin_marker in root_gitignore
+    assert "# These files are generated by multi." in root_gitignore
     assert ".vscode/settings.json" in root_gitignore
     assert ".vscode/tasks.json" in root_gitignore
-    assert ".vscode/launch.json" in root_gitignore
-    assert ".vscode/extensions.json" in root_gitignore
     assert "CLAUDE.md" in root_gitignore
-    assert "AGENTS.md" in root_gitignore
+    assert GENERATED_FILES_BLOCK.end_marker in root_gitignore
 
-    repo_a_gitignore = (repo_a / ".gitignore").read_text()
+    repo_a_gitignore = (repo_a / ".gitignore").read_text(encoding="utf-8")
+    assert GENERATED_FILES_BLOCK.begin_marker in repo_a_gitignore
+    assert "# These files are generated by multi." in repo_a_gitignore
     assert "CLAUDE.md" in repo_a_gitignore
     assert "AGENTS.md" in repo_a_gitignore
-    assert ".vscode/settings.json" not in repo_a_gitignore
+    assert ".vscode/settings.json" in repo_a_gitignore
 
-    repo_b_gitignore = (repo_b / ".gitignore").read_text()
+    repo_b_gitignore = (repo_b / ".gitignore").read_text(encoding="utf-8")
+    assert GENERATED_FILES_BLOCK.begin_marker in repo_b_gitignore
+    assert "# These files are generated by multi." in repo_b_gitignore
     assert "CLAUDE.md" in repo_b_gitignore
     assert "AGENTS.md" in repo_b_gitignore
     assert ".vscode/settings.json" not in repo_b_gitignore
@@ -140,7 +128,8 @@ def test_update_gitignore_with_generated_files_skips_non_git_subrepo(tmp_path):
                 ]
             },
             indent=2,
-        )
+        ),
+        encoding="utf-8",
     )
 
     repo_a = workspace / "repo-a"
@@ -154,35 +143,80 @@ def test_update_gitignore_with_generated_files_skips_non_git_subrepo(tmp_path):
     assert not (repo_b / ".gitignore").exists()
 
 
-def test_remove_lines_removes_exact_matches(tmp_path):
-    ignore_path = tmp_path / ".gitignore"
-    ignore_path.write_text("repo-a/\nrepo-a\nkeep-me\n", encoding="utf-8")
-
-    ignore_file = IgnoreFile(ignore_path)
-    ignore_file.remove_lines(["repo-a/", "repo-a"])
-
-    assert ignore_path.read_text(encoding="utf-8") == "keep-me\n"
-
-
-def test_remove_repo_entries_from_ignore_files(tmp_path):
+def test_remove_repo_entries_from_ignore_files_removes_only_managed_lines(tmp_path):
     workspace = tmp_path / "workspace"
     workspace.mkdir()
-    (workspace / "multi.json").write_text(
-        json.dumps({"repos": [{"url": "https://github.com/test/repo-a"}]}, indent=2),
-        encoding="utf-8",
-    )
     (workspace / ".gitignore").write_text(
-        "repo-a/\nrepo-a\nother/\n",
+        "\n".join(
+            [
+                "keep/",
+                "",
+                REPO_DIRECTORIES_BLOCK.begin_marker,
+                "repo-a/",
+                "repo-a",
+                "repo-b/",
+                "repo-b",
+                REPO_DIRECTORIES_BLOCK.end_marker,
+                "",
+            ]
+        ),
         encoding="utf-8",
     )
     (workspace / ".ignore").write_text(
-        "!repo-a/\n!repo-a\n!other/\n",
+        "\n".join(
+            [
+                "!keep/",
+                "",
+                SEARCHABLE_REPOS_BLOCK.begin_marker,
+                "!repo-a/",
+                "!repo-a",
+                "!repo-b/",
+                "!repo-b",
+                SEARCHABLE_REPOS_BLOCK.end_marker,
+                "",
+            ]
+        ),
         encoding="utf-8",
     )
 
-    paths = Paths(workspace)
+    paths = Paths.__new__(Paths)
+    paths.root_dir = workspace
+
     remove_gitignore_entries_for_repos(paths, ["repo-a"])
     remove_ignore_entries_for_repos(paths, ["repo-a"])
 
-    assert (workspace / ".gitignore").read_text(encoding="utf-8") == "other/\n"
-    assert (workspace / ".ignore").read_text(encoding="utf-8") == "!other/\n"
+    gitignore = (workspace / ".gitignore").read_text(encoding="utf-8")
+    assert "keep/" in gitignore
+    assert "repo-a/" not in gitignore
+    assert "repo-b/" in gitignore
+    assert REPO_DIRECTORIES_BLOCK.begin_marker in gitignore
+
+    ignore = (workspace / ".ignore").read_text(encoding="utf-8")
+    assert "!keep/" in ignore
+    assert "!repo-a/" not in ignore
+    assert "!repo-b/" in ignore
+    assert SEARCHABLE_REPOS_BLOCK.begin_marker in ignore
+
+
+def test_clear_subrepo_generated_file_block_removes_only_managed_block(tmp_path):
+    repo_path = tmp_path / "repo-a"
+    repo_path.mkdir()
+    gitignore_path = repo_path / ".gitignore"
+    gitignore_path.write_text(
+        "\n".join(
+            [
+                "keep-me",
+                "",
+                GENERATED_FILES_BLOCK.begin_marker,
+                "CLAUDE.md",
+                "AGENTS.md",
+                GENERATED_FILES_BLOCK.end_marker,
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    clear_subrepo_generated_file_block(repo_path)
+
+    assert gitignore_path.read_text(encoding="utf-8") == "keep-me\n"

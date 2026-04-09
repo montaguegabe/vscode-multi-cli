@@ -19,25 +19,33 @@ multi --version
 
 The extension automatically syncs when changes are detected:
 
-- Generates files in your root `.vscode` folder when sub-repo configurations change
-- Generates `CLAUDE.md` files when Cursor rules change
-- Syncs root `.github/workflows` files when sub-repo workflow files change
+- Runs the matching `multi sync ...` command when watched source files change
+- Regenerates root `.vscode` outputs from repo config files and workspace-level shared files
+- Generates both `CLAUDE.md` and `AGENTS.md` when Cursor rules change
+- Syncs root `.github/workflows` files from repo workflows in monorepo mode
 
 ## Watched Files
 
-The extension monitors these files in your sub-repositories:
+The extension monitors these source files across your workspace and sub-repositories:
 
 | File | Triggers |
 |------|----------|
 | `.vscode/launch.json` | `multi sync vscode launch` |
+| `.vscode/launch.shared.json` | `multi sync vscode launch` |
 | `.vscode/settings.json` | `multi sync vscode settings` |
+| `.vscode/settings.shared.json` | `multi sync vscode settings` |
+| `.vscode/settings.local.json` | `multi sync vscode settings` |
 | `.vscode/tasks.json` | `multi sync vscode tasks` |
+| `.vscode/tasks.shared.json` | `multi sync vscode tasks` |
 | `.vscode/extensions.json` | `multi sync vscode extensions` |
-| `.cursor/rules/*` | `multi sync rules` |
+| `.cursor/rules/*.mdc` | `multi sync rules` |
 | `.github/workflows/*.{yml,yaml}` | `multi sync github` |
+| `multi.json` | `multi sync` |
 
 ## Usage
 
-The extension activates automatically when VS Code starts. Simply edit any of the watched config files in a sub-repository and the appropriate sync will run in the background.
+The extension activates automatically when VS Code starts. Simply edit any of the watched source files in your workspace or a sub-repository and the appropriate sync will run in the background.
+
+Generated outputs like root `.vscode/settings.json`, root `.devcontainer/`, root `.github/workflows/`, and root `.cursor/rules/repo-directories.mdc` are ignored so the extension does not loop on its own writes.
 
 No manual intervention is required - changes are detected and synced automatically.

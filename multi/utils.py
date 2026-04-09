@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -92,51 +93,73 @@ def write_jsonc_file(
         f.write("\n")
 
 
+def soft_parse_jsonc_text(text: str) -> Dict[str, Any]:
+    """Load JSONC content from a string, returning {} on parse failures."""
+    try:
+        lines = []
+        for line in text.splitlines(keepends=True):
+            processed_line = ""
+            in_string = False
+            string_char = None
+            i = 0
+            while i < len(line):
+                char = line[i]
+
+                if char in ['"', "'"] and (i == 0 or line[i - 1] != "\\"):
+                    if not in_string:
+                        in_string = True
+                        string_char = char
+                    elif string_char == char:
+                        in_string = False
+                        string_char = None
+
+                if (
+                    not in_string
+                    and char == "/"
+                    and i + 1 < len(line)
+                    and line[i + 1] == "/"
+                ):
+                    break
+
+                processed_line += char
+                i += 1
+
+            lines.append(processed_line)
+
+        content = "".join(lines)
+        content = re.sub(r",(\s*[}\]])", r"\1", content)
+        parsed = json.loads(content)
+        return parsed if isinstance(parsed, dict) else {}
+    except Exception as e:
+        logger.warning(f"Could not parse JSONC content: {str(e)}, skipping...")
+        return {}
+
+
 def soft_read_json_file(path: Path) -> Dict[str, Any]:
     """Load a JSON file if it exists, otherwise return an empty dict.
     Handles comments by removing anything after // that's not in a string."""
     if path.exists():
         try:
-            with path.open("r") as f:
-                lines = []
-                for line in f:
-                    processed_line = ""
-                    in_string = False
-                    string_char = None  # Track whether we're in ' or " string
-                    i = 0
-                    while i < len(line):
-                        char = line[i]
-
-                        # Handle string boundaries
-                        if char in ['"', "'"] and (i == 0 or line[i - 1] != "\\"):
-                            if not in_string:
-                                in_string = True
-                                string_char = char
-                            elif (
-                                string_char == char
-                            ):  # Make sure we match the same quote type
-                                in_string = False
-                                string_char = None
-
-                        # Look for comments outside of strings
-                        if (
-                            not in_string
-                            and char == "/"
-                            and i + 1 < len(line)
-                            and line[i + 1] == "/"
-                        ):
-                            break
-
-                        processed_line += char
-                        i += 1
-
-                    lines.append(processed_line)
-
-                content = "".join(lines)
-                return json.loads(content)
+            return soft_parse_jsonc_text(path.read_text(encoding="utf-8"))
         except Exception as e:
             logger.warning(f"Could not parse {path}: {str(e)}, skipping...")
     return {}
+
+
+def serialize_jsonc_object_entries(
+    data: Dict[str, Any],
+    *,
+    indent_level: int = 1,
+    indent_str: str = "    ",
+) -> List[str]:
+    entries: List[str] = []
+    current_indent = indent_str * indent_level
+
+    for key, value in data.items():
+        serialized_value = _serialize_value(value, indent_level, indent_str)
+        entries.append(f"{current_indent}{json.dumps(key)}: {serialized_value}")
+
+    return entries
 
 
 def _is_list_default_convention(value: Any) -> bool:
