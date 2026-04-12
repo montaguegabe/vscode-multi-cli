@@ -7,7 +7,7 @@ Multi provides commands for managing your multi-repo workspace.
 | Command | Description |
 |---------|-------------|
 | [`add`](add.md) | Add a repository to an existing workspace |
-| [`collaborator`](collaborator.md) | Add or remove a GitHub collaborator across all workspace repos |
+| [`collaborator`](collaborator.md) | Add, remove, and list recent GitHub collaborators across workspace repos |
 | [`init`](init.md) | Initialize a new multi workspace |
 | [`sync`](sync.md) | Sync configurations and repositories |
 | [`sync github`](sync-github.md) | Sync root GitHub Actions workflows (monorepo mode) |
@@ -39,6 +39,9 @@ multi add https://github.com/org/t-ide-cli
 
 # Add a collaborator to every workspace repo
 multi collaborator add octocat --yes
+
+# Choose a recent collaborator username
+multi collaborator add --yes
 
 # Sync all configurations
 multi sync

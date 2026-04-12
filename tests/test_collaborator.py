@@ -3,9 +3,19 @@ import subprocess
 from pathlib import Path
 
 import git
+import pytest
 from click.testing import CliRunner
 
+from multi import collaborator
 from multi.cli import main
+
+
+@pytest.fixture(autouse=True)
+def recent_github_users_file(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        "multi.collaborator.RECENT_GITHUB_USERS_FILE",
+        tmp_path / "recent-github-users.json",
+    )
 
 
 def _write_workspace_config() -> None:
@@ -273,3 +283,140 @@ def test_collaborator_continues_after_repo_failure(monkeypatch):
                 "permission=push",
             ],
         ]
+
+
+def test_collaborator_add_records_recent_github_username(monkeypatch):
+    runner = CliRunner()
+
+    def fake_subprocess_run(cmd, check, capture_output, text):
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr("multi.collaborator.shutil.which", lambda name: "gh")
+    monkeypatch.setattr("multi.collaborator.subprocess.run", fake_subprocess_run)
+    monkeypatch.setattr(
+        "multi.cli_helpers.check_all_on_same_branch", lambda **kwargs: True
+    )
+
+    with runner.isolated_filesystem():
+        _write_workspace_config()
+        _init_workspace_root_repo()
+        collaborator._save_recent_github_usernames(["hubot"])
+
+        result = runner.invoke(
+            main,
+            [
+                "collaborator",
+                "add",
+                "octocat",
+                "--yes",
+            ],
+        )
+
+        assert result.exit_code == 0
+        assert collaborator._load_recent_github_usernames() == ["octocat", "hubot"]
+
+
+def test_collaborator_remove_records_recent_github_username(monkeypatch):
+    runner = CliRunner()
+
+    def fake_subprocess_run(cmd, check, capture_output, text):
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr("multi.collaborator.shutil.which", lambda name: "gh")
+    monkeypatch.setattr("multi.collaborator.subprocess.run", fake_subprocess_run)
+    monkeypatch.setattr(
+        "multi.cli_helpers.check_all_on_same_branch", lambda **kwargs: True
+    )
+
+    with runner.isolated_filesystem():
+        _write_workspace_config()
+        _init_workspace_root_repo()
+
+        result = runner.invoke(
+            main,
+            [
+                "collaborator",
+                "remove",
+                "octocat",
+                "--yes",
+            ],
+        )
+
+        assert result.exit_code == 0
+        assert collaborator._load_recent_github_usernames() == ["octocat"]
+
+
+def test_collaborator_add_without_username_prompts_for_recent_user(monkeypatch):
+    runner = CliRunner()
+    calls: list[list[str]] = []
+
+    def fake_subprocess_run(cmd, check, capture_output, text):
+        calls.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr("multi.collaborator.shutil.which", lambda name: "gh")
+    monkeypatch.setattr("multi.collaborator.subprocess.run", fake_subprocess_run)
+    monkeypatch.setattr(
+        "multi.cli_helpers.check_all_on_same_branch", lambda **kwargs: True
+    )
+
+    with runner.isolated_filesystem():
+        _write_workspace_config()
+        _init_workspace_root_repo()
+        collaborator._save_recent_github_usernames(["octocat", "hubot"])
+
+        result = runner.invoke(
+            main,
+            [
+                "collaborator",
+                "add",
+                "--yes",
+            ],
+            input="2\n",
+        )
+
+        assert result.exit_code == 0
+        assert "Recent GitHub users:" in result.output
+        assert "1. octocat" in result.output
+        assert "2. hubot" in result.output
+        assert calls == [
+            ["gh", "api", "--method", "GET", "users/hubot"],
+            [
+                "gh",
+                "api",
+                "--method",
+                "PUT",
+                "repos/example/t-ide-workspace/collaborators/hubot",
+                "-f",
+                "permission=push",
+            ],
+            [
+                "gh",
+                "api",
+                "--method",
+                "PUT",
+                "repos/example/t-ide-cli/collaborators/hubot",
+                "-f",
+                "permission=push",
+            ],
+            [
+                "gh",
+                "api",
+                "--method",
+                "PUT",
+                "repos/example/t-ide-extension/collaborators/hubot",
+                "-f",
+                "permission=push",
+            ],
+        ]
+        assert collaborator._load_recent_github_usernames() == ["hubot", "octocat"]
+
+
+def test_collaborator_recent_users_lists_recent_usernames():
+    runner = CliRunner()
+    collaborator._save_recent_github_usernames(["octocat", "hubot"])
+
+    result = runner.invoke(main, ["collaborator", "recent-users"])
+
+    assert result.exit_code == 0
+    assert result.output == "octocat\nhubot\n"
