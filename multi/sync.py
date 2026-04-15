@@ -1,5 +1,7 @@
 import logging
 import os
+import shutil
+import tempfile
 from pathlib import Path
 
 import click
@@ -100,20 +102,29 @@ def _clone_repo(
     """Clone a repository and checkout the appropriate branch."""
     logger.debug(f"Cloning {repo_config.name}...")
 
-    # First clone the default branch
-    cloned_repo = git.Repo.clone_from(repo_config.url, repo_config.path)
+    with tempfile.TemporaryDirectory(
+        prefix=f"multi-{repo_config.name}-clone-",
+    ) as temp_dir:
+        temp_repo_path = Path(temp_dir) / repo_config.name
 
-    # Then checkout the same branch as parent repo if it exists
-    if current_branch:
-        try:
-            cloned_repo.git.checkout(current_branch)
-            logger.info(
-                f"✅ Cloned {repo_config.name} and checked out branch {current_branch}"
-            )
-        except GitCommandError:
-            logger.warning(
-                f"Branch {current_branch} not found in {repo_config.name}, staying on default branch."
-            )
+        # First clone the default branch outside the workspace, then move the
+        # checked-out repo into place. This avoids checkout conflicts when the
+        # workspace root gitignore already manages sub-repo paths.
+        cloned_repo = git.Repo.clone_from(repo_config.url, temp_repo_path)
+
+        # Then checkout the same branch as parent repo if it exists
+        if current_branch:
+            try:
+                cloned_repo.git.checkout(current_branch)
+                logger.info(
+                    f"✅ Cloned {repo_config.name} and checked out branch {current_branch}"
+                )
+            except GitCommandError:
+                logger.warning(
+                    f"Branch {current_branch} not found in {repo_config.name}, staying on default branch."
+                )
+
+        shutil.move(str(temp_repo_path), str(repo_config.path))
 
 
 def clone_repos(paths: Paths, ensure_on_same_branch: bool = True):
