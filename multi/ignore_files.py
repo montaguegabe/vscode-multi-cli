@@ -156,6 +156,10 @@ def update_gitignore_with_generated_files(paths: Paths):
         if not repo_git_dir.exists():
             continue
 
+        if not repo.manage_gitignore:
+            clear_subrepo_generated_file_block(repo.path)
+            continue
+
         IgnoreFile(repo.path / ".gitignore", GENERATED_FILES_BLOCK).set_managed_lines(
             _subrepo_generated_entries(repo.path)
         )

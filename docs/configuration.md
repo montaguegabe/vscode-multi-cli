@@ -117,6 +117,7 @@ An array of repository configurations. Each repository object supports:
 | `description` | string | No | - | Repository description used to generate `.cursor/rules/repo-directories.mdc` during `multi sync rules` |
 | `skipVSCode` | boolean | No | `false` | Skip this repo when merging VS Code configurations |
 | `allowSymlink` | boolean | No | `false` | Allow symlinking to an existing clone of this repo |
+| `manageGitignore` | boolean | No | `true` | Manage Multi-generated entries in this repo's `.gitignore` |
 
 #### Example: Basic repository list
 
@@ -193,6 +194,24 @@ Use this when a repository should be symlinked to an existing clone (saves disk 
     {
       "url": "https://github.com/org/reuse-existing-clone",
       "allowSymlink": true
+    }
+  ]
+}
+```
+
+#### Example: Disable `.gitignore` management for a specific repo
+
+Use this when a repository should not have Multi add or retain generated-file entries such as `CLAUDE.md` and `AGENTS.md` in its own `.gitignore`:
+
+```json
+{
+  "repos": [
+    {
+      "url": "https://github.com/org/managed-repo"
+    },
+    {
+      "url": "https://github.com/org/manual-gitignore-repo",
+      "manageGitignore": false
     }
   ]
 }

@@ -39,6 +39,9 @@ class Repository:
         # Allow symlinking for this repo (default True, can be overridden per-repo)
         self.allow_symlink = kwargs.pop("allowSymlink", False)
 
+        # Manage generated entries in this repo's .gitignore by default.
+        self.manage_gitignore = kwargs.pop("manageGitignore", True)
+
         # Set any other attributes passed in kwargs (top-level keys from repo config)
         for key, value in kwargs.items():
             setattr(self, key, value)
