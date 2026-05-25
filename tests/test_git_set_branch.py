@@ -1,3 +1,5 @@
+import json
+
 import git
 import pytest
 
@@ -83,3 +85,23 @@ def test_set_branch_with_remote_branch(setup_git_repos_with_remotes):
 
     # Verify we're on the branch
     assert root_repo.active_branch.name == branch_name
+
+
+def test_set_branch_respects_fixed_branch(setup_git_repos):
+    """Test fixedBranch keeps a sub-repo on its configured branch."""
+    root_repo_path, sub_repo_paths = setup_git_repos
+    branch_name = "feature/with-fixed"
+
+    multi_json_path = root_repo_path / "multi.json"
+    config = json.loads(multi_json_path.read_text(encoding="utf-8"))
+    config["repos"][1]["fixedBranch"] = "main"
+    multi_json_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
+    root_repo = git.Repo(root_repo_path)
+    root_repo.index.add(["multi.json"])
+    root_repo.index.commit("Configure fixed branch")
+
+    set_branch_in_all_repos(root_dir=root_repo_path, branch_name=branch_name)
+
+    assert root_repo.active_branch.name == branch_name
+    assert git.Repo(sub_repo_paths[0]).active_branch.name == branch_name
+    assert git.Repo(sub_repo_paths[1]).active_branch.name == "main"

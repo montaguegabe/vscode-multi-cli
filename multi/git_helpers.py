@@ -12,8 +12,16 @@ logger = logging.getLogger(__name__)
 
 
 def is_git_repo_root(repo_path: Path) -> bool:
-    # Will fail for submodules and worktrees, but these aren't used by us
-    return (repo_path / ".git").is_dir()
+    git_metadata_path = repo_path / ".git"
+    if not git_metadata_path.exists():
+        return False
+
+    try:
+        repo = git.Repo(repo_path)
+    except (InvalidGitRepositoryError, NoSuchPathError):
+        return False
+
+    return Path(repo.working_tree_dir or "").resolve() == repo_path.resolve()
 
 
 def get_current_branch(repo_path: Path) -> str:
@@ -34,7 +42,7 @@ def get_current_branch(repo_path: Path) -> str:
 
 
 def check_all_on_same_branch(paths: Paths, raise_error: bool = True) -> bool:
-    """Validate that all repositories are on the same branch."""
+    """Validate that all repositories are on the expected branch."""
     from multi.repos import load_repos
 
     root_branch = get_current_branch(paths.root_dir)
@@ -42,10 +50,16 @@ def check_all_on_same_branch(paths: Paths, raise_error: bool = True) -> bool:
         (repo, get_current_branch(repo.path)) for repo in load_repos(paths)
     ]
     for repo, branch in repo_branches:
-        if branch != root_branch:
+        expected_branch = repo.fixed_branch or root_branch
+        if branch != expected_branch:
             if raise_error:
+                if repo.fixed_branch:
+                    expectation = f"fixed branch {expected_branch}"
+                else:
+                    expectation = f"root branch {root_branch}"
                 raise GitError(
-                    f"Repository {repo.name} is not on the same branch as the root repository.  Please fix.  {repo.name}: {branch}, Root: {root_branch}"
+                    f"Repository {repo.name} is not on the expected branch. "
+                    f"Please fix. {repo.name}: {branch}, Expected: {expectation}"
                 )
             return False
     return True

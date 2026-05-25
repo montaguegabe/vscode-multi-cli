@@ -42,6 +42,9 @@ class Repository:
         # Manage generated entries in this repo's .gitignore by default.
         self.manage_gitignore = kwargs.pop("manageGitignore", True)
 
+        # Keep this repo on a fixed branch during branch synchronization.
+        self.fixed_branch = kwargs.pop("fixedBranch", None)
+
         # Set any other attributes passed in kwargs (top-level keys from repo config)
         for key, value in kwargs.items():
             setattr(self, key, value)

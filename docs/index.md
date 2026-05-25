@@ -22,6 +22,12 @@ Switch all repositories to the same branch simultaneously:
 multi set-branch feature/my-feature
 ```
 
+Create a sibling worktree for parallel branch work:
+
+```bash
+multi worktree add my-feature --branch feature/my-feature
+```
+
 ### VS Code Configuration Merging
 
 Merge `launch.json`, `tasks.json`, `settings.json`, and `extensions.json` from all sub-repos into your root `.vscode` folder:

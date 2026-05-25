@@ -13,6 +13,7 @@ from multi.open import open_cmd
 from multi.remove import remove_cmd
 from multi.service import service_cmd
 from multi.sync import sync_cmd
+from multi.worktree import worktree_cmd
 
 
 def print_version(ctx, param, value):
@@ -52,6 +53,7 @@ main.add_command(common_command_wrapper(init_cmd))
 main.add_command(common_command_wrapper(doctor_cmd))
 main.add_command(common_command_wrapper(convert_monorepo_cmd))
 main.add_command(common_command_wrapper(remove_cmd))
+main.add_command(worktree_cmd)
 main.add_command(open_cmd)
 main.add_command(service_cmd)
 

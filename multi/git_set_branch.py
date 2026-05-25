@@ -51,8 +51,9 @@ def set_branch_in_all_repos(root_dir: Path, branch_name: str) -> None:
         paths.root_dir, branch_name, allow_create=all_on_same_branch
     )
     for repo in load_repos(paths=paths):
+        repo_branch_name = repo.fixed_branch or branch_name
         create_and_switch_branch(
-            repo.path, branch_name, allow_create=all_on_same_branch
+            repo.path, repo_branch_name, allow_create=all_on_same_branch
         )
 
 

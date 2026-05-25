@@ -118,6 +118,7 @@ An array of repository configurations. Each repository object supports:
 | `skipVSCode` | boolean | No | `false` | Skip this repo when merging VS Code configurations |
 | `allowSymlink` | boolean | No | `false` | Allow symlinking to an existing clone of this repo |
 | `manageGitignore` | boolean | No | `true` | Manage Multi-generated entries in this repo's `.gitignore` |
+| `fixedBranch` | string | No | - | Keep this repo on a fixed branch during branch synchronization and worktree creation |
 
 #### Example: Basic repository list
 
@@ -213,6 +214,51 @@ Use this when a repository should not have Multi add or retain generated-file en
       "url": "https://github.com/org/manual-gitignore-repo",
       "manageGitignore": false
     }
+  ]
+}
+```
+
+---
+
+#### Example: Keep a repo on a fixed branch
+
+Use `fixedBranch` for repositories that should remain on a shared branch while the rest of the workspace moves to a feature branch:
+
+```json
+{
+  "repos": [
+    { "url": "https://github.com/org/app" },
+    {
+      "url": "https://github.com/org/shared-fixtures",
+      "fixedBranch": "main"
+    }
+  ]
+}
+```
+
+---
+
+### worktree
+
+Configuration for `multi worktree add`.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `symlink` | string[] | `[]` | Gitignored workspace-relative paths to symlink from the original workspace into the new worktree |
+| `copy` | string[] | `[]` | Gitignored workspace-relative paths to copy from the original workspace into the new worktree |
+
+All paths must be relative to the workspace root, must stay inside the workspace, and must be ignored by the owning Git repository. Existing destinations in the new worktree are left unchanged.
+
+#### Example: Transfer local worktree files
+
+```json
+{
+  "worktree": {
+    "symlink": [".env", ".venv"],
+    "copy": [".cursor/local.json", "api/.env.local"]
+  },
+  "repos": [
+    { "url": "https://github.com/org/api", "name": "api" }
   ]
 }
 ```

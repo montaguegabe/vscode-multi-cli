@@ -10,7 +10,7 @@ multi set-branch BRANCH_NAME
 
 ## Description
 
-The `set-branch` command ensures all repositories in your workspace are on the same branch. It creates the branch if it doesn't exist in a repository, or switches to it if it does.
+The `set-branch` command ensures all repositories in your workspace are on the expected branch. It creates the branch if it doesn't exist in a repository, or switches to it if it does. Repos configured with `fixedBranch` stay on their configured branch.
 
 ## Arguments
 
@@ -21,10 +21,10 @@ The `set-branch` command ensures all repositories in your workspace are on the s
 ## Behavior
 
 1. **Validates clean state** - Checks that all repositories have no uncommitted changes
-2. **Creates or switches** - For each repository (root and sub-repos):
+2. **Creates or switches** - For the root repository and each non-fixed sub-repo:
    - If the branch exists, switches to it
    - If the branch doesn't exist, creates it and switches to it
-3. **Maintains consistency** - Ensures all repos end up on the specified branch
+3. **Maintains consistency** - Ensures all repos end up on the specified branch, except repos with `fixedBranch`
 
 ## Examples
 
@@ -65,5 +65,6 @@ git stash pop  # if you stashed
 ## Notes
 
 - This command operates on both the root repository (if it exists) and all sub-repositories
+- Sub-repositories with `fixedBranch` in `multi.json` are checked out to that fixed branch instead
 - Branch creation is done locally; use `multi git push -u origin BRANCH_NAME` to push to remote
 - The command is idempotent - running it when already on the branch is safe
