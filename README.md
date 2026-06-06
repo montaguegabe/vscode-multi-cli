@@ -7,7 +7,7 @@
 Features:
 
 - Generates files in your root `.vscode` folder from sub-repo `launch.json`, `tasks.json`, and `settings.json` files.
-- Generates `CLAUDE.md` files from Cursor rules.
+- Optionally generates `CLAUDE.md` and `AGENTS.md` files from tracked `AGENTS.parts/*.md` files.
 - In monorepo mode, syncs sub-repo GitHub workflows into root `.github/workflows`.
 
 ## Installation
@@ -30,7 +30,7 @@ To get started, create a new workspace directory that will house all your relate
 multi init
 ```
 
-When prompted, paste in the URLs of all the repositories you want to have in your workspace. You can optionally specify descriptions of what they do, which will be used to create a new repo-directories.mdc Cursor/Claude rule.
+When prompted, paste in the URLs of all the repositories you want to have in your workspace. You can optionally specify descriptions of what they do, which can be included in generated agent instruction files when that feature is enabled.
 
 For scripts, you can also initialize non-interactively:
 

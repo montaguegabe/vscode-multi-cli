@@ -88,10 +88,6 @@ class Paths:
             os.makedirs(result, exist_ok=True)
         return result
 
-    def get_cursor_rules_dir(self, repo_dir: Path) -> Path:
-        """Get the cursor rules directory for a given repository."""
-        return repo_dir / ".cursor" / "rules"
-
     @property
     def settings(self) -> Settings:
         return Settings.from_multi_json_file(self.multi_json_path)

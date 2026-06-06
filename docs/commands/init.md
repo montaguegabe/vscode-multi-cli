@@ -54,7 +54,7 @@ Initializing workspace...
 ✓ Cloned common
 ✓ Created .vscode configuration
 ✓ Created README.md
-✓ Created repo-directories.mdc Cursor rule
+✓ Created README.md
 Done!
 ```
 
@@ -119,9 +119,9 @@ The main configuration file containing repository URLs, descriptions, and settin
 
 A basic README for your workspace (only created if one doesn't exist).
 
-### .cursor/rules/repo-directories.mdc
+### Agent Instruction Generation
 
-If you provided repository descriptions, a Cursor rule file is generated during sync (from the descriptions in `multi.json`) to help AI assistants understand your project structure.
+If you provided repository descriptions, they are saved in `multi.json`. When `agentInstructions.enabled` is true, Multi can include them in generated root `AGENTS.md` and `CLAUDE.md` files.
 
 ### .vscode/
 

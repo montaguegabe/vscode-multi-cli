@@ -81,7 +81,7 @@ When enabled, Multi treats the workspace as a monorepo where:
 - The root workspace is the only git repository
 - Sub-directories listed in `repos` are regular directories (not separate git repos)
 - Git operations (cloning, branch switching) are skipped
-- VS Code config syncing and CLAUDE.md generation still work normally
+- VS Code config syncing and optional agent instruction generation still work normally
 - GitHub Actions workflows can be synced into root `.github/workflows` for commit-and-run behavior
 
 This is useful for:
@@ -114,7 +114,7 @@ An array of repository configurations. Each repository object supports:
 |-------|------|----------|---------|-------------|
 | `url` | string | Yes* | - | Git repository URL (HTTPS or SSH). *Not required in monorepo mode. |
 | `name` | string | No** | Last segment of URL | Custom directory name for the cloned repo. **Required in monorepo mode if no URL. |
-| `description` | string | No | - | Repository description used to generate `.cursor/rules/repo-directories.mdc` during `multi sync rules` |
+| `description` | string | No | - | Repository description available to generated root agent instructions |
 | `skipVSCode` | boolean | No | `false` | Skip this repo when merging VS Code configurations |
 | `allowSymlink` | boolean | No | `false` | Allow symlinking to an existing clone of this repo |
 | `manageGitignore` | boolean | No | `true` | Manage Multi-generated entries in this repo's `.gitignore` |
@@ -153,7 +153,7 @@ Recommended pattern: if the GitHub repository is product-prefixed, use a short l
 
 #### Example: Repository descriptions for AI context
 
-Use `description` when you want Multi to generate `.cursor/rules/repo-directories.mdc` so AI assistants can understand the role of each repo in the workspace.
+Use `description` with `agentInstructions.enabled` when you want generated root agent instructions to include each repo's role in the workspace.
 
 ```json
 {
@@ -167,6 +167,26 @@ Use `description` when you want Multi to generate `.cursor/rules/repo-directorie
       "description": "Customer-facing web app"
     }
   ]
+}
+```
+
+### Agent Instructions (`agentInstructions`)
+
+Agent instruction generation is disabled by default. Enable it when you want Multi to generate `AGENTS.md` and `CLAUDE.md` from tracked Markdown source files.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | boolean | `false` | Generate agent instruction outputs during sync |
+| `partsDir` | string | `AGENTS.parts` | Directory containing ordered `*.md` source parts |
+| `includeRepoDescriptions` | boolean | `true` | Include repo descriptions in the root generated outputs |
+
+```json
+{
+  "agentInstructions": {
+    "enabled": true,
+    "partsDir": "AGENTS.parts",
+    "includeRepoDescriptions": true
+  }
 }
 ```
 
@@ -202,7 +222,7 @@ Use this when a repository should be symlinked to an existing clone (saves disk 
 
 #### Example: Disable `.gitignore` management for a specific repo
 
-Use this when a repository should not have Multi add or retain generated-file entries such as `CLAUDE.md` and `AGENTS.md` in its own `.gitignore`:
+Use this when a repository should not have Multi add or retain generated-file entries in its own `.gitignore`:
 
 ```json
 {

@@ -320,7 +320,7 @@ def init_cmd(
     create_multi_json(repo_configs)
     logger.info("Created multi.json configuration")
 
-    # Run sync (this will generate repo-directories.mdc from descriptions in multi.json)
+    # Run sync after writing the workspace configuration.
     sync(root_dir=Path.cwd(), ensure_on_same_branch=False)
 
     # Commit changes

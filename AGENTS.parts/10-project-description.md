@@ -1,12 +1,6 @@
----
-description:
-globs:
-alwaysApply: true
----
-
 `multi` (directory `multi-cli`) is a CLI tool that allows VS Code/Cursor to work on multiple Git repos at once. It is a competitor to VS Code multi-root workspaces. It operates by cloning "sub-repos" (simply referred to as "repos" in the codebase) inside the main VS Code workspace, which is sometimes also itself a repo (called the "root" or "workspace" repo/directory). The root workspace that houses all the sub-repos can also be a git repo itself, but does not track the sub-repos through submodules or any other mechanism. The sub-repos are simply .gitignored and are managed through the CLI, which makes sure they are all on the same branch.
 
 The CLI also offers features to:
 
 - Merge the `.vscode` folder of the sub-repos: `launch.json`, `tasks.json`, `settings.json`
-- Generate `CLAUDE.md` files from Cursor rule files
+- Optionally generate `AGENTS.md` and `CLAUDE.md` from `AGENTS.parts/*.md`

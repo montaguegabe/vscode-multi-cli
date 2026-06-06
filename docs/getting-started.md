@@ -78,7 +78,7 @@ The init command will:
 3. Clone repositories (standard mode)
 4. Set up the initial `.vscode` configuration
 5. Create a `README.md` for your workspace if missing
-6. Optionally create Cursor rules with repository descriptions
+6. Save optional repository descriptions for generated agent instructions
 
 ## Automation Path
 
@@ -130,7 +130,7 @@ This command:
 
 - Ensures all repositories are cloned and up to date
 - Merges `.vscode` configurations from all sub-repos
-- Generates `CLAUDE.md` files from Cursor rules
+- Generates agent instruction files from `AGENTS.parts/*.md` when enabled
 
 ## Next Steps
 

@@ -10,6 +10,11 @@ logger = logging.getLogger(__name__)
 default_settings = {
     "monoRepo": False,
     "allowSymlinks": False,
+    "agentInstructions": {
+        "enabled": False,
+        "partsDir": "AGENTS.parts",
+        "includeRepoDescriptions": True,
+    },
     "vscode": {"skipSettings": ["workbench.colorCustomizations"]},
     "repos": [],
 }

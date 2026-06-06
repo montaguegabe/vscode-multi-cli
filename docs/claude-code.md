@@ -2,7 +2,7 @@
 
 Multi now ships as an agent skill repository compatible with [`vercel-labs/skills`](https://github.com/vercel-labs/skills).
 
-The skill teaches agents how to work with Multi-managed workspaces, including `multi.json`, branch orchestration, VS Code sync behavior, and Cursor-rules-to-`CLAUDE.md` generation.
+The skill teaches agents how to work with Multi-managed workspaces, including `multi.json`, branch orchestration, VS Code sync behavior, and optional generated agent instructions.
 
 ## Installation
 
@@ -43,7 +43,7 @@ The skill activates when you mention topics like:
 - `multi.json`, multi workspace, multi CLI
 - Branch switching across repos
 - VS Code config merging, syncing
-- Cursor rules sync, `CLAUDE.md` generation
+- Agent instruction generation, `CLAUDE.md` generation
 - Working with multiple repositories
 
 ## Example Usage

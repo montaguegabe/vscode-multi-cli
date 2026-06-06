@@ -8,15 +8,3 @@ class GitError(Exception):
 
 class RepoNotCleanError(GitError):
     pass
-
-
-class RulesError(Exception):
-    pass
-
-
-class RuleParseError(RulesError):
-    pass
-
-
-class RulesNotCombinableError(RulesError):
-    pass

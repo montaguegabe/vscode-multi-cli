@@ -8,7 +8,7 @@ When working on projects that span multiple repositories, VS Code's multi-root w
 
 - **Unified branch management** - Keep all your repos on the same branch with a single command
 - **Configuration merging** - Automatically combine `.vscode` settings, launch configurations, and tasks from all repos
-- **AI assistant support** - Generate `repo-directories.mdc`, `CLAUDE.md`, and `AGENTS.md` from `multi.json` descriptions and Cursor rules
+- **AI assistant support** - Optionally generate `CLAUDE.md` and `AGENTS.md` from tracked Markdown part files
 - **Flexible structure** - Sub-repos are simply cloned into your workspace directory, no submodules required
 - **Workspace diagnostics** - Detect common misconfigurations with `multi doctor`
 
@@ -36,12 +36,12 @@ Merge `launch.json`, `tasks.json`, `settings.json`, and `extensions.json` from a
 multi sync vscode
 ```
 
-### Cursor Rules Sync
+### Agent Instructions Sync
 
-Generate repo descriptions from `multi.json` and convert Cursor rules to `CLAUDE.md` files:
+Generate agent instruction files from `AGENTS.parts/*.md` when enabled:
 
 ```bash
-multi sync rules
+multi sync agents
 ```
 
 ### Monorepo GitHub Workflow Sync

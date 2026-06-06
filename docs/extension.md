@@ -21,7 +21,7 @@ The extension automatically syncs when changes are detected:
 
 - Runs the matching `multi sync ...` command when watched source files change
 - Regenerates root `.vscode` outputs from repo config files and workspace-level shared files
-- Generates both `CLAUDE.md` and `AGENTS.md` when Cursor rules change
+- Generates both `CLAUDE.md` and `AGENTS.md` when agent instruction parts change
 - Syncs root `.github/workflows` files from repo workflows in monorepo mode
 
 ## Watched Files
@@ -38,7 +38,7 @@ The extension monitors these source files across your workspace and sub-reposito
 | `.vscode/tasks.json` | `multi sync vscode tasks` |
 | `.vscode/tasks.shared.json` | `multi sync vscode tasks` |
 | `.vscode/extensions.json` | `multi sync vscode extensions` |
-| `.cursor/rules/*.mdc` | `multi sync rules` |
+| `AGENTS.parts/*.md` | `multi sync agents` |
 | `.github/workflows/*.{yml,yaml}` | `multi sync github` |
 | `multi.json` | `multi sync` |
 
@@ -46,6 +46,6 @@ The extension monitors these source files across your workspace and sub-reposito
 
 The extension activates automatically when VS Code starts. Simply edit any of the watched source files in your workspace or a sub-repository and the appropriate sync will run in the background.
 
-Generated outputs like root `.vscode/settings.json`, root `.devcontainer/`, root `.github/workflows/`, and root `.cursor/rules/repo-directories.mdc` are ignored so the extension does not loop on its own writes.
+Generated outputs like root `.vscode/settings.json`, root `.devcontainer/`, and root `.github/workflows/` are ignored so the extension does not loop on its own writes.
 
 No manual intervention is required - changes are detected and synced automatically.
