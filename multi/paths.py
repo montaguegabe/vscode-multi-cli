@@ -8,9 +8,14 @@ logger = logging.getLogger(__name__)
 
 
 class Paths:
-    def __init__(self, target_dir: Path | str | None = None):
+    def __init__(
+        self,
+        target_dir: Path | str | None = None,
+        install_set: str | None = None,
+    ):
         self.target_dir = Path(target_dir) or Path.cwd()
         self.root_dir = self._get_root(self.target_dir)
+        self.install_set = install_set
 
     @property
     def multi_json_path(self) -> Path:

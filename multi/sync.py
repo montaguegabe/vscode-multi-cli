@@ -167,11 +167,15 @@ def clone_repos(paths: Paths, ensure_on_same_branch: bool = True):
     update_ignore_with_repos(paths=paths)
 
 
-def sync(root_dir: Path, ensure_on_same_branch: bool = True):
+def sync(
+    root_dir: Path,
+    ensure_on_same_branch: bool = True,
+    install_set: str | None = None,
+):
     """Run all sync operations."""
     logger.info("Syncing...")
 
-    paths = Paths(root_dir)
+    paths = Paths(root_dir, install_set=install_set)
     ensure_root_git_repo(paths.root_dir)
     ensure_workspace_readme(paths=paths)
 
@@ -186,24 +190,33 @@ def sync(root_dir: Path, ensure_on_same_branch: bool = True):
         clone_repos(paths=paths, ensure_on_same_branch=ensure_on_same_branch)
 
     update_gitignore_with_generated_files(paths=paths)
-    merge_vscode_configs(root_dir=root_dir)
-    sync_all_agents(root_dir=root_dir)
-    sync_all_github_actions(root_dir=root_dir)
+    merge_vscode_configs(root_dir=root_dir, install_set=install_set)
+    sync_all_agents(root_dir=root_dir, install_set=install_set)
+    sync_all_github_actions(root_dir=root_dir, install_set=install_set)
 
     logger.info("✅ Sync complete")
 
 
 @click.group(name="sync", invoke_without_command=True)
+@click.option(
+    "--install-set",
+    "--set",
+    "install_set",
+    metavar="NAME",
+    help="Only sync repositories included in the named install set.",
+)
 @click.pass_context
-def sync_cmd(ctx: click.Context):
+def sync_cmd(ctx: click.Context, install_set: str | None):
     """Sync development environment and configurations.
 
     If no subcommand is given, performs complete sync:
     1. Clones/updates all repositories
     2. Merges VSCode configurations
     """
+    ctx.ensure_object(dict)
+    ctx.obj["install_set"] = install_set
     if ctx.invoked_subcommand is None:
-        sync(root_dir=Path.cwd())
+        sync(root_dir=Path.cwd(), install_set=install_set)
 
 
 # Add subcommands

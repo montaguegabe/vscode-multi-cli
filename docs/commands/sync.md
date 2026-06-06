@@ -5,7 +5,7 @@ Sync development environment and configurations.
 ## Usage
 
 ```bash
-multi sync [SUBCOMMAND]
+multi sync [--install-set NAME] [SUBCOMMAND]
 ```
 
 ## Description
@@ -27,6 +27,12 @@ A full sync performs all of the following:
 5. Generates agent instruction files when `agentInstructions.enabled` is true
 6. Syncs GitHub Actions workflows to root `.github/workflows` (monorepo mode only)
 
+## Install Sets
+
+Use `--install-set NAME` or `--set NAME` to sync only repos whose `repos[].installSets` contains that name. This is useful for public installer workflows where a root workspace should clone and generate config only for public/runtime repos while private development repos remain excluded.
+
+Repos without `installSets` are included in every selected set for backward compatibility. Running `multi sync` with no install set preserves the existing behavior and includes every repo.
+
 ## Subcommands
 
 | Subcommand | Description |
@@ -41,8 +47,17 @@ A full sync performs all of the following:
 # Full sync (recommended)
 multi sync
 
+# Public/runtime subset
+multi sync --install-set default
+
+# Equivalent shorter form
+multi sync --set default
+
 # Only sync VS Code configurations
 multi sync vscode
+
+# Only sync VS Code settings for the selected subset
+multi sync --set default vscode settings
 
 # Only sync VS Code settings
 multi sync vscode settings
@@ -59,5 +74,6 @@ multi sync github
 - The VS Code extension can automatically run `multi sync` when relevant files change
 - Sync operations are idempotent - running them multiple times is safe
 - Use `--verbose` to see detailed output during sync
+- Use `--install-set` / `--set` before the subcommand name when filtering a partial sync, for example `multi sync --set default agents`
 - `multi sync github` is available only when `monoRepo` is `true`
 - Recommended automation path: create/edit `multi.json` and run `multi sync`

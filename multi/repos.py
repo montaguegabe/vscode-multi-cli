@@ -45,6 +45,16 @@ class Repository:
         # Keep this repo on a fixed branch during branch synchronization.
         self.fixed_branch = kwargs.pop("fixedBranch", None)
 
+        install_sets = kwargs.pop("installSets", None)
+        if install_sets is not None:
+            if not isinstance(install_sets, list) or not all(
+                isinstance(install_set, str) for install_set in install_sets
+            ):
+                raise ValueError(
+                    f"installSets for repository {self.name} must be a list of strings."
+                )
+        self.install_sets = install_sets
+
         # Set any other attributes passed in kwargs (top-level keys from repo config)
         for key, value in kwargs.items():
             setattr(self, key, value)
@@ -72,6 +82,13 @@ class Repository:
             "setup.cfg",
         ]
         return any((self.path / file).exists() for file in python_files)
+
+    def matches_install_set(self, install_set: str | None) -> bool:
+        if install_set is None:
+            return True
+        if self.install_sets is None:
+            return True
+        return install_set in self.install_sets
 
 
 def load_repos(paths: Paths) -> List[Repository]:
@@ -109,9 +126,15 @@ def load_repos(paths: Paths) -> List[Repository]:
             )
 
         # Directly pass the config_dict; __init__ will handle parsing.
-        result.append(Repository(**config_dict, paths=paths))
+        repo = Repository(**config_dict, paths=paths)
+        if repo.matches_install_set(paths.install_set):
+            result.append(repo)
 
     if not result:
+        if paths.install_set is not None:
+            raise NoRepositoriesError(
+                f"No repositories found for install set '{paths.install_set}'."
+            )
         raise NoRepositoriesError("No repositories found in multi.json settings.")
 
     return result

@@ -4,6 +4,7 @@ from typing import Any, Dict
 
 import click
 
+from multi.cli_helpers import get_install_set_from_context
 from multi.paths import Paths
 from multi.sync_vscode_helpers import VSCodeFileMerger
 
@@ -35,8 +36,8 @@ class ExtensionsFileMerger(VSCodeFileMerger):
         return merged_json
 
 
-def merge_extensions_json(root_dir: Path) -> None:
-    merger = ExtensionsFileMerger(paths=Paths(root_dir))
+def merge_extensions_json(root_dir: Path, install_set: str | None = None) -> None:
+    merger = ExtensionsFileMerger(paths=Paths(root_dir, install_set=install_set))
     merger.merge()
 
 
@@ -49,4 +50,4 @@ def merge_extensions_cmd():
     2. Remove duplicate recommendations while preserving order.
     """
     logger.info("Merging extensions.json files from all repositories...")
-    merge_extensions_json(Path.cwd())
+    merge_extensions_json(Path.cwd(), install_set=get_install_set_from_context())

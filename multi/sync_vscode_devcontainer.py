@@ -4,6 +4,7 @@ from pathlib import Path
 
 import click
 
+from multi.cli_helpers import get_install_set_from_context
 from multi.paths import Paths
 from multi.repos import load_repos
 from multi.sync_vscode_helpers import prefix_repo_name_to_path_recursive
@@ -12,14 +13,14 @@ from multi.utils import soft_read_json_file, write_json_file
 logger = logging.getLogger(__name__)
 
 
-def sync_devcontainer(root_dir: Path) -> None:
+def sync_devcontainer(root_dir: Path, install_set: str | None = None) -> None:
     """Copy .devcontainer folder from a sub-repo to root workspace.
 
     Assumes only one sub-repo has a .devcontainer folder.
     If found, copies it to the root directory, overwriting any existing one.
     Prefixes workspace folder paths in devcontainer.json with the repo name.
     """
-    paths = Paths(root_dir)
+    paths = Paths(root_dir, install_set=install_set)
     repos = load_repos(paths)
 
     dest_devcontainer = paths.root_dir / ".devcontainer"
@@ -67,4 +68,4 @@ def sync_devcontainer_cmd():
     3. Prefix workspace folder paths in devcontainer.json with the repo name.
     """
     logger.info("Syncing .devcontainer folder...")
-    sync_devcontainer(root_dir=Path.cwd())
+    sync_devcontainer(root_dir=Path.cwd(), install_set=get_install_set_from_context())

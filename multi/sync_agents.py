@@ -3,6 +3,7 @@ from pathlib import Path
 
 import click
 
+from multi.cli_helpers import get_install_set_from_context
 from multi.paths import Paths
 from multi.repos import load_repos
 
@@ -117,8 +118,8 @@ def generate_agents_files(
     logger.info(f"✅ Generated AGENTS.md and CLAUDE.md at {repo_dir}")
 
 
-def sync_all_agents(root_dir: Path) -> None:
-    paths = Paths(root_dir)
+def sync_all_agents(root_dir: Path, install_set: str | None = None) -> None:
+    paths = Paths(root_dir, install_set=install_set)
     if not is_agents_generation_enabled(paths):
         logger.debug("AGENTS generation is disabled")
         return
@@ -138,8 +139,9 @@ def sync_agents_cmd():
     """Generate AGENTS.md and CLAUDE.md from AGENTS.parts/*.md files."""
     logger.info("Syncing AGENTS files...")
     root_dir = Path.cwd()
-    paths = Paths(root_dir)
+    install_set = get_install_set_from_context()
+    paths = Paths(root_dir, install_set=install_set)
     from multi.ignore_files import update_gitignore_with_generated_files
 
     update_gitignore_with_generated_files(paths=paths)
-    sync_all_agents(root_dir)
+    sync_all_agents(root_dir, install_set=install_set)

@@ -7,6 +7,7 @@
 Features:
 
 - Generates files in your root `.vscode` folder from sub-repo `launch.json`, `tasks.json`, and `settings.json` files.
+- Supports optional `installSets` so installer scripts can sync only a public/runtime subset of repos.
 - Optionally generates `CLAUDE.md` and `AGENTS.md` files from tracked `AGENTS.parts/*.md` files.
 - In monorepo mode, syncs sub-repo GitHub workflows into root `.github/workflows`.
 
@@ -57,6 +58,23 @@ For `--github-repo`, the GitHub CLI (`gh`) must already be installed and authent
 When repository slugs are product-prefixed, `multi init` automatically writes short local directory names into `multi.json` when the slug matches the workspace name prefix. For example, in a `t-ide/` workspace, `t-ide-cli` becomes local folder `cli`.
 
 The same naming rule applies to `multi add`, so adding `https://github.com/org/t-ide-cli` inside a `t-ide/` workspace will also default to local folder `cli`.
+
+For public installer workflows, add `installSets` to repo entries and run a filtered sync:
+
+```json
+{
+  "repos": [
+    { "name": "cli", "url": "https://github.com/org/product-cli", "installSets": ["default", "dev"] },
+    { "name": "ios", "url": "git@github.com:org/product-ios.git", "installSets": ["dev"] }
+  ]
+}
+```
+
+```bash
+multi sync --install-set default
+```
+
+Running `multi sync` without `--install-set` still includes every repo. Repos without `installSets` are included in every named set.
 
 To grant or remove GitHub collaborator access across every GitHub repo in a workspace, use:
 

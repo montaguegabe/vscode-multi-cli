@@ -22,6 +22,7 @@ my-workspace/
       "url": "https://github.com/org/repo-a",
       "name": "custom-name",
       "description": "Backend API service",
+      "installSets": ["default", "dev"],
       "skipVSCode": false
     },
     {
@@ -119,6 +120,7 @@ An array of repository configurations. Each repository object supports:
 | `allowSymlink` | boolean | No | `false` | Allow symlinking to an existing clone of this repo |
 | `manageGitignore` | boolean | No | `true` | Manage Multi-generated entries in this repo's `.gitignore` |
 | `fixedBranch` | string | No | - | Keep this repo on a fixed branch during branch synchronization and worktree creation |
+| `installSets` | string[] | No | included in all sets | Named sync/install sets that include this repo when `multi sync --install-set` is used |
 
 #### Example: Basic repository list
 
@@ -150,6 +152,49 @@ An array of repository configurations. Each repository object supports:
 ```
 
 Recommended pattern: if the GitHub repository is product-prefixed, use a short local `name` that reflects the role of the repo rather than repeating the full slug.
+
+#### Example: Public installer and private dev sets
+
+Use `installSets` when an installer should sync only a public/runtime subset of the workspace while development syncs can still include every repo. Running `multi sync` with no set still uses all repos.
+
+```json
+{
+  "repos": [
+    {
+      "url": "https://github.com/org/product-cli",
+      "name": "cli",
+      "installSets": ["default", "dev"]
+    },
+    {
+      "url": "https://github.com/org/product-console",
+      "name": "console",
+      "installSets": ["default", "dev"]
+    },
+    {
+      "url": "git@github.com:org/product-ios.git",
+      "name": "ios",
+      "installSets": ["dev"]
+    },
+    {
+      "url": "https://github.com/org/product-shared",
+      "name": "shared"
+    }
+  ]
+}
+```
+
+```bash
+# Public/runtime installer sync
+multi sync --install-set default
+
+# Equivalent shorter form
+multi sync --set default
+
+# Full workspace sync, preserving existing behavior
+multi sync
+```
+
+Repos without `installSets` are included in every named set for backward compatibility. In the example above, `shared` is included by both `--install-set default` and `--install-set dev`.
 
 #### Example: Repository descriptions for AI context
 

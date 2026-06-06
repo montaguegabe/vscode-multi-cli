@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 
 import click
 
+from multi.cli_helpers import get_install_set_from_context
 from multi.paths import Paths
 from multi.repos import Repository
 from multi.sync_vscode_helpers import VSCodeFileMerger, deep_merge
@@ -107,8 +108,8 @@ class TasksFileMerger(VSCodeFileMerger):
         return merged_json
 
 
-def merge_tasks_json(root_dir: Path) -> None:
-    merger = TasksFileMerger(paths=Paths(root_dir))
+def merge_tasks_json(root_dir: Path, install_set: str | None = None) -> None:
+    merger = TasksFileMerger(paths=Paths(root_dir, install_set=install_set))
     merger.merge()
 
 
@@ -123,4 +124,4 @@ def merge_tasks_cmd():
     4. Preserve existing tasks by renaming conflicts.
     """
     logger.info("Merging tasks.json files from all repositories...")
-    merge_tasks_json(root_dir=Path.cwd())
+    merge_tasks_json(root_dir=Path.cwd(), install_set=get_install_set_from_context())

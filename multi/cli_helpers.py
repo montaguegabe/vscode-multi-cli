@@ -11,6 +11,17 @@ from multi.git_helpers import check_all_on_same_branch
 from multi.logging import configure_logging
 from multi.paths import Paths
 
+COMMANDS_WITHOUT_WORKSPACE_BRANCH_CHECK = {"doctor", "recent-users"}
+
+
+def get_install_set_from_context() -> str | None:
+    ctx = click.get_current_context(silent=True)
+    while ctx is not None:
+        if ctx.obj and "install_set" in ctx.obj:
+            return ctx.obj["install_set"]
+        ctx = ctx.parent
+    return None
+
 
 def common_command_wrapper(command_to_wrap: click.Command) -> click.Command:
     """
@@ -36,10 +47,10 @@ def common_command_wrapper(command_to_wrap: click.Command) -> click.Command:
         log_level = logging.DEBUG if verbose_value else logging.INFO
         configure_logging(level=log_level)
 
-        exit_code = None
+        result = None
         try:
             # Call the original command's callback with its intended kwargs
-            return original_callback(**kwargs)
+            result = original_callback(**kwargs)
         except Exception as e:
             logger = logging.getLogger(__name__)  # Get logger after configuration
             logger.error(str(e))  # This will use the emoji formatter
@@ -47,18 +58,23 @@ def common_command_wrapper(command_to_wrap: click.Command) -> click.Command:
                 # For verbose mode, also print traceback directly to stderr
                 click.secho("\nDebug traceback:", fg="yellow", err=True)
                 click.secho(traceback.format_exc(), fg="yellow", err=True)
-            exit_code = 1
+            sys.exit(1)
 
-        if exit_code is not None:
-            sys.exit(exit_code)
+        ctx = click.get_current_context(silent=True)
+        if isinstance(command_to_wrap, click.Group) and ctx is not None:
+            if ctx.invoked_subcommand is not None:
+                return result
 
         # After commands, check that all sub-repos are on the same branch as the root repo.
         # Some commands (like doctor) intentionally run even when no workspace is initialized.
-        if command_to_wrap.name in {"doctor"}:
-            return
+        if command_to_wrap.name in COMMANDS_WITHOUT_WORKSPACE_BRANCH_CHECK:
+            return result
 
         try:
-            paths = Paths(Path.cwd())
+            paths = Paths(
+                Path.cwd(),
+                install_set=kwargs.get("install_set") or get_install_set_from_context(),
+            )
             if not paths.settings.is_monorepo():
                 check_all_on_same_branch(paths=paths, raise_error=True)
         except GitError as e:
@@ -67,6 +83,7 @@ def common_command_wrapper(command_to_wrap: click.Command) -> click.Command:
             # This can happen for commands that run outside a multi workspace.
             pass
 
+        return result
 
     # Replace the command's callback with our new wrapped version
     command_to_wrap.callback = new_wrapped_callback

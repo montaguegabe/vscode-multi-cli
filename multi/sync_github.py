@@ -5,6 +5,7 @@ from pathlib import Path
 import click
 import yaml
 
+from multi.cli_helpers import get_install_set_from_context
 from multi.paths import Paths
 from multi.repos import load_repos
 
@@ -121,9 +122,9 @@ def _render_generated_workflow(
     return "\n".join(headers) + serialized
 
 
-def sync_all_github_actions(root_dir: Path) -> None:
+def sync_all_github_actions(root_dir: Path, install_set: str | None = None) -> None:
     """Sync GitHub Actions workflow files from monorepo directories to root."""
-    paths = Paths(root_dir)
+    paths = Paths(root_dir, install_set=install_set)
     if not paths.settings.is_monorepo():
         logger.debug("Skipping GitHub Actions sync outside monorepo mode")
         return
@@ -201,9 +202,10 @@ def sync_github_cmd() -> None:
 
     This command is only available in monorepo mode.
     """
-    paths = Paths(Path.cwd())
+    install_set = get_install_set_from_context()
+    paths = Paths(Path.cwd(), install_set=install_set)
     if not paths.settings.is_monorepo():
         raise click.UsageError(
             "The 'multi sync github' command is only available in monorepo mode."
         )
-    sync_all_github_actions(root_dir=Path.cwd())
+    sync_all_github_actions(root_dir=Path.cwd(), install_set=install_set)
