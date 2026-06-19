@@ -12,6 +12,7 @@ from multi.app_api import (
     get_history_group_diff,
     get_project_detail,
     get_projects_summary,
+    refresh_projects_summary,
 )
 
 logger = logging.getLogger(__name__)
@@ -63,6 +64,18 @@ class MultiServiceHandler(BaseHTTPRequestHandler):
                 self._write_json(
                     HTTPStatus.OK,
                     {"projects": get_projects_summary(repo_paths)},
+                )
+                return
+
+            if self.path == "/v1/projects/status":
+                repo_paths = body.get("repoPaths", [])
+                if not isinstance(repo_paths, list) or not all(
+                    isinstance(item, str) for item in repo_paths
+                ):
+                    raise ValueError("repoPaths must be a list of strings.")
+                self._write_json(
+                    HTTPStatus.OK,
+                    {"projects": refresh_projects_summary(repo_paths)},
                 )
                 return
 

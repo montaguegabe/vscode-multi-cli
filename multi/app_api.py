@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import dataclasses
 import subprocess
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError, as_completed
 from pathlib import Path
 from typing import Any, Literal, TypedDict
 
@@ -10,11 +13,29 @@ from multi.errors import NoRepositoriesError
 from multi.paths import Paths
 from multi.repos import Repository, load_repos
 
-RepoStatus = Literal["clean", "dirty", "out-of-sync", "not-a-repo", "missing"]
+RepoStatus = Literal[
+    "clean",
+    "dirty",
+    "out-of-sync",
+    "no_git",
+    "missing",
+    "unknown",
+]
 
 HISTORY_GROUP_WINDOW_MS = 60_000
 HISTORY_MAX_COMMITS_PER_REPO = 250
 GIT_HISTORY_FORMAT = "%H%x1f%h%x1f%an%x1f%ae%x1f%at%x1f%s%x1f%b%x1e"
+PROJECT_SUMMARY_METADATA_CACHE_TTL_SECONDS = 10.0
+PROJECT_SUMMARY_WORKERS = 8
+PROJECT_SUMMARY_TIMEOUT_SECONDS = 12.0
+
+_project_summary_cache_lock = threading.Lock()
+_project_summary_executor = ThreadPoolExecutor(
+    max_workers=PROJECT_SUMMARY_WORKERS,
+    thread_name_prefix="multi-project-summary",
+)
+_cached_project_summary_metadata: dict[str, tuple[float, dict[str, Any]]] = {}
+_refreshing_project_summary_paths: set[str] = set()
 
 
 class RepoSyncState(TypedDict):
@@ -104,7 +125,7 @@ def _get_git_status_internal(repo_path: Path, ignore_untracked: bool) -> RepoSta
         return "missing"
 
     if not (repo_path / ".git").exists():
-        return "not-a-repo"
+        return "no_git"
 
     status_args = ["status", "--porcelain"]
     if ignore_untracked:
@@ -184,7 +205,9 @@ def _get_latest_commit_ms_for_repo(repo_path: Path) -> int | None:
         return None
 
     try:
-        stdout = _run_git(["log", "-1", "--format=%at"], cwd=repo_path, timeout=10).stdout
+        stdout = _run_git(
+            ["log", "-1", "--format=%at"], cwd=repo_path, timeout=10
+        ).stdout
         authored_at_seconds = int(stdout.strip())
         return authored_at_seconds * 1000
     except (OSError, ValueError, subprocess.SubprocessError):
@@ -194,10 +217,11 @@ def _get_latest_commit_ms_for_repo(repo_path: Path) -> int | None:
 def _worst_status(a: RepoStatus, b: RepoStatus) -> RepoStatus:
     severity = {
         "clean": 0,
-        "not-a-repo": 1,
-        "out-of-sync": 2,
-        "dirty": 3,
-        "missing": 4,
+        "unknown": 1,
+        "no_git": 2,
+        "out-of-sync": 3,
+        "dirty": 4,
+        "missing": 5,
     }
     return a if severity[a] >= severity[b] else b
 
@@ -214,10 +238,10 @@ def get_project_status(repo_path: str | Path) -> RepoStatus:
             ],
         ]
         worst = statuses[0]
-        if worst in {"missing", "not-a-repo"}:
+        if worst in {"missing", "no_git"}:
             worst = "clean"
         for status in statuses[1:]:
-            if status in {"missing", "not-a-repo"}:
+            if status in {"missing", "no_git"}:
                 continue
             worst = _worst_status(worst, status)
         return worst
@@ -311,10 +335,13 @@ def _history_commit_from_record(
         "authorName": author_name or "",
         "authorEmail": author_email or "",
         "authoredAtMs": authored_at_ms,
-        "authoredAtIso": __import__("datetime").datetime.fromtimestamp(
+        "authoredAtIso": __import__("datetime")
+        .datetime.fromtimestamp(
             authored_at_ms / 1000,
             tz=__import__("datetime").timezone.utc,
-        ).isoformat().replace("+00:00", "Z"),
+        )
+        .isoformat()
+        .replace("+00:00", "Z"),
         "repoPath": str(repo_path),
         "repoName": repo_name,
     }
@@ -365,7 +392,9 @@ def group_history_commits(commits: list[dict[str, Any]]) -> list[dict[str, Any]]
     for commit in sorted_commits:
         current_group = groups[-1] if groups else None
         previous_commit = (
-            current_group["commits"][-1] if current_group and current_group["commits"] else None
+            current_group["commits"][-1]
+            if current_group and current_group["commits"]
+            else None
         )
         should_merge = (
             previous_commit is not None
@@ -483,7 +512,7 @@ def _doctor_result(repo_path: Path) -> dict[str, Any] | None:
     }
 
 
-def get_project_summary(repo_path: str | Path) -> dict[str, Any]:
+def _project_summary_static_payload(repo_path: str | Path) -> dict[str, Any]:
     project_path = Path(repo_path)
     name = project_path.name or str(project_path)
     try:
@@ -495,15 +524,131 @@ def get_project_summary(repo_path: str | Path) -> dict[str, Any]:
         "path": str(project_path),
         "name": name,
         "lastModifiedMs": _normalize_optional_ms(last_modified_ms),
-        "lastCommitMs": _normalize_optional_ms(get_project_last_commit_ms(project_path)),
+    }
+
+
+def _project_summary_metadata(repo_path: str | Path) -> dict[str, Any]:
+    project_path = Path(repo_path)
+    return {
+        "lastCommitMs": _normalize_optional_ms(
+            get_project_last_commit_ms(project_path)
+        ),
         "status": get_project_status(project_path),
         "doctorResult": _doctor_result(project_path),
         "subRepos": _subrepo_payloads(project_path),
     }
 
 
+def _project_summary_fallback_metadata() -> dict[str, Any]:
+    return {
+        "lastCommitMs": None,
+        "status": "unknown",
+        "doctorResult": None,
+        "subRepos": None,
+    }
+
+
+def _cached_project_metadata(repo_path: str) -> tuple[dict[str, Any] | None, bool]:
+    now = time.monotonic()
+    with _project_summary_cache_lock:
+        cached = _cached_project_summary_metadata.get(repo_path)
+        if cached is None:
+            return None, False
+        cached_at, metadata = cached
+        return dict(
+            metadata
+        ), now - cached_at < PROJECT_SUMMARY_METADATA_CACHE_TTL_SECONDS
+
+
+def _refresh_project_summary_metadata_task(repo_path: str) -> None:
+    try:
+        metadata = _project_summary_metadata(repo_path)
+        with _project_summary_cache_lock:
+            _cached_project_summary_metadata[repo_path] = (time.monotonic(), metadata)
+    finally:
+        with _project_summary_cache_lock:
+            _refreshing_project_summary_paths.discard(repo_path)
+
+
+def _schedule_project_summary_metadata_refresh(repo_paths: list[str]) -> None:
+    now = time.monotonic()
+    scheduled: list[str] = []
+    with _project_summary_cache_lock:
+        for repo_path in dict.fromkeys(path for path in repo_paths if path):
+            cached = _cached_project_summary_metadata.get(repo_path)
+            if (
+                cached is not None
+                and now - cached[0] < PROJECT_SUMMARY_METADATA_CACHE_TTL_SECONDS
+            ):
+                continue
+            if repo_path in _refreshing_project_summary_paths:
+                continue
+            _refreshing_project_summary_paths.add(repo_path)
+            scheduled.append(repo_path)
+
+    for repo_path in scheduled:
+        _project_summary_executor.submit(
+            _refresh_project_summary_metadata_task, repo_path
+        )
+
+
+def _project_summary_payload(repo_path: str | Path) -> dict[str, Any]:
+    path_key = str(repo_path)
+    metadata, is_fresh = _cached_project_metadata(path_key)
+    if not is_fresh:
+        _schedule_project_summary_metadata_refresh([path_key])
+    return {
+        **_project_summary_static_payload(repo_path),
+        **(metadata or _project_summary_fallback_metadata()),
+    }
+
+
+def get_project_summary(repo_path: str | Path) -> dict[str, Any]:
+    return {
+        **_project_summary_static_payload(repo_path),
+        **_project_summary_metadata(repo_path),
+    }
+
+
 def get_projects_summary(repo_paths: list[str]) -> list[dict[str, Any]]:
-    return [get_project_summary(repo_path) for repo_path in repo_paths]
+    return [_project_summary_payload(repo_path) for repo_path in repo_paths]
+
+
+def refresh_projects_summary(repo_paths: list[str]) -> list[dict[str, Any]]:
+    unique_paths = list(dict.fromkeys(path for path in repo_paths if path))
+    futures = {
+        _project_summary_executor.submit(
+            _project_summary_metadata, repo_path
+        ): repo_path
+        for repo_path in unique_paths
+    }
+    refreshed: dict[str, dict[str, Any]] = {}
+    deadline = time.monotonic() + PROJECT_SUMMARY_TIMEOUT_SECONDS
+
+    try:
+        for future in as_completed(futures, timeout=PROJECT_SUMMARY_TIMEOUT_SECONDS):
+            repo_path = futures[future]
+            remaining = max(0.0, deadline - time.monotonic())
+            try:
+                metadata = future.result(timeout=remaining)
+            except Exception:
+                metadata = _project_summary_fallback_metadata()
+            refreshed[repo_path] = metadata
+            with _project_summary_cache_lock:
+                _cached_project_summary_metadata[repo_path] = (
+                    time.monotonic(),
+                    metadata,
+                )
+    except TimeoutError:
+        pass
+
+    return [
+        {
+            **_project_summary_static_payload(repo_path),
+            **refreshed.get(repo_path, _project_summary_fallback_metadata()),
+        }
+        for repo_path in unique_paths
+    ]
 
 
 def get_project_detail(repo_path: str | Path) -> dict[str, Any]:
