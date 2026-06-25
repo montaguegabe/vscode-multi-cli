@@ -135,11 +135,17 @@ def _run_gh_api(
     method: str,
     endpoint: str,
     fields: dict[str, str] | None = None,
+    paginate: bool = False,
+    slurp: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     cmd = [gh_path, "api", "--method", method, endpoint]
     if fields:
         for key, value in fields.items():
             cmd.extend(["-f", f"{key}={value}"])
+    if paginate:
+        cmd.append("--paginate")
+    if slurp:
+        cmd.append("--slurp")
 
     try:
         return subprocess.run(
@@ -153,6 +159,57 @@ def _run_gh_api(
         stdout = exc.stdout.strip()
         message = stderr or stdout or str(exc)
         raise click.ClickException(message) from exc
+
+
+def _load_pending_repository_invitations(gh_path: str) -> list[dict[str, object]]:
+    result = _run_gh_api(
+        gh_path,
+        method="GET",
+        endpoint="user/repository_invitations?per_page=100",
+        paginate=True,
+        slurp=True,
+    )
+
+    try:
+        invitations = json.loads(result.stdout or "[]")
+    except json.JSONDecodeError as exc:
+        raise click.ClickException(
+            "GitHub returned invalid repository invitation data."
+        ) from exc
+
+    if not isinstance(invitations, list):
+        raise click.ClickException(
+            "GitHub returned invalid repository invitation data."
+        )
+
+    if all(isinstance(page, list) for page in invitations):
+        return [
+            invitation
+            for page in invitations
+            for invitation in page
+            if isinstance(invitation, dict)
+        ]
+
+    return [invitation for invitation in invitations if isinstance(invitation, dict)]
+
+
+def _get_invitation_id(invitation: dict[str, object]) -> int | None:
+    invitation_id = invitation.get("id")
+    if isinstance(invitation_id, int):
+        return invitation_id
+    return None
+
+
+def _get_invitation_repo_slug(invitation: dict[str, object]) -> str | None:
+    repository = invitation.get("repository")
+    if not isinstance(repository, dict):
+        return None
+
+    full_name = repository.get("full_name")
+    if isinstance(full_name, str) and full_name:
+        return full_name
+
+    return None
 
 
 def _load_workspace_github_repo_slug(paths: Paths) -> str | None:
@@ -246,6 +303,70 @@ def _confirm_across_repos(
         raise click.ClickException("Operation cancelled.")
 
 
+def _confirm_accept_invitations(
+    *,
+    invitations: list[tuple[str, int]],
+    yes: bool,
+) -> None:
+    if yes:
+        return
+
+    repo_list = "\n".join(f"- {slug}" for slug, _ in invitations)
+    confirmed = click.confirm(
+        f"Accept repository invitations for these repos?\n{repo_list}",
+        default=False,
+    )
+    if not confirmed:
+        raise click.ClickException("Operation cancelled.")
+
+
+def _accept_collaborator_invitations(*, yes: bool) -> None:
+    paths = Paths(Path.cwd())
+    gh_path = _ensure_gh_available()
+    repo_targets = _load_github_repo_targets(paths)
+    target_slugs = {slug.lower() for _, slug in repo_targets}
+    invitations: list[tuple[str, int]] = []
+    failures: list[tuple[str, str]] = []
+
+    for invitation in _load_pending_repository_invitations(gh_path):
+        slug = _get_invitation_repo_slug(invitation)
+        invitation_id = _get_invitation_id(invitation)
+        if slug is None or invitation_id is None:
+            continue
+        if slug.lower() not in target_slugs:
+            continue
+        invitations.append((slug, invitation_id))
+
+    if not invitations:
+        click.echo("No pending repository invitations found for this workspace.")
+        return
+
+    _confirm_accept_invitations(invitations=invitations, yes=yes)
+
+    for slug, invitation_id in invitations:
+        try:
+            logger.info(f"Accepting repository invitation for {slug}")
+            _run_gh_api(
+                gh_path,
+                method="PATCH",
+                endpoint=f"user/repository_invitations/{invitation_id}",
+            )
+        except click.ClickException as exc:
+            message = exc.message or str(exc)
+            logger.error(
+                f"Failed accepting repository invitation for {slug}: {message}"
+            )
+            failures.append((slug, message))
+
+    if failures:
+        failure_lines = "\n".join(f"- {slug}: {message}" for slug, message in failures)
+        raise click.ClickException(
+            f"Finished accepting repository invitations with failures:\n{failure_lines}"
+        )
+
+    logger.info("✅ Accepted repository invitations for all workspace repos")
+
+
 def _manage_collaborator(
     *,
     action: str,
@@ -335,6 +456,17 @@ def collaborator_add_cmd(username: str | None, permission: str, yes: bool) -> No
     )
 
 
+@click.command(name="accept")
+@click.option(
+    "--yes",
+    is_flag=True,
+    help="Skip the confirmation prompt.",
+)
+def collaborator_accept_cmd(yes: bool) -> None:
+    """Accept pending collaborator invitations for this workspace."""
+    _accept_collaborator_invitations(yes=yes)
+
+
 @click.command(name="remove")
 @click.argument("username")
 @click.option(
@@ -365,5 +497,6 @@ def collaborator_recent_users_cmd() -> None:
 
 
 collaborator_cmd.add_command(common_command_wrapper(collaborator_add_cmd))
+collaborator_cmd.add_command(common_command_wrapper(collaborator_accept_cmd))
 collaborator_cmd.add_command(common_command_wrapper(collaborator_remove_cmd))
 collaborator_cmd.add_command(common_command_wrapper(collaborator_recent_users_cmd))

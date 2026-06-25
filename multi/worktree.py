@@ -39,7 +39,12 @@ def _run_git(repo_path: Path, args: list[str]) -> None:
         ) from e
 
 
-def _create_root_worktree(root_dir: Path, destination: Path, branch_name: str) -> None:
+def _create_root_worktree(
+    root_dir: Path,
+    destination: Path,
+    branch_name: str,
+    base_ref: str,
+) -> None:
     exists_locally, exists_remotely = check_branch_existence(root_dir, branch_name)
 
     if exists_locally:
@@ -54,7 +59,7 @@ def _create_root_worktree(root_dir: Path, destination: Path, branch_name: str) -
             f"origin/{branch_name}",
         ]
     else:
-        args = ["worktree", "add", "-b", branch_name, str(destination), "HEAD"]
+        args = ["worktree", "add", "-b", branch_name, str(destination), base_ref]
 
     _run_git(root_dir, args)
     logger.info(f"Created worktree at {destination}")
@@ -164,12 +169,42 @@ def _transfer_configured_paths(source_paths: Paths, destination_paths: Paths) ->
 
 
 def _checkout_subrepos(
-    repos: Iterable[Repository],
+    source_repos: Iterable[Repository],
+    destination_repos: Iterable[Repository],
     branch_name: str,
     allow_create: bool,
+    base_ref: str,
 ) -> None:
-    for repo in repos:
+    source_by_name = {repo.name: repo for repo in source_repos}
+    for repo in destination_repos:
         repo_branch_name = repo.fixed_branch or branch_name
+        if repo.fixed_branch:
+            create_and_switch_branch(
+                repo.path,
+                repo_branch_name,
+                allow_create=allow_create,
+            )
+            continue
+        source_repo = source_by_name.get(repo.name)
+        if (
+            source_repo is not None
+            and base_ref != "HEAD"
+            and not check_branch_existence(repo.path, repo_branch_name)[0]
+        ):
+            try:
+                _run_git(repo.path, ["fetch", str(source_repo.path), base_ref])
+                _run_git(repo.path, ["checkout", "-b", repo_branch_name, "FETCH_HEAD"])
+                logger.info(f"✅ Switched to branch '{repo_branch_name}' in {repo.path}")
+                continue
+            except GitError as exc:
+                logger.warning(
+                    "⚠️  Base ref %s was not available for %s; creating %s from "
+                    "the current checkout instead. %s",
+                    base_ref,
+                    repo.name,
+                    repo_branch_name,
+                    exc,
+                )
         create_and_switch_branch(
             repo.path,
             repo_branch_name,
@@ -177,8 +212,14 @@ def _checkout_subrepos(
         )
 
 
-def add_worktree(root_dir: Path, name: str, branch_name: str | None = None) -> Path:
-    paths = Paths(root_dir)
+def add_worktree(
+    root_dir: Path,
+    name: str,
+    branch_name: str | None = None,
+    install_set: str | None = None,
+    base_ref: str = "HEAD",
+) -> Path:
+    paths = Paths(root_dir, install_set=install_set)
     if paths.settings.is_monorepo():
         raise click.UsageError(
             "The 'multi worktree add' command is not available in monorepo mode. "
@@ -198,14 +239,16 @@ def add_worktree(root_dir: Path, name: str, branch_name: str | None = None) -> P
             "already exist for all repos, this command will fix the situation."
         )
 
-    _create_root_worktree(paths.root_dir, destination, branch_name)
-    sync(root_dir=destination)
+    _create_root_worktree(paths.root_dir, destination, branch_name, base_ref)
+    sync(root_dir=destination, install_set=install_set)
 
-    destination_paths = Paths(destination)
+    destination_paths = Paths(destination, install_set=install_set)
     _checkout_subrepos(
+        load_repos(paths),
         load_repos(destination_paths),
         branch_name,
         allow_create=all_on_same_branch,
+        base_ref=base_ref,
     )
     _transfer_configured_paths(paths, destination_paths)
     return destination
@@ -223,13 +266,37 @@ def worktree_cmd() -> None:
     "branch_name",
     help="Branch name for the worktree. Defaults to NAME.",
 )
-def worktree_add_cmd(name: str, branch_name: str | None = None) -> None:
+@click.option(
+    "--install-set",
+    "--set",
+    "install_set",
+    metavar="NAME",
+    help="Only sync repositories included in the named install set.",
+)
+@click.option(
+    "--base-ref",
+    default="HEAD",
+    show_default=True,
+    help="Base ref for newly created root and sub-repo branches.",
+)
+def worktree_add_cmd(
+    name: str,
+    branch_name: str | None = None,
+    install_set: str | None = None,
+    base_ref: str = "HEAD",
+) -> None:
     """Create a sibling worktree.
 
     NAME: Directory name for the sibling worktree. Used as the branch name when
     --branch is omitted.
     """
-    add_worktree(Path.cwd(), name=name, branch_name=branch_name)
+    add_worktree(
+        Path.cwd(),
+        name=name,
+        branch_name=branch_name,
+        install_set=install_set,
+        base_ref=base_ref,
+    )
 
 
 worktree_cmd.add_command(common_command_wrapper(worktree_add_cmd))

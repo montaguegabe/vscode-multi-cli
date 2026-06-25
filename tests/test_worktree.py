@@ -148,3 +148,55 @@ def test_add_worktree_transfers_gitignored_paths(tmp_path):
     assert (destination / "repo0" / ".secret").read_text(
         encoding="utf-8"
     ) == "repo-local\n"
+
+
+def test_add_worktree_respects_install_set(tmp_path):
+    repo0_remote = _create_remote_repo(tmp_path, "repo0")
+    repo1_remote = _create_remote_repo(tmp_path, "repo1")
+    root_path = _create_workspace(
+        tmp_path,
+        repo_configs=[
+            {"url": str(repo0_remote), "name": "repo0", "installSets": ["default"]},
+            {"url": str(repo1_remote), "name": "repo1", "installSets": ["dev"]},
+        ],
+    )
+
+    destination = add_worktree(root_path, name="feature-default", install_set="default")
+
+    assert (destination / "repo0").is_dir()
+    assert not (destination / "repo1").exists()
+    assert git.Repo(destination / "repo0").active_branch.name == "feature-default"
+
+
+def test_add_worktree_uses_base_ref_for_root_and_subrepos(tmp_path):
+    remote = _create_remote_repo(tmp_path, "repo0")
+    root_path = _create_workspace(
+        tmp_path,
+        repo_configs=[{"url": str(remote), "name": "repo0"}],
+    )
+    root_repo = git.Repo(root_path)
+    root_repo.create_head("agent-work/upstream").checkout()
+    (root_path / "root-upstream.txt").write_text("root upstream\n", encoding="utf-8")
+    _commit_all(root_repo, "Root upstream")
+    repo0 = git.Repo(root_path / "repo0")
+    repo0.create_head("agent-work/upstream").checkout()
+    (root_path / "repo0" / "repo-upstream.txt").write_text(
+        "repo upstream\n",
+        encoding="utf-8",
+    )
+    _commit_all(repo0, "Repo upstream")
+
+    destination = add_worktree(
+        root_path,
+        name="feature-downstream",
+        base_ref="agent-work/upstream",
+    )
+
+    assert git.Repo(destination).active_branch.name == "feature-downstream"
+    assert git.Repo(destination / "repo0").active_branch.name == "feature-downstream"
+    assert (destination / "root-upstream.txt").read_text(encoding="utf-8") == (
+        "root upstream\n"
+    )
+    assert (destination / "repo0" / "repo-upstream.txt").read_text(
+        encoding="utf-8"
+    ) == "repo upstream\n"

@@ -81,11 +81,14 @@ To grant or remove GitHub collaborator access across every GitHub repo in a work
 ```bash
 multi collaborator add octocat --permission maintain --yes
 multi collaborator add --yes
+multi collaborator accept --yes
 multi collaborator remove octocat --yes
 multi collaborator recent-users
 ```
 
 When the workspace root repository has a GitHub `origin`, `multi collaborator` applies the change there too.
+
+The invited collaborator can run `multi collaborator accept --yes` with their own `gh` authentication to accept pending invitations for the workspace repos.
 
 Recent collaborator usernames are saved under `~/.multi`, and `multi collaborator add` can prompt from that list when no username is supplied.
 

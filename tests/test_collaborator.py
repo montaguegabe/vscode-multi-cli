@@ -215,6 +215,158 @@ def test_collaborator_skips_workspace_root_without_github_origin(monkeypatch):
         ]
 
 
+def test_collaborator_accept_uses_gh_api_for_matching_workspace_invitations(
+    monkeypatch,
+):
+    runner = CliRunner()
+    calls: list[list[str]] = []
+
+    def fake_subprocess_run(cmd, check, capture_output, text):
+        calls.append(cmd)
+        if cmd[:4] == [
+            "gh",
+            "api",
+            "--method",
+            "GET",
+        ]:
+            return subprocess.CompletedProcess(
+                cmd,
+                0,
+                stdout=json.dumps(
+                    [
+                        [
+                            {
+                                "id": 101,
+                                "repository": {
+                                    "full_name": "example/t-ide-workspace",
+                                },
+                            },
+                            {
+                                "id": 102,
+                                "repository": {
+                                    "full_name": "example/t-ide-cli",
+                                },
+                            },
+                        ],
+                        [
+                            {
+                                "id": 103,
+                                "repository": {
+                                    "full_name": "elsewhere/unrelated",
+                                },
+                            },
+                        ],
+                    ]
+                ),
+                stderr="",
+            )
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr("multi.collaborator.shutil.which", lambda name: "gh")
+    monkeypatch.setattr("multi.collaborator.subprocess.run", fake_subprocess_run)
+    monkeypatch.setattr(
+        "multi.cli_helpers.check_all_on_same_branch", lambda **kwargs: True
+    )
+
+    with runner.isolated_filesystem():
+        _write_workspace_config()
+        _init_workspace_root_repo()
+
+        result = runner.invoke(
+            main,
+            [
+                "collaborator",
+                "accept",
+                "--yes",
+            ],
+        )
+
+        assert result.exit_code == 0
+        assert calls == [
+            [
+                "gh",
+                "api",
+                "--method",
+                "GET",
+                "user/repository_invitations?per_page=100",
+                "--paginate",
+                "--slurp",
+            ],
+            [
+                "gh",
+                "api",
+                "--method",
+                "PATCH",
+                "user/repository_invitations/101",
+            ],
+            [
+                "gh",
+                "api",
+                "--method",
+                "PATCH",
+                "user/repository_invitations/102",
+            ],
+        ]
+
+
+def test_collaborator_accept_reports_no_matching_pending_invitations(monkeypatch):
+    runner = CliRunner()
+    calls: list[list[str]] = []
+
+    def fake_subprocess_run(cmd, check, capture_output, text):
+        calls.append(cmd)
+        return subprocess.CompletedProcess(
+            cmd,
+            0,
+            stdout=json.dumps(
+                [
+                    {
+                        "id": 101,
+                        "repository": {
+                            "full_name": "elsewhere/unrelated",
+                        },
+                    }
+                ]
+            ),
+            stderr="",
+        )
+
+    monkeypatch.setattr("multi.collaborator.shutil.which", lambda name: "gh")
+    monkeypatch.setattr("multi.collaborator.subprocess.run", fake_subprocess_run)
+    monkeypatch.setattr(
+        "multi.cli_helpers.check_all_on_same_branch", lambda **kwargs: True
+    )
+
+    with runner.isolated_filesystem():
+        _write_workspace_config()
+        _init_workspace_root_repo()
+
+        result = runner.invoke(
+            main,
+            [
+                "collaborator",
+                "accept",
+                "--yes",
+            ],
+        )
+
+        assert result.exit_code == 0
+        assert result.output == (
+            "No pending repository invitations found for this workspace.\n"
+        )
+        assert calls == [
+            [
+                "gh",
+                "api",
+                "--method",
+                "GET",
+                "user/repository_invitations?per_page=100",
+                "--paginate",
+                "--slurp",
+            ],
+        ]
+
+
 def test_collaborator_continues_after_repo_failure(monkeypatch):
     runner = CliRunner()
     calls: list[list[str]] = []
