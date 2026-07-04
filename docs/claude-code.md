@@ -34,7 +34,7 @@ The `multi-workspace` skill gives your agent knowledge of:
 - **Command usage** - Knows when and how to use `multi sync`, `multi add`, `multi collaborator`, `multi set-branch`, `multi git`, etc.
 - **Configuration schema** - Understands all `multi.json` fields and options
 - **VS Code merging** - Knows how launch configs, tasks, and settings are prefixed and merged
-- **Key constraints** - Knows that `multi init` supports both interactive and non-interactive setup, can optionally create GitHub repos via `gh`, `multi add` follows the same workspace-prefix shortening rule for local folder names, `multi collaborator` uses `gh api` to manage GitHub access across GitHub-hosted workspace repos including invite acceptance by the invited user, `CLAUDE.md` is auto-generated, and repos must be clean for branch switching
+- **Key constraints** - Knows that `multi init` supports both interactive and non-interactive setup, can optionally create GitHub repos via `gh`, `multi add` follows the same workspace-prefix shortening rule for local folder names, `multi collaborator` uses `gh api` to manage GitHub access across GitHub-hosted workspace repos including invite acceptance by the invited user, generated agent instruction files are opt-in behind `agentInstructions.enabled`, and repos must be clean for branch switching
 
 ## Trigger Phrases
 

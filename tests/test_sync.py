@@ -80,6 +80,29 @@ jobs:
     assert (workspace / ".github" / "workflows" / "ci.yml").exists()
 
 
+def test_sync_does_not_generate_agent_instructions_by_default(tmp_path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+
+    multi_json = {
+        "monoRepo": True,
+        "repos": [
+            {"name": "packages/api", "description": "Backend API"},
+        ],
+    }
+    (workspace / "multi.json").write_text(json.dumps(multi_json, indent=2))
+    (workspace / "AGENTS.md").write_text("Manual agents\n", encoding="utf-8")
+    (workspace / "CLAUDE.md").write_text("Manual claude\n", encoding="utf-8")
+    parts_dir = workspace / "AGENTS.parts"
+    parts_dir.mkdir()
+    (parts_dir / "base.md").write_text("Generated agents\n", encoding="utf-8")
+
+    sync(root_dir=workspace)
+
+    assert (workspace / "AGENTS.md").read_text(encoding="utf-8") == "Manual agents\n"
+    assert (workspace / "CLAUDE.md").read_text(encoding="utf-8") == "Manual claude\n"
+
+
 def test_multi_sync_fails_when_repo_url_ends_with_dot_git():
     runner = CliRunner()
 

@@ -21,7 +21,7 @@ The extension automatically syncs when changes are detected:
 
 - Runs the matching `multi sync ...` command when watched source files change
 - Regenerates root `.vscode` outputs from repo config files and workspace-level shared files
-- Generates both `CLAUDE.md` and `AGENTS.md` when agent instruction parts change
+- Runs optional agent instruction sync when `AGENTS.parts/*.md` files change; the CLI generates `CLAUDE.md` and `AGENTS.md` only when `agentInstructions.enabled` is `true`
 - Syncs root `.github/workflows` files from repo workflows in monorepo mode
 
 ## Watched Files
