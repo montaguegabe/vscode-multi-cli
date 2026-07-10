@@ -9,6 +9,12 @@ This guide will help you install Multi and set up your first multi-repo workspac
 
 ## Installation
 
+### Desktop App
+
+On Apple Silicon Macs, you can also install
+[Multi Desktop](https://multi-desktop-releases-632795836081-us-east-1.s3.amazonaws.com/mac/Multi-Desktop-latest-arm64.dmg)
+to inspect and manage Multi workspaces from a native app.
+
 === "pipx"
 
     [pipx](https://github.com/pypa/pipx) installs Python CLI tools in isolated environments:
