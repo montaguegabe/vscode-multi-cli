@@ -22,6 +22,12 @@ Switch all repositories to the same branch simultaneously:
 multi set-branch feature/my-feature
 ```
 
+Check which branch every repo is on — read-only, so it works with dirty working trees and detached HEADs:
+
+```bash
+multi branch
+```
+
 Create a sibling worktree for parallel branch work:
 
 ```bash

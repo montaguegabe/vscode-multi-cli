@@ -18,6 +18,7 @@ nav = [
     { "sync vscode" = "commands/sync-vscode.md" },
     { "sync agents" = "commands/sync-agents.md" },
     { "sync github" = "commands/sync-github.md" },
+    { "branch" = "commands/branch.md" },
     { "set-branch" = "commands/set-branch.md" },
     { "git" = "commands/git.md" },
     { "doctor" = "commands/doctor.md" }

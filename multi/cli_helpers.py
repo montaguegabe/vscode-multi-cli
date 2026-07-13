@@ -11,7 +11,9 @@ from multi.git_helpers import check_all_on_same_branch
 from multi.logging import configure_logging
 from multi.paths import Paths
 
-COMMANDS_WITHOUT_WORKSPACE_BRANCH_CHECK = {"doctor", "recent-users"}
+# `branch` is excluded because it reports branch state itself (including
+# mismatches); re-running the post-command check would duplicate the output.
+COMMANDS_WITHOUT_WORKSPACE_BRANCH_CHECK = {"branch", "doctor", "recent-users"}
 
 
 def get_install_set_from_context() -> str | None:

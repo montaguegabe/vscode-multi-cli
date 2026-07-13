@@ -85,12 +85,14 @@ Output from each repository is displayed with the repository name as a header.
 
 - All repositories must be on the same branch before running git commands
 - This validation ensures consistency across your workspace
+- Working trees do **not** need to be clean — read-only queries like `multi git branch --show-current` or `multi git status` work with uncommitted changes
 
 ## Error Handling
 
-If repositories are on different branches, the command will fail with an error. Use `multi set-branch` to synchronize branches first:
+If repositories are on different branches, the command will fail with an error (even for read-only git commands). Use `multi branch` to inspect which branch every repo is on — it works with dirty trees and mismatched branches — then use `multi set-branch` to synchronize:
 
 ```bash
+multi branch
 multi set-branch main
 multi git pull
 ```
@@ -98,5 +100,5 @@ multi git pull
 ## Notes
 
 - Any valid git command works with `multi git`
-- The command passes arguments directly to git, so all git options are supported
+- The command passes arguments directly to git, so all git options are supported (for example `multi git branch --show-current`)
 - Interactive git commands (like `git rebase -i`) are not supported

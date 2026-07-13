@@ -24,11 +24,9 @@ def is_git_repo_root(repo_path: Path) -> bool:
     return Path(repo.working_tree_dir or "").resolve() == repo_path.resolve()
 
 
-def get_current_branch(repo_path: Path) -> str:
-    """Get the current branch name of a git repository."""
+def _open_repo_for_branch_lookup(repo_path: Path) -> git.Repo:
     try:
-        repo = git.Repo(repo_path)
-        return repo.active_branch.name
+        return git.Repo(repo_path)
     except (InvalidGitRepositoryError, NoSuchPathError) as e:
         msg = (
             f"Could not determine current branch for {repo_path}: not a git repository. "
@@ -36,19 +34,41 @@ def get_current_branch(repo_path: Path) -> str:
         )
         logger.error(msg)
         raise GitError(msg) from e
-    except TypeError:
-        # Detached HEAD state - active_branch raises TypeError
+
+
+def get_current_branch(repo_path: Path) -> str:
+    """Get the current branch name of a git repository."""
+    repo = _open_repo_for_branch_lookup(repo_path)
+    if repo.head.is_detached:
+        # Detached HEAD state has no branch name.
         return "HEAD"
+    return repo.active_branch.name
+
+
+def describe_head(repo_path: Path) -> str:
+    """Return the current branch name, or a detached-HEAD description.
+
+    Read-only: works with dirty working trees and in linked worktrees
+    (where ``.git`` is a file). A detached HEAD is reported as
+    ``(detached at <short-sha>)`` instead of failing.
+    """
+    repo = _open_repo_for_branch_lookup(repo_path)
+    if repo.head.is_detached:
+        return f"(detached at {repo.git.rev_parse('--short', 'HEAD')})"
+    return repo.active_branch.name
 
 
 def check_all_on_same_branch(paths: Paths, raise_error: bool = True) -> bool:
-    """Validate that all repositories are on the expected branch."""
+    """Validate that all repositories are on the expected branch.
+
+    Read-only: does not require clean working trees. Detached HEADs are
+    reported as ``(detached at <short-sha>)`` and never match an expected
+    branch name.
+    """
     from multi.repos import load_repos
 
-    root_branch = get_current_branch(paths.root_dir)
-    repo_branches = [
-        (repo, get_current_branch(repo.path)) for repo in load_repos(paths)
-    ]
+    root_branch = describe_head(paths.root_dir)
+    repo_branches = [(repo, describe_head(repo.path)) for repo in load_repos(paths)]
     for repo, branch in repo_branches:
         expected_branch = repo.fixed_branch or root_branch
         if branch != expected_branch:

@@ -46,7 +46,7 @@ def run_git_in_all_repos(paths: Paths, git_args: List[str]) -> None:
         run_git_command(repo.path, git_args)
 
 
-@click.command(name="git")
+@click.command(name="git", context_settings={"ignore_unknown_options": True})
 @click.argument("git_args", nargs=-1, required=True)
 def git_cmd(git_args: tuple[str, ...]) -> None:
     """Run a git command across all repositories.
@@ -55,6 +55,10 @@ def git_cmd(git_args: tuple[str, ...]) -> None:
 
     Example: multi git pull
              multi git checkout -b feature/new-branch
+             multi git branch --show-current
+
+    Requires all repositories to be on the same branch (working trees may be
+    dirty). To inspect branches when they mismatch, use `multi branch`.
     """
     paths = Paths(Path.cwd())
     if paths.settings.is_monorepo():

@@ -2,6 +2,7 @@ import click
 
 from multi._version import __version__
 from multi.add import add_cmd
+from multi.branch import branch_cmd
 from multi.cli_helpers import common_command_wrapper
 from multi.collaborator import collaborator_cmd
 from multi.convert_monorepo import convert_monorepo_cmd
@@ -46,6 +47,7 @@ def main():
 
 main.add_command(common_command_wrapper(add_cmd))
 main.add_command(collaborator_cmd)
+main.add_command(common_command_wrapper(branch_cmd))
 main.add_command(common_command_wrapper(set_branch_cmd))
 main.add_command(common_command_wrapper(sync_cmd))
 main.add_command(common_command_wrapper(git_cmd))
