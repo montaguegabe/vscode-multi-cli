@@ -18,6 +18,7 @@ It is **read-only** and intentionally has none of the preconditions of the mutat
 - Repositories may be on **different branches** — mismatches are reported instead of blocking
 - **Detached HEAD** states (common in git worktrees) are reported as `(detached at <short-sha>)` instead of failing
 - Works in linked worktrees created by `multi worktree add`, where `.git` is a file
+- Sub-repos listed in `multi.json` that have **not been synced yet** (directory missing or not a git repository) are reported as ``(missing — run `multi sync`)`` and the report continues through the remaining repos
 
 ## Output
 
@@ -26,14 +27,15 @@ my-workspace (root): feature/login
 backend: feature/login
 frontend: main (expected root branch feature/login)
 docs: stable
+extras: (missing — run `multi sync`)
 ```
 
-Repos on their expected branch are listed plainly. Mismatched repos are flagged with the expected branch. Repos with `fixedBranch` are expected to be on that fixed branch instead of the root branch.
+Repos on their expected branch are listed plainly. Mismatched repos are flagged with the expected branch. Repos with `fixedBranch` are expected to be on that fixed branch instead of the root branch. Repos that have not been synced yet are flagged as missing.
 
 ## Exit Status
 
-- `0` — every repository is on its expected branch
-- `1` — one or more repositories are not on their expected branches (the listing is still printed)
+- `0` — every repository is present and on its expected branch
+- `1` — one or more repositories are missing or not on their expected branches (the full listing is still printed)
 
 This makes `multi branch` usable as a quick verification step in scripts.
 

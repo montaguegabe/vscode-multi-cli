@@ -1,3 +1,5 @@
+import shutil
+
 import git
 import pytest
 
@@ -70,6 +72,44 @@ def test_branch_cmd_fails_on_mismatch(setup_git_repos, monkeypatch):
     assert result.exit_code == 1
     assert "other-branch" in result.output
     assert "expected root branch main" in result.output
+
+
+def test_report_branches_continues_past_missing_repo(setup_git_repos):
+    """A configured but never-synced sub-repo is reported, not fatal."""
+    root_repo_path, sub_repo_paths = setup_git_repos
+    shutil.rmtree(sub_repo_paths[0])
+
+    assert report_branches(Paths(root_repo_path)) is False
+
+
+def test_report_branches_continues_past_non_git_directory(setup_git_repos):
+    """A sub-repo directory without .git is reported as missing, not fatal."""
+    root_repo_path, sub_repo_paths = setup_git_repos
+    shutil.rmtree(sub_repo_paths[0] / ".git")
+
+    assert report_branches(Paths(root_repo_path)) is False
+
+
+def test_branch_cmd_lists_all_repos_when_one_is_missing(setup_git_repos, monkeypatch):
+    """The full report is printed (once per repo) before the nonzero exit."""
+    root_repo_path, sub_repo_paths = setup_git_repos
+    missing_repo = sub_repo_paths[0]
+    remaining_repo = sub_repo_paths[1]
+    shutil.rmtree(missing_repo)
+    monkeypatch.chdir(root_repo_path)
+
+    from click.testing import CliRunner
+
+    result = CliRunner().invoke(main, ["branch"])
+
+    assert result.exit_code == 1
+    missing_line = f"{missing_repo.name}: (missing — run `multi sync`)"
+    assert result.output.count(missing_line) == 1
+    # Repos after the missing one are still listed.
+    assert f"{remaining_repo.name}: main" in result.output
+    # No absolute filesystem paths and no bad `git init` advice.
+    assert str(missing_repo) not in result.output
+    assert "git init" not in result.output
 
 
 def test_check_all_on_same_branch_allows_dirty_trees(setup_git_repos):

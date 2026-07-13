@@ -28,12 +28,12 @@ def _open_repo_for_branch_lookup(repo_path: Path) -> git.Repo:
     try:
         return git.Repo(repo_path)
     except (InvalidGitRepositoryError, NoSuchPathError) as e:
-        msg = (
-            f"Could not determine current branch for {repo_path}: not a git repository. "
-            "Initialize it with `git init -b main` or run `multi sync` from the workspace root."
-        )
-        logger.error(msg)
-        raise GitError(msg) from e
+        # No logging here: callers (or the CLI error wrapper) report the
+        # error exactly once.
+        raise GitError(
+            f"Could not determine current branch for {repo_path.name}: not a git "
+            "repository. Run `multi sync` from the workspace root."
+        ) from e
 
 
 def get_current_branch(repo_path: Path) -> str:

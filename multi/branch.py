@@ -14,9 +14,10 @@ logger = logging.getLogger(__name__)
 def report_branches(paths: Paths) -> bool:
     """Log the current branch of the root repo and each sub-repo.
 
-    Read-only: works with dirty working trees, mismatched branches, and
-    detached HEADs (for example in worktrees created by `multi worktree add`).
-    Returns True when every repo is on its expected branch.
+    Read-only: works with dirty working trees, mismatched branches, detached
+    HEADs (for example in worktrees created by `multi worktree add`), and
+    sub-repos that have not been synced yet (reported as missing).
+    Returns True when every repo is present and on its expected branch.
     """
     root_branch = describe_head(paths.root_dir)
     logger.info(f"{paths.root_dir.name} (root): {root_branch}")
@@ -27,7 +28,14 @@ def report_branches(paths: Paths) -> bool:
 
     all_match = True
     for repo in load_repos(paths):
-        branch = describe_head(repo.path)
+        try:
+            branch = describe_head(repo.path)
+        except GitError:
+            # Missing or uninitialized sub-repo: report it and keep going so
+            # the rest of the workspace is still listed.
+            all_match = False
+            logger.warning(f"{repo.name}: (missing — run `multi sync`)")
+            continue
         expected_branch = repo.fixed_branch or root_branch
         if branch == expected_branch:
             logger.info(f"{repo.name}: {branch}")
@@ -52,6 +60,7 @@ def branch_cmd() -> None:
     paths = Paths(Path.cwd())
     if not report_branches(paths):
         raise GitError(
-            "Repositories are not all on their expected branches. "
-            "Use `multi set-branch` (with clean working trees) to fix."
+            "Repositories are missing or not on their expected branches. "
+            "Run `multi sync` to clone missing repos, or `multi set-branch` "
+            "(with clean working trees) to fix branch mismatches."
         )

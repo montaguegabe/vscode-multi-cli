@@ -95,5 +95,8 @@ def test_get_current_branch_gives_actionable_message(tmp_path):
 
     message = str(exc_info.value)
     assert "Could not determine current branch" in message
-    assert "git init -b main" in message
     assert "multi sync" in message
+    # The repo name alone identifies the repo; no absolute paths, and no
+    # `git init` advice (that would create an unrelated empty repo).
+    assert str(tmp_path) not in message
+    assert "git init" not in message
