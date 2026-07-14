@@ -50,6 +50,12 @@ class SubRepoPayload(TypedDict):
     path: str
 
 
+class RepoBranchPayload(TypedDict):
+    name: str
+    path: str
+    branch: str
+
+
 def _run_git(
     args: list[str],
     cwd: Path,
@@ -118,6 +124,81 @@ def _subrepo_payloads(repo_path: Path) -> list[SubRepoPayload] | None:
         }
         for repo in subrepos
     ]
+
+
+def _describe_git_head(repo_path: Path) -> str | None:
+    if not repo_path.exists():
+        return None
+
+    if not (repo_path / ".git").exists():
+        return None
+
+    if not is_git_repo_root(repo_path):
+        return None
+
+    try:
+        branch = _run_git(
+            ["symbolic-ref", "--quiet", "--short", "HEAD"],
+            cwd=repo_path,
+            timeout=10,
+        ).stdout.strip()
+        if branch:
+            return branch
+    except (OSError, subprocess.SubprocessError):
+        pass
+
+    try:
+        short_sha = _run_git(
+            ["rev-parse", "--short", "HEAD"],
+            cwd=repo_path,
+            timeout=10,
+        ).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+    return f"(detached at {short_sha})" if short_sha else None
+
+
+def get_project_branches(repo_path: str | Path) -> list[RepoBranchPayload]:
+    project_path = Path(repo_path)
+    root_name = project_path.name or str(project_path)
+    subrepos = _load_subrepos(project_path) or []
+    repo_entries = [
+        {
+            "name": root_name,
+            "path": project_path,
+        },
+        *[
+            {
+                "name": repo.name,
+                "path": Path(repo.path),
+            }
+            for repo in subrepos
+        ],
+    ]
+
+    branch_entries: list[RepoBranchPayload] = []
+    seen_paths: set[Path] = set()
+    for entry in repo_entries:
+        entry_path = entry["path"]
+        resolved_path = entry_path.resolve()
+        if resolved_path in seen_paths:
+            continue
+        seen_paths.add(resolved_path)
+
+        branch = _describe_git_head(entry_path)
+        if branch is None:
+            continue
+
+        branch_entries.append(
+            {
+                "name": str(entry["name"]),
+                "path": str(entry_path),
+                "branch": branch,
+            }
+        )
+
+    return branch_entries
 
 
 def _get_git_status_internal(repo_path: Path, ignore_untracked: bool) -> RepoStatus:
@@ -536,6 +617,7 @@ def _project_summary_metadata(repo_path: str | Path) -> dict[str, Any]:
         "status": get_project_status(project_path),
         "doctorResult": _doctor_result(project_path),
         "subRepos": _subrepo_payloads(project_path),
+        "branches": get_project_branches(project_path),
     }
 
 
@@ -545,6 +627,7 @@ def _project_summary_fallback_metadata() -> dict[str, Any]:
         "status": "unknown",
         "doctorResult": None,
         "subRepos": None,
+        "branches": [],
     }
 
 
@@ -697,6 +780,7 @@ def get_project_detail(repo_path: str | Path) -> dict[str, Any]:
         "historyGroups": get_combined_history(project_path),
         "syncStatesByRepoPath": sync_states_by_repo_path,
         "subRepos": subrepos,
+        "branches": get_project_branches(project_path),
     }
 
 
