@@ -1,7 +1,7 @@
 [project]
 site_name = "Multi Documentation"
 site_description = "Work with VS Code/Cursor on multiple Git repos at once"
-site_url = "https://gabemontague.github.io/multi"
+site_url = "https://multi.bighelp.ai"
 site_author = "Gabe Montague"
 copyright = "&copy; 2025 Gabe Montague"
 extra_css = ["stylesheets/extra.css"]

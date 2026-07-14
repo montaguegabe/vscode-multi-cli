@@ -14,6 +14,13 @@ When working on projects that span multiple repositories, VS Code's multi-root w
 
 ## Key Features
 
+### Desktop App
+
+Use the desktop app to inspect configured Multi workspaces, review cross-repo diffs, and keep track of repository status.
+
+- [Download for macOS Apple Silicon](https://multi-desktop-releases-632795836081-us-east-1.s3.amazonaws.com/mac/Multi-Desktop-latest-arm64.dmg)
+- [Download for macOS Intel](https://multi-desktop-releases-632795836081-us-east-1.s3.amazonaws.com/mac/Multi-Desktop-latest-x64.dmg)
+
 ### Branch Synchronization
 
 Switch all repositories to the same branch simultaneously:

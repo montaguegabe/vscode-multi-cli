@@ -11,9 +11,11 @@ This guide will help you install Multi and set up your first multi-repo workspac
 
 ### Desktop App
 
-On Apple Silicon Macs, you can also install
-[Multi Desktop](https://multi-desktop-releases-632795836081-us-east-1.s3.amazonaws.com/mac/Multi-Desktop-latest-arm64.dmg)
-to inspect and manage Multi workspaces from a native app.
+You can also install Multi Desktop to inspect and manage Multi workspaces from
+a native app:
+
+- [Download for macOS Apple Silicon](https://multi-desktop-releases-632795836081-us-east-1.s3.amazonaws.com/mac/Multi-Desktop-latest-arm64.dmg)
+- [Download for macOS Intel](https://multi-desktop-releases-632795836081-us-east-1.s3.amazonaws.com/mac/Multi-Desktop-latest-x64.dmg)
 
 For terminal-only setup, install the Multi CLI with one of the package managers
 below.
