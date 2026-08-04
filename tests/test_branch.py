@@ -76,6 +76,20 @@ def test_branch_cmd_succeeds_with_dirty_trees(setup_git_repos, monkeypatch):
     assert "main" in result.output
 
 
+def test_branch_check_cmd_succeeds_with_dirty_trees(setup_git_repos, monkeypatch):
+    root_repo_path, sub_repo_paths = setup_git_repos
+    _make_dirty(root_repo_path)
+    _make_dirty(sub_repo_paths[0])
+    monkeypatch.chdir(root_repo_path)
+
+    from click.testing import CliRunner
+
+    result = CliRunner().invoke(main, ["branch", "check"])
+
+    assert result.exit_code == 0
+    assert "main" in result.output
+
+
 def test_branch_cmd_fails_on_mismatch(setup_git_repos, monkeypatch):
     root_repo_path, sub_repo_paths = setup_git_repos
     git.Repo(sub_repo_paths[0]).create_head("other-branch").checkout()
@@ -89,6 +103,31 @@ def test_branch_cmd_fails_on_mismatch(setup_git_repos, monkeypatch):
     assert result.exit_code == 1
     assert "other-branch" in result.output
     assert "expected root branch main" in result.output
+
+
+def test_branch_check_cmd_fails_on_mismatch(setup_git_repos, monkeypatch):
+    root_repo_path, sub_repo_paths = setup_git_repos
+    git.Repo(sub_repo_paths[0]).create_head("other-branch").checkout()
+    _make_dirty(sub_repo_paths[0])
+    monkeypatch.chdir(root_repo_path)
+
+    from click.testing import CliRunner
+
+    result = CliRunner().invoke(main, ["branch", "check"])
+
+    assert result.exit_code == 1
+    assert "other-branch" in result.output
+    assert "expected root branch main" in result.output
+
+
+def test_branch_help_lists_check_subcommand():
+    from click.testing import CliRunner
+
+    result = CliRunner().invoke(main, ["branch", "--help"])
+
+    assert result.exit_code == 0
+    assert "check" in result.output
+    assert "expected branches" in result.output
 
 
 def test_report_branches_continues_past_missing_repo(setup_git_repos):

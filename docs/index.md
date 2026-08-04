@@ -29,10 +29,10 @@ Switch repositories to the same workspace branch, except repos configured with `
 multi set-branch feature/my-feature
 ```
 
-Check which branch every repo is on — read-only, so it works with dirty working trees and detached HEADs:
+Check expected branch alignment — read-only, so it works with dirty working trees and detached HEADs:
 
 ```bash
-multi branch
+multi branch check
 ```
 
 Create a sibling worktree for parallel branch work:

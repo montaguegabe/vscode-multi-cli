@@ -3,6 +3,7 @@ from pathlib import Path
 
 import click
 
+from multi.cli_helpers import common_command_wrapper
 from multi.errors import GitError
 from multi.git_helpers import (
     describe_head,
@@ -50,14 +51,7 @@ def report_branches(paths: Paths) -> bool:
     return all_match
 
 
-@click.command(name="branch")
-def branch_cmd() -> None:
-    """Show the current branch of the root repo and every sub-repo.
-
-    Read-only: unlike `multi set-branch` and `multi git`, this works with
-    dirty working trees, mismatched branches, and detached HEADs.
-    Exits with an error status when repos are not on their expected branches.
-    """
+def _check_branch_alignment() -> None:
     paths = Paths(Path.cwd())
     if not report_branches(paths):
         raise GitError(
@@ -65,3 +59,24 @@ def branch_cmd() -> None:
             "Run `multi sync` to clone missing repos, or `multi set-branch` "
             "(with clean working trees) to fix branch mismatches."
         )
+
+
+@click.group(name="branch", invoke_without_command=True)
+@click.pass_context
+def branch_cmd(ctx: click.Context) -> None:
+    """Show branch state and expected-branch alignment.
+
+    Running `multi branch` is kept as the backwards-compatible spelling for
+    `multi branch check`.
+    """
+    if ctx.invoked_subcommand is None:
+        _check_branch_alignment()
+
+
+@click.command(name="check")
+def branch_check_cmd() -> None:
+    """Check that repos are on their expected branches."""
+    _check_branch_alignment()
+
+
+branch_cmd.add_command(common_command_wrapper(branch_check_cmd))

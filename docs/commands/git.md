@@ -91,10 +91,10 @@ Output from each repository is displayed with the repository name as a header.
 
 ## Error Handling
 
-If repositories are not on their expected branches, the command will fail with an error (even for read-only git commands). Use `multi branch` to inspect which branch every repo is on — it works with dirty trees and mismatched branches — then use `multi set-branch` to synchronize:
+If repositories are not on their expected branches, the command will fail with an error (even for read-only git commands). Use `multi branch check` to inspect alignment — it works with dirty trees and mismatched branches — then use `multi set-branch` to synchronize:
 
 ```bash
-multi branch
+multi branch check
 multi set-branch main
 multi git pull
 ```

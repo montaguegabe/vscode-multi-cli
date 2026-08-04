@@ -55,7 +55,7 @@ multi set-branch release/v2.0
 
 If any repository has uncommitted changes, the command will fail with an error message indicating which repository is not clean. Commit or stash your changes before running `set-branch`.
 
-To simply **check** which branch every repo is on (without switching), use [`multi branch`](branch.md) — it does not require clean working trees.
+To simply **check** expected branch alignment without switching, use [`multi branch check`](branch.md) — it does not require clean working trees. `multi branch` remains supported.
 
 ```bash
 # If you have uncommitted changes
