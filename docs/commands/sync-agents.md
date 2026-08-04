@@ -85,6 +85,20 @@ my-workspace/
 - **Team consistency**: Share AI context across different tools
 - **Repository documentation**: Reuse repo descriptions from `multi.json`
 
+## Claude Code And Codex Hooks
+
+Use `AGENTS.parts/*.md` for tracked Claude Code and Codex hook instructions that should be visible to agents in a Multi workspace. For example, add a file such as `AGENTS.parts/30-hooks.md` with concise instructions like "after editing this repo, run the install command" or "before committing, run the project test command."
+
+Multi writes the same generated content to both `AGENTS.md` and `CLAUDE.md`, so keep shared hook instructions tool-neutral where possible. If a hook is specific to one tool, label it clearly in the Markdown, for example "Claude Code only" or "Codex only."
+
+Root and subrepo instructions are generated independently:
+
+- Put workspace-wide hook instructions in the root `AGENTS.parts/` directory.
+- Put repo-specific hook instructions in that subrepo's `AGENTS.parts/` directory.
+- Do not assume root parts are inherited into subrepo outputs; duplicate or template any hook instruction that must appear in multiple generated files.
+
+Multi does not manage executable Claude Code or Codex runtime hook configuration files. If a project needs tool runtime hooks outside Markdown instructions, keep that config in the owning root repo or subrepo and document the expected behavior in the relevant `AGENTS.parts/*.md` file.
+
 ## Notes
 
 - The VS Code extension automatically runs this when `AGENTS.parts/*.md` files change

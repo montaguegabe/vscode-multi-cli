@@ -235,6 +235,8 @@ Agent instruction generation is disabled by default. Enable it when you want Mul
 }
 ```
 
+Use the configured parts directory for tracked Claude Code and Codex hook instructions that should appear in generated agent files. Root and subrepo parts are generated independently: root `AGENTS.parts/*.md` becomes root `AGENTS.md`/`CLAUDE.md`, while each subrepo's own parts become that subrepo's outputs. Multi does not manage executable tool runtime hook config; keep that config in the owning repo and document it in the relevant parts file.
+
 #### Example: Skip VS Code config for a repo
 
 ```json
