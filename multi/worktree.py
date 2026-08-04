@@ -13,6 +13,8 @@ from multi.git_helpers import (
     check_all_on_same_branch,
     check_all_repos_are_clean,
     check_branch_existence,
+    expected_branch_for_repo,
+    repo_uses_fixed_branch,
 )
 from multi.git_set_branch import create_and_switch_branch
 from multi.paths import Paths
@@ -177,8 +179,9 @@ def _checkout_subrepos(
 ) -> None:
     source_by_name = {repo.name: repo for repo in source_repos}
     for repo in destination_repos:
-        repo_branch_name = repo.fixed_branch or branch_name
-        if repo.fixed_branch:
+        repo_branch_name = expected_branch_for_repo(repo, branch_name)
+        assert repo_branch_name is not None
+        if repo_uses_fixed_branch(repo):
             create_and_switch_branch(
                 repo.path,
                 repo_branch_name,

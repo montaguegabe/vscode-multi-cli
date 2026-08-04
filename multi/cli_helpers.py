@@ -67,7 +67,7 @@ def common_command_wrapper(command_to_wrap: click.Command) -> click.Command:
             if ctx.invoked_subcommand is not None:
                 return result
 
-        # After commands, check that all sub-repos are on the same branch as the root repo.
+        # After commands, check that all sub-repos are on their expected branch.
         # Some commands (like doctor) intentionally run even when no workspace is initialized.
         if command_to_wrap.name in COMMANDS_WITHOUT_WORKSPACE_BRANCH_CHECK:
             return result

@@ -11,7 +11,7 @@ from git.exc import GitCommandError
 from multi.bootstrap import ensure_root_git_repo, ensure_workspace_readme
 from multi.cli_helpers import common_command_wrapper
 from multi.doctor import find_nested_git_repos_in_monorepo
-from multi.git_helpers import get_current_branch
+from multi.git_helpers import expected_branch_for_repo, get_current_branch
 from multi.ignore_files import (
     update_gitignore_with_generated_files,
     update_gitignore_with_repos,
@@ -39,7 +39,7 @@ def _is_path_inside(child: Path, parent: Path) -> bool:
 def _try_symlink_repo(
     repo_config: Repository,
     paths: Paths,
-    current_branch: str | None,
+    expected_branch: str | None,
 ) -> bool:
     """Attempt to create a symlink for a repository.
 
@@ -78,15 +78,17 @@ def _try_symlink_repo(
         os.symlink(existing_path, repo_config.path)
         logger.info(f"🔗 Symlinked {repo_config.name} -> {existing_path}")
 
-        # Checkout the correct branch if needed
-        if current_branch:
+        # Checkout the expected branch if one is defined for this repo.
+        if expected_branch:
             try:
                 symlinked_repo = git.Repo(repo_config.path)
-                symlinked_repo.git.checkout(current_branch)
-                logger.debug(f"Checked out branch {current_branch} in symlinked repo")
+                symlinked_repo.git.checkout(expected_branch)
+                logger.debug(
+                    f"Checked out branch {expected_branch} in symlinked repo"
+                )
             except GitCommandError:
                 logger.warning(
-                    f"Branch {current_branch} not found in {repo_config.name}, staying on current branch."
+                    f"Branch {expected_branch} not found in {repo_config.name}, staying on current branch."
                 )
 
         return True
@@ -97,7 +99,7 @@ def _try_symlink_repo(
 
 def _clone_repo(
     repo_config: Repository,
-    current_branch: str | None,
+    expected_branch: str | None,
 ) -> None:
     """Clone a repository and checkout the appropriate branch."""
     logger.debug(f"Cloning {repo_config.name}...")
@@ -112,16 +114,16 @@ def _clone_repo(
         # workspace root gitignore already manages sub-repo paths.
         cloned_repo = git.Repo.clone_from(repo_config.url, temp_repo_path)
 
-        # Then checkout the same branch as parent repo if it exists
-        if current_branch:
+        # Then checkout the expected branch if one is defined for this repo.
+        if expected_branch:
             try:
-                cloned_repo.git.checkout(current_branch)
+                cloned_repo.git.checkout(expected_branch)
                 logger.info(
-                    f"✅ Cloned {repo_config.name} and checked out branch {current_branch}"
+                    f"✅ Cloned {repo_config.name} and checked out branch {expected_branch}"
                 )
             except GitCommandError:
                 logger.warning(
-                    f"Branch {current_branch} not found in {repo_config.name}, staying on default branch."
+                    f"Branch {expected_branch} not found in {repo_config.name}, staying on default branch."
                 )
 
         shutil.move(str(temp_repo_path), str(repo_config.path))
@@ -145,6 +147,7 @@ def clone_repos(paths: Paths, ensure_on_same_branch: bool = True):
         logger.info(f"Current branch: {current_branch}")
 
     for repo_config in repos:
+        expected_branch = expected_branch_for_repo(repo_config, current_branch)
         if repo_config.path.exists():
             # Path already exists - register it and skip
             logger.debug(
@@ -154,11 +157,11 @@ def clone_repos(paths: Paths, ensure_on_same_branch: bool = True):
             continue
 
         # Try to symlink first
-        if _try_symlink_repo(repo_config, paths, current_branch):
+        if _try_symlink_repo(repo_config, paths, expected_branch):
             continue
 
         # Fall back to cloning
-        _clone_repo(repo_config, current_branch)
+        _clone_repo(repo_config, expected_branch)
 
         # Register the newly cloned repo
         register_repo(repo_config.url, repo_config.path)

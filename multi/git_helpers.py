@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Tuple
+from typing import Any, Tuple
 
 import git
 from git.exc import InvalidGitRepositoryError, NoSuchPathError
@@ -9,6 +9,31 @@ from multi.errors import GitError, RepoNotCleanError
 from multi.paths import Paths
 
 logger = logging.getLogger(__name__)
+
+
+def expected_branch_for_repo(repo: Any, workspace_branch: str | None) -> str | None:
+    """Return the branch a sub-repo should be on.
+
+    This is the fixed-branch invariant for Multi workspaces: a repo's
+    ``fixedBranch`` config wins, otherwise it follows the workspace branch.
+    Commands that need branch expectations should use this helper instead of
+    reading ``repo.fixed_branch`` directly.
+    """
+    fixed_branch = getattr(repo, "fixed_branch", None)
+    if fixed_branch is not None:
+        return fixed_branch
+    return workspace_branch
+
+
+def repo_uses_fixed_branch(repo: Any) -> bool:
+    return getattr(repo, "fixed_branch", None) is not None
+
+
+def expected_branch_description(repo: Any, workspace_branch: str | None) -> str:
+    expected_branch = expected_branch_for_repo(repo, workspace_branch)
+    if repo_uses_fixed_branch(repo):
+        return f"fixed branch {expected_branch}"
+    return f"root branch {workspace_branch}"
 
 
 def is_git_repo_root(repo_path: Path) -> bool:
@@ -70,13 +95,10 @@ def check_all_on_same_branch(paths: Paths, raise_error: bool = True) -> bool:
     root_branch = describe_head(paths.root_dir)
     repo_branches = [(repo, describe_head(repo.path)) for repo in load_repos(paths)]
     for repo, branch in repo_branches:
-        expected_branch = repo.fixed_branch or root_branch
+        expected_branch = expected_branch_for_repo(repo, root_branch)
         if branch != expected_branch:
             if raise_error:
-                if repo.fixed_branch:
-                    expectation = f"fixed branch {expected_branch}"
-                else:
-                    expectation = f"root branch {root_branch}"
+                expectation = expected_branch_description(repo, root_branch)
                 raise GitError(
                     f"Repository {repo.name} is not on the expected branch. "
                     f"Please fix. {repo.name}: {branch}, Expected: {expectation}"

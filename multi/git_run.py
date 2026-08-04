@@ -35,7 +35,7 @@ def run_git_command(repo_path: Path, git_args: List[str]) -> None:
 
 def run_git_in_all_repos(paths: Paths, git_args: List[str]) -> None:
     """Run git command across all repositories."""
-    # First check if all repos are on the same branch
+    # First check if all repos are on their expected branch.
     check_all_on_same_branch(paths=paths, raise_error=True)
 
     # Run in root repo first
@@ -57,8 +57,8 @@ def git_cmd(git_args: tuple[str, ...]) -> None:
              multi git checkout -b feature/new-branch
              multi git branch --show-current
 
-    Requires all repositories to be on the same branch (working trees may be
-    dirty). To inspect branches when they mismatch, use `multi branch`.
+    Requires all repositories to be on their expected branch (working trees may
+    be dirty). To inspect branches when they mismatch, use `multi branch`.
     """
     paths = Paths(Path.cwd())
     if paths.settings.is_monorepo():

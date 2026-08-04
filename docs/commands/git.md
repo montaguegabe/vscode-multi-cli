@@ -83,19 +83,25 @@ Output from each repository is displayed with the repository name as a header.
 
 ## Requirements
 
-- All repositories must be on the same branch before running git commands
-- This validation ensures consistency across your workspace
+- All repositories must be on their expected branch before running git commands:
+  - Unlocked repositories must match the root workspace branch
+  - Repositories with `fixedBranch` in `multi.json` must be on that fixed branch
+- This validation uses Multi's shared expected-branch invariant from `multi.git_helpers.expected_branch_for_repo`
 - Working trees do **not** need to be clean — read-only queries like `multi git branch --show-current` or `multi git status` work with uncommitted changes
 
 ## Error Handling
 
-If repositories are on different branches, the command will fail with an error (even for read-only git commands). Use `multi branch` to inspect which branch every repo is on — it works with dirty trees and mismatched branches — then use `multi set-branch` to synchronize:
+If repositories are not on their expected branches, the command will fail with an error (even for read-only git commands). Use `multi branch` to inspect which branch every repo is on — it works with dirty trees and mismatched branches — then use `multi set-branch` to synchronize:
 
 ```bash
 multi branch
 multi set-branch main
 multi git pull
 ```
+
+## Fixed Branch Warning
+
+`multi git` still runs the exact same git arguments in fixed-branch repositories. Commands that are branch-specific or branch-mutating, such as `checkout`, `branch`, or `push -u origin FEATURE`, can still affect fixed repos. Multi only validates the starting expected-branch state; it does not currently skip fixed repos or rewrite git arguments for them.
 
 ## Notes
 

@@ -9,6 +9,7 @@ from multi.git_helpers import (
     check_all_on_same_branch,
     check_all_repos_are_clean,
     check_branch_existence,
+    expected_branch_for_repo,
 )
 from multi.paths import Paths
 from multi.repos import load_repos
@@ -44,14 +45,15 @@ def set_branch_in_all_repos(root_dir: Path, branch_name: str) -> None:
     all_on_same_branch = check_all_on_same_branch(paths=paths, raise_error=False)
     if not all_on_same_branch:
         logger.warning(
-            "Some repos are not on the same branch as the root repo.  If the branch already exists for all repos, this command will fix the situation."
+            "Some repos are not on their expected branches. If the target branches already exist for all repos, this command will fix the situation."
         )
 
     create_and_switch_branch(
         paths.root_dir, branch_name, allow_create=all_on_same_branch
     )
     for repo in load_repos(paths=paths):
-        repo_branch_name = repo.fixed_branch or branch_name
+        repo_branch_name = expected_branch_for_repo(repo, branch_name)
+        assert repo_branch_name is not None
         create_and_switch_branch(
             repo.path, repo_branch_name, allow_create=all_on_same_branch
         )

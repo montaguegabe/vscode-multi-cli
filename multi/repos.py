@@ -44,6 +44,10 @@ class Repository:
 
         # Keep this repo on a fixed branch during branch synchronization.
         self.fixed_branch = kwargs.pop("fixedBranch", None)
+        if self.fixed_branch is not None and not isinstance(self.fixed_branch, str):
+            raise ValueError(
+                f"fixedBranch for repository {self.name} must be a string."
+            )
 
         install_sets = kwargs.pop("installSets", None)
         if install_sets is not None:

@@ -301,6 +301,8 @@ Use `fixedBranch` for repositories that should remain on a shared branch while t
 }
 ```
 
+Multi's branch invariant is centralized in `multi.git_helpers.expected_branch_for_repo`: a repo with `fixedBranch` is expected to use that branch, and every other repo follows the root workspace branch. Branch-aware commands should consume that helper instead of implementing their own fixed-branch checks.
+
 ---
 
 ### worktree

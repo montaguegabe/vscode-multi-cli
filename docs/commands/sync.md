@@ -27,6 +27,8 @@ A full sync performs all of the following:
 5. Generates agent instruction files when `agentInstructions.enabled` is true
 6. Syncs GitHub Actions workflows to root `.github/workflows` (monorepo mode only)
 
+Fresh clone and symlink setup uses Multi's shared expected-branch invariant from `multi.git_helpers.expected_branch_for_repo`: repos with `fixedBranch` are checked out to that branch, and unlocked repos mirror the root workspace branch when branch mirroring is enabled.
+
 ## Install Sets
 
 Use `--install-set NAME` or `--set NAME` to sync only repos whose `repos[].installSets` contains that name. This is useful for public installer workflows where a root workspace should clone and generate config only for public/runtime repos while private development repos remain excluded.

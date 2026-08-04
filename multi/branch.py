@@ -4,7 +4,11 @@ from pathlib import Path
 import click
 
 from multi.errors import GitError
-from multi.git_helpers import describe_head
+from multi.git_helpers import (
+    describe_head,
+    expected_branch_description,
+    expected_branch_for_repo,
+)
 from multi.paths import Paths
 from multi.repos import load_repos
 
@@ -36,15 +40,12 @@ def report_branches(paths: Paths) -> bool:
             all_match = False
             logger.warning(f"{repo.name}: (missing — run `multi sync`)")
             continue
-        expected_branch = repo.fixed_branch or root_branch
+        expected_branch = expected_branch_for_repo(repo, root_branch)
         if branch == expected_branch:
             logger.info(f"{repo.name}: {branch}")
         else:
             all_match = False
-            if repo.fixed_branch:
-                expectation = f"fixed branch {expected_branch}"
-            else:
-                expectation = f"root branch {root_branch}"
+            expectation = expected_branch_description(repo, root_branch)
             logger.warning(f"{repo.name}: {branch} (expected {expectation})")
     return all_match
 

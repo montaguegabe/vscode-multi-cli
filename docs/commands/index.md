@@ -12,7 +12,7 @@ Multi provides commands for managing your multi-repo workspace.
 | [`sync`](sync.md) | Sync configurations and repositories |
 | [`sync github`](sync-github.md) | Sync root GitHub Actions workflows (monorepo mode) |
 | [`branch`](branch.md) | Show each repo's current branch (read-only, works with dirty trees) |
-| [`set-branch`](set-branch.md) | Switch all repos to the same branch |
+| [`set-branch`](set-branch.md) | Switch repos to their expected branches |
 | [`worktree add`](worktree.md) | Create a sibling git worktree for a branch |
 | [`git`](git.md) | Run git commands across all repos |
 | [`doctor`](doctor.md) | Diagnose common workspace configuration issues |

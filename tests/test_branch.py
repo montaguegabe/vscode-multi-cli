@@ -1,3 +1,4 @@
+import json
 import shutil
 
 import git
@@ -13,6 +14,13 @@ from multi.paths import Paths
 
 def _make_dirty(repo_path):
     (repo_path / "dirty.txt").write_text("uncommitted change")
+
+
+def _configure_fixed_branch(root_repo_path, repo_index, branch_name):
+    multi_json_path = root_repo_path / "multi.json"
+    config = json.loads(multi_json_path.read_text(encoding="utf-8"))
+    config["repos"][repo_index]["fixedBranch"] = branch_name
+    multi_json_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
 
 
 def test_report_branches_works_with_dirty_trees(setup_git_repos):
@@ -33,6 +41,15 @@ def test_report_branches_flags_mismatch_with_dirty_trees(setup_git_repos):
     _make_dirty(sub_repo_paths[0])
 
     assert report_branches(Paths(root_repo_path)) is False
+
+
+def test_report_branches_respects_fixed_branch(setup_git_repos):
+    root_repo_path, sub_repo_paths = setup_git_repos
+    fixed_repo = git.Repo(sub_repo_paths[0])
+    fixed_repo.create_head("stable").checkout()
+    _configure_fixed_branch(root_repo_path, repo_index=0, branch_name="stable")
+
+    assert report_branches(Paths(root_repo_path)) is True
 
 
 def test_report_branches_reports_detached_head(setup_git_repos):
@@ -137,6 +154,15 @@ def test_run_git_in_all_repos_allows_dirty_trees(setup_git_repos):
     _make_dirty(sub_repo_paths[0])
 
     # Should not raise despite the dirty trees.
+    run_git_in_all_repos(Paths(root_repo_path), ["branch", "--show-current"])
+
+
+def test_run_git_in_all_repos_allows_fixed_branch_expected_state(setup_git_repos):
+    root_repo_path, sub_repo_paths = setup_git_repos
+    fixed_repo = git.Repo(sub_repo_paths[0])
+    fixed_repo.create_head("stable").checkout()
+    _configure_fixed_branch(root_repo_path, repo_index=0, branch_name="stable")
+
     run_git_in_all_repos(Paths(root_repo_path), ["branch", "--show-current"])
 
 

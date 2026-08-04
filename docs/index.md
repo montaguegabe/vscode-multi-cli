@@ -6,7 +6,7 @@
 
 When working on projects that span multiple repositories, VS Code's multi-root workspaces can be limiting. Multi provides:
 
-- **Unified branch management** - Keep all your repos on the same branch with a single command
+- **Unified branch management** - Keep repos on their expected branches with a single command
 - **Configuration merging** - Automatically combine `.vscode` settings, launch configurations, and tasks from all repos
 - **AI assistant support** - Optionally generate `CLAUDE.md` and `AGENTS.md` from tracked Markdown part files
 - **Flexible structure** - Sub-repos are simply cloned into your workspace directory, no submodules required
@@ -23,7 +23,7 @@ Use the desktop app to inspect configured Multi workspaces, review cross-repo di
 
 ### Branch Synchronization
 
-Switch all repositories to the same branch simultaneously:
+Switch repositories to the same workspace branch, except repos configured with `fixedBranch`:
 
 ```bash
 multi set-branch feature/my-feature
