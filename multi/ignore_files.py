@@ -55,11 +55,11 @@ class IgnoreFile:
 
 def _repo_entries(paths: Paths) -> List[str]:
     entries: List[str] = [
-        "# multi avoids git submodules; each entry has both forms: trailing slash matches directories, bare name matches symlinks/aliases.",
+        "# multi avoids git submodules; the leading slash anchors each entry to the workspace root so it never matches a nested directory of the same name (e.g. .agents/skills). The trailing-slash form matches the repo directory; the bare form matches a root symlink/alias.",
     ]
     for repo in load_repos(paths=paths):
-        entries.append(f"{repo.name}/")
-        entries.append(repo.name)
+        entries.append(f"/{repo.name}/")
+        entries.append(f"/{repo.name}")
     return entries
 
 
@@ -68,8 +68,8 @@ def _search_entries(paths: Paths) -> List[str]:
         "# Allow us to search inside these gitignored directories",
     ]
     for repo in load_repos(paths=paths):
-        entries.append(f"!{repo.name}/")
-        entries.append(f"!{repo.name}")
+        entries.append(f"!/{repo.name}/")
+        entries.append(f"!/{repo.name}")
     return entries
 
 
@@ -117,6 +117,10 @@ def remove_gitignore_entries_for_repos(paths: Paths, repo_names: List[str]) -> N
 
     entries = []
     for repo_name in repo_names:
+        # Remove both the anchored form and the legacy unanchored form so
+        # workspaces written by older multi versions migrate cleanly.
+        entries.append(f"/{repo_name}/")
+        entries.append(f"/{repo_name}")
         entries.append(f"{repo_name}/")
         entries.append(repo_name)
 
@@ -131,6 +135,10 @@ def remove_ignore_entries_for_repos(paths: Paths, repo_names: List[str]) -> None
 
     entries = []
     for repo_name in repo_names:
+        # Remove both the anchored form and the legacy unanchored form so
+        # workspaces written by older multi versions migrate cleanly.
+        entries.append(f"!/{repo_name}/")
+        entries.append(f"!/{repo_name}")
         entries.append(f"!{repo_name}/")
         entries.append(f"!{repo_name}")
 

@@ -52,19 +52,20 @@ def test_update_repo_and_search_blocks_use_managed_markers(tmp_path):
 
     gitignore = (workspace / ".gitignore").read_text(encoding="utf-8")
     assert REPO_DIRECTORIES_BLOCK.begin_marker in gitignore
-    assert (
-        "# multi avoids git submodules; each entry has both forms: trailing slash matches directories, bare name matches symlinks/aliases."
-        in gitignore
-    )
-    assert "repo-a/" in gitignore
-    assert "repo-b" in gitignore
+    assert "the leading slash anchors each entry to the workspace root" in gitignore
+    # Entries are anchored with a leading slash so they never match a nested
+    # directory of the same name (e.g. .agents/skills).
+    assert "/repo-a/" in gitignore
+    assert "/repo-b/" in gitignore
+    assert "/repo-b" in gitignore
     assert REPO_DIRECTORIES_BLOCK.end_marker in gitignore
 
     ignore = (workspace / ".ignore").read_text(encoding="utf-8")
     assert SEARCHABLE_REPOS_BLOCK.begin_marker in ignore
     assert "# Allow us to search inside these gitignored directories" in ignore
-    assert "!repo-a/" in ignore
-    assert "!repo-b" in ignore
+    assert "!/repo-a/" in ignore
+    assert "!/repo-b/" in ignore
+    assert "!/repo-b" in ignore
     assert SEARCHABLE_REPOS_BLOCK.end_marker in ignore
 
 
@@ -292,16 +293,20 @@ def test_update_gitignore_with_generated_files_removes_empty_subrepo_block(
 def test_remove_repo_entries_from_ignore_files_removes_only_managed_lines(tmp_path):
     workspace = tmp_path / "workspace"
     workspace.mkdir()
+    # Include both the anchored form and the legacy unanchored form for repo-a
+    # to prove removal migrates workspaces written by older multi versions.
     (workspace / ".gitignore").write_text(
         "\n".join(
             [
                 "keep/",
                 "",
                 REPO_DIRECTORIES_BLOCK.begin_marker,
+                "/repo-a/",
+                "/repo-a",
                 "repo-a/",
                 "repo-a",
-                "repo-b/",
-                "repo-b",
+                "/repo-b/",
+                "/repo-b",
                 REPO_DIRECTORIES_BLOCK.end_marker,
                 "",
             ]
@@ -314,10 +319,12 @@ def test_remove_repo_entries_from_ignore_files_removes_only_managed_lines(tmp_pa
                 "!keep/",
                 "",
                 SEARCHABLE_REPOS_BLOCK.begin_marker,
+                "!/repo-a/",
+                "!/repo-a",
                 "!repo-a/",
                 "!repo-a",
-                "!repo-b/",
-                "!repo-b",
+                "!/repo-b/",
+                "!/repo-b",
                 SEARCHABLE_REPOS_BLOCK.end_marker,
                 "",
             ]
@@ -333,14 +340,14 @@ def test_remove_repo_entries_from_ignore_files_removes_only_managed_lines(tmp_pa
 
     gitignore = (workspace / ".gitignore").read_text(encoding="utf-8")
     assert "keep/" in gitignore
-    assert "repo-a/" not in gitignore
-    assert "repo-b/" in gitignore
+    assert "repo-a" not in gitignore
+    assert "/repo-b/" in gitignore
     assert REPO_DIRECTORIES_BLOCK.begin_marker in gitignore
 
     ignore = (workspace / ".ignore").read_text(encoding="utf-8")
     assert "!keep/" in ignore
-    assert "!repo-a/" not in ignore
-    assert "!repo-b/" in ignore
+    assert "repo-a" not in ignore
+    assert "!/repo-b/" in ignore
     assert SEARCHABLE_REPOS_BLOCK.begin_marker in ignore
 
 
