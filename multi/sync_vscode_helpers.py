@@ -201,7 +201,9 @@ class VSCodeFileMerger(ABC):
             effective_repo_json, repo, source_file_display
         )
 
-        return deep_merge(merged_json, effective_repo_json, repo.name, skip_keys)
+        return deep_merge(
+            merged_json, effective_repo_json, repo.relative_path, skip_keys
+        )
 
     def _post_process_json(self, merged_json: Dict[str, Any]) -> Dict[str, Any]:
         """

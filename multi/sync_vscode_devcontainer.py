@@ -44,7 +44,7 @@ def sync_devcontainer(root_dir: Path, install_set: str | None = None) -> None:
                 if devcontainer_json:
                     devcontainer_json = prefix_repo_name_to_path_recursive(
                         devcontainer_json,
-                        repo.name,
+                        repo.relative_path,
                         resolve_relative_paths=True,
                     )
                     write_json_file(devcontainer_json_path, devcontainer_json)

@@ -52,8 +52,13 @@ def remove_cmd(repo_name: str, delete: bool, force: bool):
     if matched_index is None:
         raise click.ClickException(f"No repo named '{repo_name}' found in multi.json.")
 
+    # Resolve the repo's on-disk location, honoring a custom "path" (nested
+    # layout); fall back to the repo name (flat layout).
+    matched_entry = repos_list[matched_index]
+    relative_path = (matched_entry.get("path") or repo_name).strip().strip("/")
+
     # Handle --delete
-    repo_path = paths.root_dir / repo_name
+    repo_path = paths.root_dir / relative_path
     if delete and repo_path.exists():
         if not force and not is_monorepo:
             # In monorepo mode there's no .git to check; in normal mode, check cleanliness
@@ -81,8 +86,8 @@ def remove_cmd(repo_name: str, delete: bool, force: bool):
 
     # Clean up ignore files (not used in monorepo mode)
     if not is_monorepo:
-        remove_gitignore_entries_for_repos(paths, [repo_name])
-        remove_ignore_entries_for_repos(paths, [repo_name])
+        remove_gitignore_entries_for_repos(paths, [relative_path])
+        remove_ignore_entries_for_repos(paths, [relative_path])
         if repo_path.exists():
             clear_subrepo_generated_file_block(repo_path)
 

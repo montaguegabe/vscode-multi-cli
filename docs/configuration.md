@@ -114,7 +114,8 @@ An array of repository configurations. Each repository object supports:
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `url` | string | Yes* | - | Git repository URL (HTTPS or SSH). *Not required in monorepo mode. |
-| `name` | string | No** | Last segment of URL | Custom directory name for the cloned repo. **Required in monorepo mode if no URL. |
+| `name` | string | No** | Last segment of URL | Repository identity/name. **Required in monorepo mode if no URL. |
+| `path` | string | No | `name` | Custom on-disk location, relative to the workspace root. Use to place a repo under a nested directory (e.g. `services/api`) instead of a flat top-level folder. Must be a relative path (no leading `/`, no `..`). |
 | `description` | string | No | - | Repository description available to generated root agent instructions |
 | `skipVSCode` | boolean | No | `false` | Skip this repo when merging VS Code configurations |
 | `allowSymlink` | boolean | No | `false` | Allow symlinking to an existing clone of this repo |
@@ -152,6 +153,29 @@ An array of repository configurations. Each repository object supports:
 ```
 
 Recommended pattern: if the GitHub repository is product-prefixed, use a short local `name` that reflects the role of the repo rather than repeating the full slug.
+
+#### Example: Custom nested paths
+
+Use `path` to lay repos out in nested directories instead of a flat top level.
+`name` stays the repo's identity while `path` controls where it is cloned. Multi
+anchors the generated `.gitignore`/`.ignore` entries to the exact path (e.g.
+`/services/api/`), so a nested repo never accidentally matches a same-named
+directory elsewhere in the workspace.
+
+```json
+{
+  "repos": [
+    {
+      "url": "https://github.com/org/api",
+      "path": "services/api"
+    },
+    {
+      "url": "https://github.com/org/web",
+      "path": "services/web"
+    }
+  ]
+}
+```
 
 #### Example: Public installer and private dev sets
 

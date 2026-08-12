@@ -58,8 +58,8 @@ def _repo_entries(paths: Paths) -> List[str]:
         "# multi avoids git submodules; the leading slash anchors each entry to the workspace root so it never matches a nested directory of the same name (e.g. .agents/skills). The trailing-slash form matches the repo directory; the bare form matches a root symlink/alias.",
     ]
     for repo in load_repos(paths=paths):
-        entries.append(f"/{repo.name}/")
-        entries.append(f"/{repo.name}")
+        entries.append(f"/{repo.relative_path}/")
+        entries.append(f"/{repo.relative_path}")
     return entries
 
 
@@ -68,8 +68,8 @@ def _search_entries(paths: Paths) -> List[str]:
         "# Allow us to search inside these gitignored directories",
     ]
     for repo in load_repos(paths=paths):
-        entries.append(f"!/{repo.name}/")
-        entries.append(f"!/{repo.name}")
+        entries.append(f"!/{repo.relative_path}/")
+        entries.append(f"!/{repo.relative_path}")
     return entries
 
 

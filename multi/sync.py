@@ -75,6 +75,8 @@ def _try_symlink_repo(
 
     # Try to create the symlink
     try:
+        # Create any parent directories for nested custom paths.
+        os.makedirs(repo_config.path.parent, exist_ok=True)
         os.symlink(existing_path, repo_config.path)
         logger.info(f"🔗 Symlinked {repo_config.name} -> {existing_path}")
 
@@ -83,9 +85,7 @@ def _try_symlink_repo(
             try:
                 symlinked_repo = git.Repo(repo_config.path)
                 symlinked_repo.git.checkout(expected_branch)
-                logger.debug(
-                    f"Checked out branch {expected_branch} in symlinked repo"
-                )
+                logger.debug(f"Checked out branch {expected_branch} in symlinked repo")
             except GitCommandError:
                 logger.warning(
                     f"Branch {expected_branch} not found in {repo_config.name}, staying on current branch."
@@ -126,6 +126,9 @@ def _clone_repo(
                     f"Branch {expected_branch} not found in {repo_config.name}, staying on default branch."
                 )
 
+        # Create any parent directories for nested custom paths before moving
+        # the checked-out repo into place.
+        os.makedirs(repo_config.path.parent, exist_ok=True)
         shutil.move(str(temp_repo_path), str(repo_config.path))
 
 

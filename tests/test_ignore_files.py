@@ -351,6 +351,74 @@ def test_remove_repo_entries_from_ignore_files_removes_only_managed_lines(tmp_pa
     assert SEARCHABLE_REPOS_BLOCK.begin_marker in ignore
 
 
+def test_repo_entries_anchor_custom_nested_paths(tmp_path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    (workspace / "multi.json").write_text(
+        json.dumps(
+            {
+                "repos": [
+                    {"url": "https://github.com/test/api", "path": "services/api"},
+                    {"url": "https://github.com/test/web"},
+                ]
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    paths = Paths(workspace)
+    update_gitignore_with_repos(paths)
+    update_ignore_with_repos(paths)
+
+    # Exact line membership: "/services/api/" contains the substring "/api/",
+    # so substring checks would be misleading here.
+    gitignore_lines = (
+        (workspace / ".gitignore").read_text(encoding="utf-8").splitlines()
+    )
+    assert "/services/api/" in gitignore_lines
+    assert "/services/api" in gitignore_lines
+    # The custom-path repo is ignored at its nested location, not the bare name.
+    assert "/api/" not in gitignore_lines
+    assert "/api" not in gitignore_lines
+    # A flat repo still uses its name.
+    assert "/web/" in gitignore_lines
+
+    ignore_lines = (workspace / ".ignore").read_text(encoding="utf-8").splitlines()
+    assert "!/services/api/" in ignore_lines
+    assert "!/api/" not in ignore_lines
+    assert "!/web/" in ignore_lines
+
+
+def test_remove_entries_for_custom_nested_path(tmp_path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    (workspace / ".gitignore").write_text(
+        "\n".join(
+            [
+                REPO_DIRECTORIES_BLOCK.begin_marker,
+                "/services/api/",
+                "/services/api",
+                "/web/",
+                "/web",
+                REPO_DIRECTORIES_BLOCK.end_marker,
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    paths = Paths.__new__(Paths)
+    paths.root_dir = workspace
+
+    remove_gitignore_entries_for_repos(paths, ["services/api"])
+
+    lines = (workspace / ".gitignore").read_text(encoding="utf-8").splitlines()
+    assert "/services/api/" not in lines
+    assert "/services/api" not in lines
+    assert "/web/" in lines
+
+
 def test_clear_subrepo_generated_file_block_removes_only_managed_block(tmp_path):
     repo_path = tmp_path / "repo-a"
     repo_path.mkdir()

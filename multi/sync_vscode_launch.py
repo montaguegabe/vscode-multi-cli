@@ -61,7 +61,7 @@ class LaunchFileMerger(VSCodeFileMerger):
                 if isinstance(config, dict):
                     if "cwd" not in config:
                         config["cwd"] = prefix_repo_name_to_path(
-                            "${workspaceFolder}", repo.name
+                            "${workspaceFolder}", repo.relative_path
                         )
 
         # Check if repo has requiredCompounds config and mark matching compounds

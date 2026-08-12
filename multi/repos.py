@@ -1,3 +1,4 @@
+from pathlib import Path, PurePosixPath
 from typing import Any, List
 
 from multi.errors import NoRepositoriesError
@@ -31,7 +32,28 @@ class Repository:
         else:
             raise ValueError("Repository must have either 'url' or 'name'")
         self.paths = paths
-        self.path = self.paths.root_dir / self.name
+
+        # Custom on-disk location, relative to the workspace root. Defaults to
+        # the repo name (a flat layout). Allows repos to live under nested
+        # directories, e.g. "path": "services/api".
+        relative_path = kwargs.pop("path", None)
+        if relative_path is None:
+            self.relative_path = self.name
+        else:
+            if not isinstance(relative_path, str):
+                raise ValueError(f"path for repository {self.name} must be a string.")
+            raw = relative_path.strip()
+            posix = PurePosixPath(raw)
+            # Reject absolute paths and parent-directory escapes before
+            # normalizing, so a leading '/' is an error rather than silently
+            # stripped.
+            if not raw or posix.is_absolute() or ".." in posix.parts:
+                raise ValueError(
+                    f"path for repository {self.name} must be a relative path "
+                    "inside the workspace (no leading '/' and no '..')."
+                )
+            self.relative_path = posix.as_posix()
+        self.path = self.paths.root_dir / Path(self.relative_path)
 
         # Set 'skip' attribute, defaulting to False if not provided in kwargs
         self.skip_vscode = kwargs.pop("skipVSCode", False)
