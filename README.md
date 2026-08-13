@@ -10,6 +10,7 @@ Features:
 - Supports optional `installSets` so installer scripts can sync only a public/runtime subset of repos.
 - Optionally generates `CLAUDE.md` and `AGENTS.md` files from tracked `AGENTS.parts/*.md` files.
 - In monorepo mode, syncs sub-repo GitHub workflows into root `.github/workflows`.
+- Pairs with Multi Desktop for workspace diffs, branch visibility, and actionable push diagnostics.
 
 ## Installation
 
