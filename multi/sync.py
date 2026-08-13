@@ -109,10 +109,29 @@ def _clone_repo(
     ) as temp_dir:
         temp_repo_path = Path(temp_dir) / repo_config.name
 
-        # First clone the default branch outside the workspace, then move the
-        # checked-out repo into place. This avoids checkout conflicts when the
-        # workspace root gitignore already manages sub-repo paths.
-        cloned_repo = git.Repo.clone_from(repo_config.url, temp_repo_path)
+        # First clone outside the workspace, then move the checked-out repo
+        # into place. This avoids checkout conflicts when the workspace root
+        # gitignore already manages sub-repo paths.
+        clone_kwargs = {}
+        if expected_branch:
+            clone_kwargs = {"branch": expected_branch, "single_branch": True}
+
+        try:
+            cloned_repo = git.Repo.clone_from(
+                repo_config.url,
+                temp_repo_path,
+                **clone_kwargs,
+            )
+        except GitCommandError:
+            if not expected_branch:
+                raise
+
+            # Preserve the historical fallback for repos that do not have the
+            # mirrored branch: clone whatever the remote default is, then warn
+            # below when checkout cannot find the expected branch.
+            if temp_repo_path.exists():
+                shutil.rmtree(temp_repo_path)
+            cloned_repo = git.Repo.clone_from(repo_config.url, temp_repo_path)
 
         # Then checkout the expected branch if one is defined for this repo.
         if expected_branch:

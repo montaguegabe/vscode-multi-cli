@@ -151,6 +151,26 @@ def test_sync_clones_fixed_branch_to_expected_branch(tmp_path):
     assert git.Repo(workspace / "repo1").active_branch.name == "stable"
 
 
+def test_sync_single_branch_clones_expected_branch_when_remote_default_differs(
+    tmp_path,
+):
+    repo0_remote = _create_remote_repo(tmp_path, "repo0", branches=["develop"])
+    git.Repo(repo0_remote).git.symbolic_ref("HEAD", "refs/heads/develop")
+    workspace = tmp_path / "workspace"
+    _write_clone_workspace(
+        workspace,
+        [{"url": str(repo0_remote), "name": "repo0"}],
+    )
+
+    sync(root_dir=workspace)
+
+    repo = git.Repo(workspace / "repo0")
+    assert repo.active_branch.name == "main"
+    assert repo.heads.main.commit == repo.remotes.origin.refs.main.commit
+    assert "develop" not in [head.name for head in repo.heads]
+    assert "origin/develop" not in [ref.name for ref in repo.remotes.origin.refs]
+
+
 def test_sync_install_set_clones_fixed_branch_to_expected_branch(tmp_path):
     repo0_remote = _create_remote_repo(tmp_path, "repo0", branches=["feature/root"])
     repo1_remote = _create_remote_repo(tmp_path, "repo1", branches=["stable"])
@@ -317,9 +337,10 @@ def test_clone_repo_checks_out_in_temp_dir_before_moving_to_workspace(
     class FakeRepo:
         pass
 
-    def fake_clone_from(url, path):
+    def fake_clone_from(url, path, **kwargs):
         clone_calls["url"] = url
         clone_calls["path"] = Path(path)
+        clone_calls["kwargs"] = kwargs
         return FakeRepo()
 
     def fake_move(src, dst):
@@ -340,5 +361,6 @@ def test_clone_repo_checks_out_in_temp_dir_before_moving_to_workspace(
 
     assert clone_calls["url"] == "https://github.com/example/repo-a"
     assert clone_calls["path"].parent != workspace
+    assert clone_calls["kwargs"] == {}
     assert move_calls["src"] == clone_calls["path"]
     assert move_calls["dst"] == repo_path
