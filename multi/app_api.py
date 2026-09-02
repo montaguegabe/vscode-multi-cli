@@ -126,6 +126,21 @@ def _subrepo_payloads(repo_path: Path) -> list[SubRepoPayload] | None:
     ]
 
 
+def get_project_subrepos(repo_path: str | Path) -> list[SubRepoPayload]:
+    """Public multi.json sub-repo listing for library consumers ([] when not a workspace)."""
+    return _subrepo_payloads(Path(repo_path)) or []
+
+
+def list_project_repo_names(repo_path: str | Path) -> list[str]:
+    """Names of repos declared in repo_path's own multi.json ([] when absent/invalid).
+
+    Only reads a multi.json directly inside repo_path — never searches parent
+    directories — so callers can safely probe arbitrary directories.
+    """
+    subrepos = _load_subrepos(Path(repo_path))
+    return [repo.name for repo in subrepos] if subrepos else []
+
+
 def _describe_git_head(repo_path: Path) -> str | None:
     if not repo_path.exists():
         return None
@@ -212,7 +227,13 @@ def _get_git_status_internal(repo_path: Path, ignore_untracked: bool) -> RepoSta
     if ignore_untracked:
         status_args.append("--untracked-files=no")
 
-    porcelain = _run_git(status_args, cwd=repo_path, timeout=10).stdout
+    try:
+        porcelain = _run_git(status_args, cwd=repo_path, timeout=10).stdout
+    except (OSError, subprocess.SubprocessError):
+        # A directory with a .git entry that git itself rejects (corrupt or
+        # locked repo) is neither clean nor dirty; report it as unknown
+        # instead of surfacing an exception to status callers.
+        return "unknown"
     if porcelain.strip():
         return "dirty"
 
