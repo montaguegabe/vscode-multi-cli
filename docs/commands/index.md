@@ -13,7 +13,7 @@ Multi provides commands for managing your multi-repo workspace.
 | [`sync github`](sync-github.md) | Sync root GitHub Actions workflows (monorepo mode) |
 | [`branch check`](branch.md) | Check expected branch alignment (read-only, works with dirty trees) |
 | [`set-branch`](set-branch.md) | Switch repos to their expected branches |
-| [`worktree add`](worktree.md) | Create a sibling git worktree for a branch |
+| [`worktree add`](worktree.md) | Create a git worktree in the sibling `<workspace>-worktrees` directory |
 | [`git`](git.md) | Run git commands across all repos |
 | [`doctor`](doctor.md) | Diagnose common workspace configuration issues |
 
@@ -57,7 +57,7 @@ multi branch check
 # Switch to a feature branch
 multi set-branch feature/new-feature
 
-# Create a sibling worktree
+# Create an isolated worktree under <workspace>-worktrees/
 multi worktree add new-feature --branch feature/new-feature
 
 # Pull latest changes in all repos

@@ -11,7 +11,6 @@ from multi.cli_helpers import common_command_wrapper
 from multi.errors import GitError
 from multi.git_helpers import (
     check_all_on_same_branch,
-    check_all_repos_are_clean,
     check_branch_existence,
     expected_branch_for_repo,
     repo_uses_fixed_branch,
@@ -93,14 +92,23 @@ def _resolve_relative_path(entry: str) -> Path:
     return relative_path
 
 
+def _worktrees_dir(root_dir: Path) -> Path:
+    """Return the sibling directory that holds all worktrees for a workspace.
+
+    For a workspace at ``<parent>/my-workspace``, worktrees live under
+    ``<parent>/my-workspace-worktrees/``.
+    """
+    return root_dir.parent / f"{root_dir.name}-worktrees"
+
+
 def _destination_for_name(root_dir: Path, name: str) -> Path:
     name_path = Path(name)
     if name_path.is_absolute() or len(name_path.parts) != 1 or name in {"", ".", ".."}:
         raise GitError(
-            "Worktree NAME must be a single sibling directory name. "
+            "Worktree NAME must be a single directory name. "
             "Use --branch for branch names that contain path separators."
         )
-    return root_dir.parent / name
+    return _worktrees_dir(root_dir) / name
 
 
 def _repo_for_path(paths: Paths, relative_path: Path) -> tuple[Path, Path]:
@@ -197,7 +205,9 @@ def _checkout_subrepos(
             try:
                 _run_git(repo.path, ["fetch", str(source_repo.path), base_ref])
                 _run_git(repo.path, ["checkout", "-b", repo_branch_name, "FETCH_HEAD"])
-                logger.info(f"✅ Switched to branch '{repo_branch_name}' in {repo.path}")
+                logger.info(
+                    f"✅ Switched to branch '{repo_branch_name}' in {repo.path}"
+                )
                 continue
             except GitError as exc:
                 logger.warning(
@@ -234,7 +244,8 @@ def add_worktree(
     if destination.exists():
         raise GitError(f"Worktree destination already exists: {destination}")
 
-    check_all_repos_are_clean(paths=paths, raise_error=True)
+    # No clean-working-tree requirement: worktree creation branches from a
+    # commit (HEAD or --base-ref) and never mutates the source working trees.
     all_on_same_branch = check_all_on_same_branch(paths=paths, raise_error=False)
     if not all_on_same_branch:
         logger.warning(
@@ -242,8 +253,12 @@ def add_worktree(
             "already exist for all repos, this command will fix the situation."
         )
 
+    destination.parent.mkdir(parents=True, exist_ok=True)
     _create_root_worktree(paths.root_dir, destination, branch_name, base_ref)
-    sync(root_dir=destination, install_set=install_set)
+    # Skip branch matching during the initial sync: the worktree branch is
+    # created in each sub-repo right after, so warning about it being missing
+    # here would only be confusing.
+    sync(root_dir=destination, ensure_on_same_branch=False, install_set=install_set)
 
     destination_paths = Paths(destination, install_set=install_set)
     _checkout_subrepos(
@@ -259,7 +274,11 @@ def add_worktree(
 
 @click.group(name="worktree")
 def worktree_cmd() -> None:
-    """Manage sibling git worktrees for a multi workspace."""
+    """Manage git worktrees for a multi workspace.
+
+    Worktrees live in a sibling directory named after the workspace with
+    '-worktrees' appended (e.g. my-workspace-worktrees/).
+    """
 
 
 @click.command(name="add")
@@ -288,9 +307,12 @@ def worktree_add_cmd(
     install_set: str | None = None,
     base_ref: str = "HEAD",
 ) -> None:
-    """Create a sibling worktree.
+    """Create an isolated worktree of the whole workspace.
 
-    NAME: Directory name for the sibling worktree. Used as the branch name when
+    The worktree is created at <parent>/<workspace-dirname>-worktrees/NAME
+    (the -worktrees directory is created if missing).
+
+    NAME: Directory name for the worktree. Used as the branch name when
     --branch is omitted.
     """
     add_worktree(

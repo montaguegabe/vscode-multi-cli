@@ -35,7 +35,7 @@ Check expected branch alignment — read-only, so it works with dirty working tr
 multi branch check
 ```
 
-Create a sibling worktree for parallel branch work:
+Create an isolated worktree (in a sibling `<workspace>-worktrees` directory) for parallel branch work:
 
 ```bash
 multi worktree add my-feature --branch feature/my-feature

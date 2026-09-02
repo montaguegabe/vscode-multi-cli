@@ -82,10 +82,53 @@ def test_add_worktree_uses_name_as_default_branch(tmp_path):
 
     destination = add_worktree(root_path, name="feature-test")
 
-    assert destination == tmp_path / "feature-test"
+    assert destination == tmp_path / "workspace-worktrees" / "feature-test"
     assert is_git_repo_root(destination) is True
     assert git.Repo(destination).active_branch.name == "feature-test"
     assert git.Repo(destination / "repo0").active_branch.name == "feature-test"
+
+
+def test_add_worktree_creates_worktrees_sibling_directory(tmp_path):
+    remote = _create_remote_repo(tmp_path, "repo0")
+    root_path = _create_workspace(
+        tmp_path,
+        repo_configs=[{"url": str(remote), "name": "repo0"}],
+    )
+    assert not (tmp_path / "workspace-worktrees").exists()
+
+    destination = add_worktree(root_path, name="feature-placed")
+
+    assert destination.parent == tmp_path / "workspace-worktrees"
+    assert destination.parent.is_dir()
+    assert is_git_repo_root(destination) is True
+
+
+def test_add_worktree_allows_dirty_root_and_subrepos(tmp_path):
+    remote = _create_remote_repo(tmp_path, "repo0")
+    root_path = _create_workspace(
+        tmp_path,
+        repo_configs=[{"url": str(remote), "name": "repo0"}],
+    )
+    (root_path / "README.md").write_text("# Workspace (edited)\n", encoding="utf-8")
+    (root_path / "untracked.txt").write_text("untracked\n", encoding="utf-8")
+    (root_path / "repo0" / "README.md").write_text(
+        "# repo0 (edited)\n", encoding="utf-8"
+    )
+
+    destination = add_worktree(root_path, name="feature-dirty")
+
+    assert git.Repo(destination).active_branch.name == "feature-dirty"
+    assert git.Repo(destination / "repo0").active_branch.name == "feature-dirty"
+    # Source working trees are untouched.
+    assert (root_path / "README.md").read_text(encoding="utf-8") == (
+        "# Workspace (edited)\n"
+    )
+    assert (root_path / "repo0" / "README.md").read_text(encoding="utf-8") == (
+        "# repo0 (edited)\n"
+    )
+    # Uncommitted changes do not leak into the new worktree.
+    assert (destination / "README.md").read_text(encoding="utf-8") == "# Workspace\n"
+    assert not (destination / "untracked.txt").exists()
 
 
 def test_add_worktree_uses_custom_branch_name(tmp_path):
@@ -97,7 +140,7 @@ def test_add_worktree_uses_custom_branch_name(tmp_path):
 
     destination = add_worktree(root_path, name="sibling", branch_name="feature/custom")
 
-    assert destination == tmp_path / "sibling"
+    assert destination == tmp_path / "workspace-worktrees" / "sibling"
     assert git.Repo(destination).active_branch.name == "feature/custom"
     assert git.Repo(destination / "repo0").active_branch.name == "feature/custom"
 
